@@ -64,7 +64,7 @@ import (
 	"google.golang.org/api/cloudkms/v1"
 	"google.golang.org/api/cloudresourcemanager/v1"
 	resourceManagerV3 "google.golang.org/api/cloudresourcemanager/v3"
-	composer "google.golang.org/api/composer/v1beta1"
+	"google.golang.org/api/composer/v1beta1"
 	compute "google.golang.org/api/compute/v0.beta"
 	container "google.golang.org/api/container/v1beta1"
 	dataflow "google.golang.org/api/dataflow/v1b3"
@@ -264,6 +264,7 @@ type Config struct {
 	AccessApprovalBasePath           string
 	AccessContextManagerBasePath     string
 	ActiveDirectoryBasePath          string
+	AgentRegistryBasePath            string
 	AlloydbBasePath                  string
 	ApiGatewayBasePath               string
 	ApigeeBasePath                   string
@@ -457,6 +458,7 @@ type Config struct {
 const AccessApprovalBasePathKey = "AccessApproval"
 const AccessContextManagerBasePathKey = "AccessContextManager"
 const ActiveDirectoryBasePathKey = "ActiveDirectory"
+const AgentRegistryBasePathKey = "AgentRegistry"
 const AlloydbBasePathKey = "Alloydb"
 const ApiGatewayBasePathKey = "ApiGateway"
 const ApigeeBasePathKey = "Apigee"
@@ -639,6 +641,7 @@ var DefaultBasePaths = map[string]string{
 	AccessApprovalBasePathKey:           "https://accessapproval.googleapis.com/v1/",
 	AccessContextManagerBasePathKey:     "https://accesscontextmanager.googleapis.com/v1/",
 	ActiveDirectoryBasePathKey:          "https://managedidentities.googleapis.com/v1beta1/",
+	AgentRegistryBasePathKey:            "https://agentregistry.googleapis.com/v1alpha/",
 	AlloydbBasePathKey:                  "https://alloydb.googleapis.com/v1beta/",
 	ApiGatewayBasePathKey:               "https://apigateway.googleapis.com/v1beta/",
 	ApigeeBasePathKey:                   "https://apigee.googleapis.com/v1/",
@@ -699,7 +702,7 @@ var DefaultBasePaths = map[string]string{
 	DatastreamBasePathKey:               "https://datastream.googleapis.com/v1/",
 	DeploymentManagerBasePathKey:        "https://www.googleapis.com/deploymentmanager/v2/",
 	DeveloperConnectBasePathKey:         "https://developerconnect.googleapis.com/v1/",
-	DialogflowBasePathKey:               "https://dialogflow.googleapis.com/v2/",
+	DialogflowBasePathKey:               "https://dialogflow.googleapis.com/v2beta1/",
 	DialogflowCXBasePathKey:             "https://{{location}}-dialogflow.googleapis.com/v3beta1/",
 	DiscoveryEngineBasePathKey:          "https://{{location}}-discoveryengine.googleapis.com/v1/",
 	DNSBasePathKey:                      "https://dns.googleapis.com/dns/v1beta2/",
@@ -909,6 +912,11 @@ func SetEndpointDefaults(d *schema.ResourceData) error {
 		d.Set("active_directory_custom_endpoint", MultiEnvDefault([]string{
 			"GOOGLE_ACTIVE_DIRECTORY_CUSTOM_ENDPOINT",
 		}, DefaultBasePaths[ActiveDirectoryBasePathKey]))
+	}
+	if d.Get("agent_registry_custom_endpoint") == "" {
+		d.Set("agent_registry_custom_endpoint", MultiEnvDefault([]string{
+			"GOOGLE_AGENT_REGISTRY_CUSTOM_ENDPOINT",
+		}, DefaultBasePaths[AgentRegistryBasePathKey]))
 	}
 	if d.Get("alloydb_custom_endpoint") == "" {
 		d.Set("alloydb_custom_endpoint", MultiEnvDefault([]string{
@@ -2854,6 +2862,7 @@ func ConfigureBasePaths(c *Config) {
 	c.AccessApprovalBasePath = DefaultBasePaths[AccessApprovalBasePathKey]
 	c.AccessContextManagerBasePath = DefaultBasePaths[AccessContextManagerBasePathKey]
 	c.ActiveDirectoryBasePath = DefaultBasePaths[ActiveDirectoryBasePathKey]
+	c.AgentRegistryBasePath = DefaultBasePaths[AgentRegistryBasePathKey]
 	c.AlloydbBasePath = DefaultBasePaths[AlloydbBasePathKey]
 	c.ApiGatewayBasePath = DefaultBasePaths[ApiGatewayBasePathKey]
 	c.ApigeeBasePath = DefaultBasePaths[ApigeeBasePathKey]

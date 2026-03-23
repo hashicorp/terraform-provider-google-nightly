@@ -180,7 +180,6 @@ resource "google_iam_connectors_connector" "default" {
       client_secret = "bar"
       authorization_url = "baz"
       token_url = "qux"
-      redirect_url = "zzz"
     }
   }
 }

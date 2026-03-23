@@ -209,6 +209,11 @@ func Provider() *schema.Provider {
 				Optional:     true,
 				ValidateFunc: transport_tpg.ValidateCustomEndpoint,
 			},
+			"agent_registry_custom_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: transport_tpg.ValidateCustomEndpoint,
+			},
 			"alloydb_custom_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -1248,6 +1253,7 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	config.AccessApprovalBasePath = d.Get("access_approval_custom_endpoint").(string)
 	config.AccessContextManagerBasePath = d.Get("access_context_manager_custom_endpoint").(string)
 	config.ActiveDirectoryBasePath = d.Get("active_directory_custom_endpoint").(string)
+	config.AgentRegistryBasePath = d.Get("agent_registry_custom_endpoint").(string)
 	config.AlloydbBasePath = d.Get("alloydb_custom_endpoint").(string)
 	config.ApiGatewayBasePath = d.Get("api_gateway_custom_endpoint").(string)
 	config.ApigeeBasePath = d.Get("apigee_custom_endpoint").(string)

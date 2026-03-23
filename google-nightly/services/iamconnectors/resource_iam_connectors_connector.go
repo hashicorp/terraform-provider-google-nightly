@@ -189,7 +189,6 @@ func ResourceIamConnectorsConnector() *schema.Resource {
 									"redirect_url": {
 										Type:        schema.TypeString,
 										Computed:    true,
-										Optional:    true,
 										Description: `The redirect URL this connector uses for the OAuth exchange.`,
 									},
 								},

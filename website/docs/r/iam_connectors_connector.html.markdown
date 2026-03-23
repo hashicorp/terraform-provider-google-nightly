@@ -96,7 +96,6 @@ resource "google_iam_connectors_connector" "default" {
       client_secret = "bar"
       authorization_url = "baz"
       token_url = "qux"
-      redirect_url = "zzz"
     }
   }
 }
@@ -210,7 +209,7 @@ The following arguments are supported:
   The client ID of the OAuth client.
 
 * `redirect_url` -
-  (Optional)
+  (Output)
   The redirect URL this connector uses for the OAuth exchange.
 
 * `authorization_url` -

@@ -415,6 +415,8 @@ The following arguments are supported:
 * `project` - (Optional) The ID of the project in which the resource belongs.
     If it is not provided, the provider project is used.
 
+* `deletion_policy` - (Optional) Optional. The deletion policy for the reasoning engine. Setting this to FORCE allows the reasoning engine to be deleted regardless of child undeleted resources.
+
 
 
 <a name="nested_encryption_spec"></a>The `encryption_spec` block supports:
@@ -463,6 +465,20 @@ The following arguments are supported:
   project's Cloud Storage and "roles/aiplatform.user" for using Vertex
   extensions. If not specified, the Vertex AI Reasoning Engine service
   Agent in the project will be used.
+
+* `identity_type` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  Optional. The identity type to use for the Reasoning Engine.
+  If not specified, the `service_account` field will be used if set,
+  otherwise the default Vertex AI Reasoning Engine Service Agent in the project will be used.
+  Possible values:
+  * `SERVICE_ACCOUNT`: Use a custom service account if the `service_account` field is set, otherwise use the default Vertex AI Reasoning Engine Service Agent in the project.
+  * `AGENT_IDENTITY`: Use Agent Identity. The `service_account` field must not be set.
+  Possible values are: `SERVICE_ACCOUNT`, `AGENT_IDENTITY`.
+
+* `effective_identity` -
+  (Output, [Beta](../guides/provider_versions.html.markdown))
+  The identity to use for the Reasoning Engine.
 
 
 <a name="nested_spec_deployment_spec"></a>The `deployment_spec` block supports:
