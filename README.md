@@ -2,7 +2,7 @@
 
 - Tutorials: [learn.hashicorp.com](https://learn.hashicorp.com/terraform?track=getting-started#getting-started)
 - Forum: [discuss.hashicorp.com](https://discuss.hashicorp.com/c/terraform-providers/tf-google/)
-- Documentation: https://www.terraform.io/docs/providers/google/index.html
+- Documentation: https://registry.terraform.io/providers/hashicorp/google-nightly/latest/docs
 - [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
 - Issue tracker: [terraform-provider-google](https://github.com/hashicorp/terraform-provider-google/issues/new/choose)
