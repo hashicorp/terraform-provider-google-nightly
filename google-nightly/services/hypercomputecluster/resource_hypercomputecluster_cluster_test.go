@@ -27,6 +27,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/filestore"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/hypercomputecluster"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/lustre"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/servicenetworking"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/storage"
 )

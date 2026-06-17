@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	bigquery_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/bigquery"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/kms"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/tags"
 	"google.golang.org/api/bigquery/v2"
 	"regexp"

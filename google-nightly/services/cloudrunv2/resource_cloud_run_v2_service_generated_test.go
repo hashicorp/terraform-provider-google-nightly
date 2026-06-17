@@ -34,6 +34,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/filestore"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/networkservices"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/secretmanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/sql"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/storage"
@@ -600,7 +601,6 @@ resource "google_cloud_run_v2_service" "default" {
   name     = "%{cloud_run_service_name}"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     containers {

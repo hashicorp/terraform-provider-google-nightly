@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -301,13 +300,6 @@ When set to "DELETE", deleting the resource is allowed.
 func computeNetworkEndpointsNetworkEndpointsSchema() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"ip_address": {
-				Type:     schema.TypeString,
-				Required: true,
-				Description: `IPv4 address of network endpoint. The IP address must belong
-to a VM in GCE (either the primary IP or as part of an aliased IP
-range).`,
-			},
 			"instance": {
 				Type:             schema.TypeString,
 				Computed:         true,
@@ -316,6 +308,14 @@ range).`,
 				Description: `The name for a specific VM instance that the IP address belongs to.
 This is required for network endpoints of type GCE_VM_IP_PORT.
 The instance must be in the same zone as the network endpoint group.`,
+			},
+			"ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Description: `IPv4 address of network endpoint. The IP address must belong
+to a VM in GCE (either the primary IP or as part of an aliased IP
+range).
+**Note** 'ip_address' is required unless the Network Endpoint Group is created with the type of 'GCE_VM_IP_DEDICATED_BACKEND'`,
 			},
 			"port": {
 				Type:     schema.TypeInt,

@@ -48,8 +48,7 @@ fields:
     - api_field: launchStage
     - field: location
       provider_only: true
-    - field: name
-      provider_only: true
+    - api_field: name
     - api_field: observedGeneration
     - api_field: reconciling
     - api_field: scaling.manualInstanceCount
@@ -57,6 +56,8 @@ fields:
     - api_field: scaling.minInstanceCount
     - api_field: scaling.scalingMode
     - api_field: template.annotations
+    - api_field: template.client
+    - api_field: template.clientVersion
     - api_field: template.containers.args
     - api_field: template.containers.command
     - api_field: template.containers.dependsOn
@@ -68,6 +69,7 @@ fields:
     - api_field: template.containers.livenessProbe.failureThreshold
     - api_field: template.containers.livenessProbe.grpc.port
     - api_field: template.containers.livenessProbe.grpc.service
+    - api_field: template.containers.livenessProbe.httpGet.httpHeaders.name
     - api_field: template.containers.livenessProbe.httpGet.httpHeaders.port
     - api_field: template.containers.livenessProbe.httpGet.httpHeaders.value
     - api_field: template.containers.livenessProbe.httpGet.path
@@ -81,6 +83,7 @@ fields:
     - api_field: template.containers.startupProbe.failureThreshold
     - api_field: template.containers.startupProbe.grpc.port
     - api_field: template.containers.startupProbe.grpc.service
+    - api_field: template.containers.startupProbe.httpGet.httpHeaders.name
     - api_field: template.containers.startupProbe.httpGet.httpHeaders.port
     - api_field: template.containers.startupProbe.httpGet.httpHeaders.value
     - api_field: template.containers.startupProbe.httpGet.path

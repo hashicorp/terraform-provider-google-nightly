@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -82,6 +81,14 @@ func computeServiceAttachmentConsumerAcceptListsHash(v interface{}) int {
 			} else {
 				v = networkUrl
 			}
+		}
+
+		buf.WriteString(fmt.Sprintf("%v-", v))
+	}
+
+	if v, ok := m["connection_limit"]; ok {
+		if v == nil {
+			v = 0
 		}
 
 		buf.WriteString(fmt.Sprintf("%v-", v))

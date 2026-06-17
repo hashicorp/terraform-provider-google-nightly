@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -197,6 +196,32 @@ in the format 'organizations/{{org_name}}'.`,
 						},
 					},
 				},
+			},
+			"consumer_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Description: `Optionally specify a static consumer key for the developer app's credential.
+If not set, the API auto-generates a key. The consumer key must be unique
+across all developer apps in an organization. Changing this field forces the
+resource to be recreated.
+
+This is a write-only input used at create time: the provider creates the
+credential with this key via the keys API and removes the auto-generated
+one. The effective key is exposed in the 'credentials' output.`,
+			},
+			"consumer_secret": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Description: `Optionally specify a static consumer secret for the developer app's
+credential. Required if 'consumer_key' is specified. If not set, the API
+auto-generates a secret. Changing this field forces the resource to be
+recreated.
+
+This is a write-only input used at create time; the effective secret is
+exposed in the 'credentials' output.`,
+				Sensitive: true,
 			},
 			"key_expires_in": {
 				Type:     schema.TypeString,
@@ -439,6 +464,109 @@ func resourceApigeeDeveloperAppCreate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Error constructing id: %s", err)
 	}
 	d.SetId(id)
+
+	// If a static consumer_key was specified, replace the auto-generated credential
+	// with the user-supplied key/secret.
+	//
+	// consumer_key/consumer_secret are url_param_only inputs (they are NOT part of
+	// the DeveloperApp create body -- the create API has no such fields), so the
+	// app is first created with an auto-generated credential and then, here, we swap
+	// in the user-supplied credential via the keys API.
+	if consumerKey, ok := d.GetOk("consumer_key"); ok {
+		consumerSecret := d.Get("consumer_secret").(string)
+
+		// First, obtain the auto-generated consumer key(s) to delete them later.
+		readURL, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}{{org_id}}/developers/{{developer_email}}/apps/{{name}}")
+		if err != nil {
+			return fmt.Errorf("Error constructing URL for DeveloperApp read: %s", err)
+		}
+		appRes, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+			Config:    config,
+			Method:    "GET",
+			Project:   billingProject,
+			RawURL:    readURL,
+			UserAgent: userAgent,
+		})
+		if err != nil {
+			return fmt.Errorf("Error reading DeveloperApp for credential replacement: %s", err)
+		}
+
+		// Collect auto-generated consumer keys to delete after creating the static key.
+		var autoKeys []string
+		if creds, ok := appRes["credentials"].([]interface{}); ok {
+			for _, cred := range creds {
+				if cm, ok := cred.(map[string]interface{}); ok {
+					if k, ok := cm["consumerKey"].(string); ok {
+						autoKeys = append(autoKeys, k)
+					}
+				}
+			}
+		}
+
+		// Create the static credential via the keys API.
+		keysURL, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}{{org_id}}/developers/{{developer_email}}/apps/{{name}}/keys")
+		if err != nil {
+			return fmt.Errorf("Error constructing keys URL for DeveloperApp: %s", err)
+		}
+		keyBody := map[string]interface{}{
+			"consumerKey":    consumerKey.(string),
+			"consumerSecret": consumerSecret,
+		}
+		_, err = transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+			Config:    config,
+			Method:    "POST",
+			Project:   billingProject,
+			RawURL:    keysURL,
+			UserAgent: userAgent,
+			Body:      keyBody,
+			Timeout:   d.Timeout(schema.TimeoutCreate),
+		})
+		if err != nil {
+			return fmt.Errorf("Error creating static credential for DeveloperApp: %s", err)
+		}
+
+		// Associate api_products and scopes with the new key if specified.
+		if apiProducts, ok := d.GetOk("api_products"); ok {
+			products := apiProducts.(*schema.Set).List()
+			if len(products) > 0 {
+				keyUpdateURL := keysURL + "/" + consumerKey.(string)
+				keyUpdateBody := map[string]interface{}{
+					"apiProducts": products,
+				}
+				if scopes, ok := d.GetOk("scopes"); ok {
+					keyUpdateBody["scopes"] = scopes.(*schema.Set).List()
+				}
+				_, err = transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+					Config:    config,
+					Method:    "POST",
+					Project:   billingProject,
+					RawURL:    keyUpdateURL,
+					UserAgent: userAgent,
+					Body:      keyUpdateBody,
+					Timeout:   d.Timeout(schema.TimeoutCreate),
+				})
+				if err != nil {
+					return fmt.Errorf("Error associating API products with static credential for DeveloperApp: %s", err)
+				}
+			}
+		}
+
+		// Delete the auto-generated key(s).
+		for _, autoKey := range autoKeys {
+			deleteKeyURL := keysURL + "/" + autoKey
+			_, err = transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+				Config:    config,
+				Method:    "DELETE",
+				Project:   billingProject,
+				RawURL:    deleteKeyURL,
+				UserAgent: userAgent,
+				Timeout:   d.Timeout(schema.TimeoutCreate),
+			})
+			if err != nil && !transport_tpg.IsGoogleApiErrorWithCode(err, 404) {
+				return fmt.Errorf("Error deleting auto-generated credential for DeveloperApp: %s", err)
+			}
+		}
+	}
 
 	log.Printf("[DEBUG] Finished creating DeveloperApp %q: %#v", d.Id(), res)
 
@@ -762,10 +890,6 @@ func flattenApigeeDeveloperAppCallbackUrl(v interface{}, d *schema.ResourceData,
 	return v
 }
 
-func flattenApigeeDeveloperAppKeyExpiresIn(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
-	return v
-}
-
 func flattenApigeeDeveloperAppApiProducts(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return v
@@ -1002,34 +1126,67 @@ func expandApigeeDeveloperAppAttributesValue(v interface{}, d tpgresource.Terraf
 
 func resourceApigeeDeveloperAppDecoder(d *schema.ResourceData, meta interface{}, res map[string]interface{}) (map[string]interface{}, error) {
 	if obj, ok := res["credentials"]; ok {
-		if credList, ok := obj.([]interface{}); ok && len(credList) > 0 {
-			if cred, ok := credList[0].(map[string]interface{}); ok {
-				// Decode expiresAt
-				res["keyExpiresIn"] = cred["expiresAt"]
+		credList, ok := obj.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Unable to decode credentials block from API response: unexpected type %T.", obj)
+		}
+		if len(credList) == 0 {
+			// Apigee may return an empty credentials array immediately after resource
+			// creation before the auto-generated key has fully propagated (eventual
+			// consistency). Return without setting derived fields so the caller can
+			// retry if needed.
+			log.Printf("[DEBUG] DeveloperApp credentials array is empty; skipping credential-derived field population.")
+			return res, nil
+		}
 
-				// Decode scopes
-				res["scopes"] = cred["scopes"]
+		// Use the first credential for keyExpiresIn (expiry is set at creation and shared)
+		if cred, ok := credList[0].(map[string]interface{}); ok {
+			res["keyExpiresIn"] = cred["expiresAt"]
+		} else {
+			return nil, fmt.Errorf("Unable to decode the first element of the credentials array.")
+		}
 
-				// Decode api_products
-				if apiProductsObj, productsOk := cred["apiProducts"]; productsOk {
-					if apiProductList, listOk := apiProductsObj.([]interface{}); listOk {
-						var flattenedProducts []interface{}
+		// Aggregate api_products and scopes across ALL credentials.
+		// When an app is updated to add API products, Apigee may create additional
+		// credentials (one per API product or one per update operation). Reading only
+		// the first credential would miss products stored in subsequent credentials,
+		// causing a perpetual diff between config and state.
+		productSeen := make(map[string]bool)
+		scopeSeen := make(map[string]bool)
+		var allProducts []interface{}
+		var allScopes []interface{}
+
+		for _, credRaw := range credList {
+			if cred, ok := credRaw.(map[string]interface{}); ok {
+				// Collect scopes from this credential
+				if scopesObj, ok := cred["scopes"]; ok {
+					if scopesList, ok := scopesObj.([]interface{}); ok {
+						for _, scope := range scopesList {
+							if s, ok := scope.(string); ok && !scopeSeen[s] {
+								scopeSeen[s] = true
+								allScopes = append(allScopes, s)
+							}
+						}
+					}
+				}
+				// Collect api_products from this credential
+				if apiProductsObj, ok := cred["apiProducts"]; ok {
+					if apiProductList, ok := apiProductsObj.([]interface{}); ok {
 						for _, productObj := range apiProductList {
-							if productMap, mapOk := productObj.(map[string]interface{}); mapOk {
-								if productName, nameOk := productMap["apiproduct"].(string); nameOk {
-									flattenedProducts = append(flattenedProducts, productName)
+							if productMap, ok := productObj.(map[string]interface{}); ok {
+								if productName, ok := productMap["apiproduct"].(string); ok && !productSeen[productName] {
+									productSeen[productName] = true
+									allProducts = append(allProducts, productName)
 								}
 							}
 						}
-						res["apiProducts"] = flattenedProducts
 					}
 				}
-			} else {
-				return nil, fmt.Errorf("Unable to decode the first element of the credentials array.")
 			}
-		} else {
-			return nil, fmt.Errorf("Unable to decode credentials block from API response, expected a non-empty array.")
 		}
+
+		res["apiProducts"] = allProducts
+		res["scopes"] = allScopes
 	}
 	return res, nil
 }
@@ -1044,9 +1201,6 @@ func ResourceApigeeDeveloperAppFlatten(d *schema.ResourceData, meta interface{},
 		return fmt.Errorf("Error reading DeveloperApp: %s", err)
 	}
 	if err = d.Set("callback_url", flattenApigeeDeveloperAppCallbackUrl(res["callbackUrl"], d, config)); err != nil {
-		return fmt.Errorf("Error reading DeveloperApp: %s", err)
-	}
-	if err = d.Set("key_expires_in", flattenApigeeDeveloperAppKeyExpiresIn(res["keyExpiresIn"], d, config)); err != nil {
 		return fmt.Errorf("Error reading DeveloperApp: %s", err)
 	}
 	if err = d.Set("api_products", flattenApigeeDeveloperAppApiProducts(res["apiProducts"], d, config)); err != nil {

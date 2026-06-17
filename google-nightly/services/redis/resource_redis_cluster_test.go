@@ -31,6 +31,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/networkconnectivityv1"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/privateca"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/redis"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/storage"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 )

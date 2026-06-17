@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/cloudrun"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/secretmanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/sql"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
@@ -152,17 +153,16 @@ resource "google_cloud_run_service" "default" {
   name     = "%{cloud_run_service_name}"
   location = "us-central1"
 
-  metadata {
-    annotations = {
-      "run.googleapis.com/launch-stage" = "BETA"
-    }
-  }
 
   template {
     metadata {
       annotations = {
         "autoscaling.knative.dev/maxScale": "1"
         "run.googleapis.com/cpu-throttling": "false"
+        # Explicitly disable zonal redundancy to bypass quota limits in the HashiCorp test project.
+        # Alternatively, if quota is granted to the test project, this annotation can be removed 
+        # to properly test the DiffSuppressFunc.
+        "run.googleapis.com/gpu-zonal-redundancy-disabled": "true"
       }
     }
     spec {
@@ -737,12 +737,6 @@ func testAccCloudRunService_cloudRunServiceReadinessProbeExample(context map[str
 resource "google_cloud_run_service" "default" {
   name     = "%{cloud_run_service_name}"
   location = "us-central1"
-
-  metadata {
-    annotations = {
-      "run.googleapis.com/launch-stage" = "BETA"
-    }
-  }
 
   template {
     spec {

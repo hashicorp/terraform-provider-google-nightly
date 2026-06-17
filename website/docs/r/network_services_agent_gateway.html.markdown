@@ -23,17 +23,17 @@ description: |-
 
 AgentGateway represents the agent gateway resource.
 
-~> **Warning:** This resource is in beta, and should be used with the terraform-provider-google-beta provider.
-See [Provider Versions](../guides/provider_versions.html.markdown) for more details on beta resources.
 
 To get more information about AgentGateway, see:
 
-* [API documentation](https://cloud.google.com/network-services/docs/reference/network-services/rest/v1beta1/projects.locations.agentGateways)
+* [API documentation](https://cloud.google.com/network-services/docs/reference/network-services/rest/v1/projects.locations.agentGateways)
 
 ## Example Usage - Network Services Agent Gateway Full
 
 
 ```hcl
+data "google_project" "project" {}
+
 resource "google_network_services_agent_gateway" "default" {
   name     = "my-full-agent-gateway"
   location = "us-central1"
@@ -54,7 +54,55 @@ resource "google_network_services_agent_gateway" "default" {
 
   network_config {
     egress {
-      network_attachment = "projects/my-project-name/regions/us-central1/networkAttachments/my-network-attachment"
+      network_attachment = google_compute_network_attachment.default.id
+    }
+
+    dns_peering_config {
+      domains        = [google_dns_managed_zone.default.dns_name]
+      target_project = data.google_project.project.project_id
+      target_network = google_compute_network.default.id
+    }
+  }
+
+  depends_on = [google_project_service.agent_registry]
+}
+
+resource "google_project_service" "agent_registry" {
+  service            = "agentregistry.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_compute_network" "default" {
+  name                    = "my-gateway-network"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "default" {
+  name          = "my-gateway-subnetwork"
+  region        = "us-central1"
+  network       = google_compute_network.default.id
+  ip_cidr_range = "10.0.0.0/16"
+}
+
+resource "google_compute_network_attachment" "default" {
+  name                  = "my-gateway-attachment"
+  region                = "us-central1"
+  connection_preference = "ACCEPT_MANUAL"
+
+  subnetworks = [
+    google_compute_subnetwork.default.id,
+  ]
+}
+
+resource "google_dns_managed_zone" "default" {
+  name        = "my-gateway-zone"
+  dns_name    = "example.com."
+  description = "Private zone used by AgentGateway DNS peering"
+  visibility  = "private"
+
+  private_visibility_config {
+    networks {
+      network_url = google_compute_network.default.id
     }
   }
 }
@@ -67,8 +115,6 @@ resource "google_network_services_agent_gateway" "default" {
   name     = "my-client-to-agent-gateway"
   location = "us-central1"
 
-  protocols = ["MCP"]
-
   google_managed {
     governed_access_path = "CLIENT_TO_AGENT"
   }
@@ -76,6 +122,13 @@ resource "google_network_services_agent_gateway" "default" {
   registries = [
     "//agentregistry.googleapis.com/projects/my-project-name/locations/us-central1"
   ]
+
+  depends_on = [google_project_service.agent_registry]
+}
+
+resource "google_project_service" "agent_registry" {
+  service            = "agentregistry.googleapis.com"
+  disable_on_destroy = false
 }
 ```
 ## Example Usage - Network Services Agent Gateway Self Managed
@@ -85,8 +138,6 @@ resource "google_network_services_agent_gateway" "default" {
 resource "google_network_services_agent_gateway" "default" {
   name = "my-self-managed-agent-gateway"
   location = "us-central1"
-
-  protocols = ["MCP"]
 
   self_managed {
     resource_uri = "projects/my-project-name/locations/us-central1/gateways/my-gateway"
@@ -102,11 +153,6 @@ resource "google_network_services_agent_gateway" "default" {
 
 The following arguments are supported:
 
-
-* `protocols` -
-  (Required)
-  List of protocols supported by an Agent Gateway.
-  Each value may be one of: `MCP`.
 
 * `name` -
   (Required)
@@ -127,6 +173,13 @@ The following arguments are supported:
 * `description` -
   (Optional)
   A free-text description of the resource. Max length 1024 characters.
+
+* `protocols` -
+  (Optional, Deprecated)
+  List of protocols supported by an Agent Gateway.
+  Each value may be one of: `MCP`.
+
+  ~> **Warning:** `protocols` is deprecated and will be removed in a future major release.
 
 * `google_managed` -
   (Optional)
@@ -183,12 +236,37 @@ The following arguments are supported:
   private VPCs network.
   Structure is [documented below](#nested_network_config_egress).
 
+* `dns_peering_config` -
+  (Optional)
+  DNS peering configuration for the AgentGateway. When set, the
+  AgentGateway will resolve queries for the configured `domains` via
+  Cloud DNS in the specified `targetNetwork`.
+  Structure is [documented below](#nested_network_config_dns_peering_config).
+
 
 <a name="nested_network_config_egress"></a>The `egress` block supports:
 
 * `network_attachment` -
   (Required)
   The URI of the Network Attachment resource.
+
+<a name="nested_network_config_dns_peering_config"></a>The `dns_peering_config` block supports:
+
+* `domains` -
+  (Required)
+  The list of domain names to peer for DNS resolution. Each entry
+  must be a fully qualified domain name ending with a dot
+  (for example, `example.com.`).
+
+* `target_project` -
+  (Required)
+  The ID of the project that hosts the target VPC network for DNS
+  peering.
+
+* `target_network` -
+  (Required)
+  The URI of the target VPC network for DNS peering. Must be of the
+  form `projects/{project}/global/networks/{network}`.
 
 ## Attributes Reference
 

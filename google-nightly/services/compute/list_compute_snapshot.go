@@ -82,6 +82,7 @@ func (listR *ComputeSnapshotListResource) List(ctx context.Context, listReq list
 	}
 	project := listR.GetProject(data.Project)
 
+	errStreamClosed := errors.New("stream closed")
 	stream.Results = func(push func(list.ListResult) bool) {
 		err := ListComputeSnapshots(
 			listR.Client,
@@ -94,17 +95,19 @@ func (listR *ComputeSnapshotListResource) List(ctx context.Context, listReq list
 				}
 
 				if !push(result) {
-					return errors.New("stream closed")
+					return errStreamClosed
 				}
 				return nil
 			},
 		)
-		if err != nil {
-			diags.AddError("API Error", err.Error())
-			result := listReq.NewListResult(ctx)
-			result.Diagnostics = diags
-			push(result)
+		// A closed stream is not an error: return without pushing again.
+		if err == nil || errors.Is(err, errStreamClosed) {
+			return
 		}
+		diags.AddError("API Error", err.Error())
+		result := listReq.NewListResult(ctx)
+		result.Diagnostics = diags
+		push(result)
 	}
 }
 
@@ -151,13 +154,13 @@ func ListComputeSnapshots(config *transport_tpg.Config,
 			if res == nil {
 				return fmt.Errorf("error decoding ComputeSnapshot from list response")
 			}
-			if err = ResourceComputeSnapshotFlatten(d, config, res, config, project, userAgent, billingProject, url, headers); err != nil {
-				return err
-			}
 			if v, ok := res["name"]; ok && v != nil {
 				if err := d.Set("name", v); err != nil {
 					return fmt.Errorf("error setting name: %w", err)
 				}
+			}
+			if err = ResourceComputeSnapshotFlatten(d, config, res, config, project, userAgent, billingProject, url, headers); err != nil {
+				return err
 			}
 			id, err := tpgresource.ReplaceVars(d, config, "projects/{{project}}/global/snapshots/{{name}}")
 			if err != nil {

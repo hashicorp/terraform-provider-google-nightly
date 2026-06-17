@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -470,8 +469,7 @@ func resourceComputeDiskResourcePolicyAttachmentDelete(d *schema.ResourceData, m
 
 	// resourcePolicies are referred to by region but affixed to zonal disks.
 	// We construct the regional name from the zone:
-	//
-	//	projects/{project}/regions/{region}/resourcePolicies/{resourceId}
+	//   projects/{project}/regions/{region}/resourcePolicies/{resourceId}
 	region := tpgresource.GetRegionFromZone(zone)
 	if region == "" {
 		return fmt.Errorf("invalid zone %q, unable to infer region from zone", zone)
@@ -557,8 +555,7 @@ func resourceComputeDiskResourcePolicyAttachmentEncoder(d *schema.ResourceData, 
 
 	// resourcePolicies are referred to by region but affixed to zonal disks.
 	// We construct the regional name from the zone:
-	//
-	//	projects/{project}/regions/{region}/resourcePolicies/{resourceId}
+	//   projects/{project}/regions/{region}/resourcePolicies/{resourceId}
 	region := tpgresource.GetRegionFromZone(zone)
 	if region == "" {
 		return nil, fmt.Errorf("invalid zone %q, unable to infer region from zone", zone)

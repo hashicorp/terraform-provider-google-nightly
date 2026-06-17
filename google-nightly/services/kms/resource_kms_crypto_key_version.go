@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -572,8 +571,22 @@ func resourceKMSCryptoKeyVersionDelete(d *schema.ResourceData, meta interface{})
 func resourceKMSCryptoKeyVersionImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 
 	config := meta.(*transport_tpg.Config)
+	importId := d.Id()
+	if importId == "" {
+		identity, err := d.Identity()
+		if err != nil {
+			return nil, fmt.Errorf("Error reading import identity: %s", err)
+		}
 
-	cryptoKeyVersionId, err := parseKmsCryptoKeyVersionId(d.Id(), config)
+		identityName, ok := identity.Get("name").(string)
+		if !ok || identityName == "" {
+			return nil, fmt.Errorf("Error reading import identity: missing required identity field \"name\"")
+		}
+
+		importId = identityName
+	}
+
+	cryptoKeyVersionId, err := parseKmsCryptoKeyVersionId(importId, config)
 	if err != nil {
 		return nil, err
 	}
