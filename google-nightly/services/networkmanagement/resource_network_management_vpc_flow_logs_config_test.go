@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/networkmanagement"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 )
 
 func TestAccNetworkManagementVpcFlowLogsConfig_updateInterconnect(t *testing.T) {

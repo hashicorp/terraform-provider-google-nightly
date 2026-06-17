@@ -25,6 +25,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/bigquery"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dialogflowcx"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/integrationconnectors"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 )
 
 func TestAccDialogflowCXTool_update(t *testing.T) {

@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -175,6 +174,16 @@ All system annotations in v1 now have a corresponding field in v2 WorkerPoolRevi
 This field follows Kubernetes annotations' namespacing, limits, and rules.`,
 							Elem: &schema.Schema{Type: schema.TypeString},
 						},
+						"client": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: `Arbitrary identifier for the API client.`,
+						},
+						"client_version": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: `Arbitrary version identifier for the API client.`,
+						},
 						"containers": {
 							Type:        schema.TypeList,
 							Optional:    true,
@@ -262,12 +271,17 @@ This field follows Kubernetes annotations' namespacing, limits, and rules.`,
 																Type:        schema.TypeList,
 																Optional:    true,
 																Description: `Optional. Custom headers to set in the request. HTTP allows repeated headers.`,
-																MaxItems:    1,
 																Elem: &schema.Resource{
 																	Schema: map[string]*schema.Schema{
+																		"name": {
+																			Type:        schema.TypeString,
+																			Optional:    true,
+																			Description: `Required. The header field name`,
+																		},
 																		"port": {
 																			Type:        schema.TypeInt,
-																			Required:    true,
+																			Optional:    true,
+																			Deprecated:  "`port` field is deprecated and will be removed in a future major release. It was never supported by the API.",
 																			Description: `Required. The header field name`,
 																		},
 																		"value": {
@@ -394,12 +408,17 @@ This field follows Kubernetes annotations' namespacing, limits, and rules.`,
 																Type:        schema.TypeList,
 																Optional:    true,
 																Description: `Optional. Custom headers to set in the request. HTTP allows repeated headers.`,
-																MaxItems:    1,
 																Elem: &schema.Resource{
 																	Schema: map[string]*schema.Schema{
+																		"name": {
+																			Type:        schema.TypeString,
+																			Optional:    true,
+																			Description: `Required. The header field name`,
+																		},
 																		"port": {
 																			Type:        schema.TypeInt,
-																			Required:    true,
+																			Optional:    true,
+																			Deprecated:  "`port` field is deprecated and will be removed in a future major release. It was never supported by the API.",
 																			Description: `Required. The header field name`,
 																		},
 																		"value": {
@@ -1213,6 +1232,12 @@ func resourceCloudRunV2WorkerPoolCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	obj := make(map[string]interface{})
+	nameProp, err := expandCloudRunV2WorkerPoolName(d.Get("name"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("name"); !tpgresource.IsEmptyValue(reflect.ValueOf(nameProp)) && (ok || !reflect.DeepEqual(v, nameProp)) {
+		obj["name"] = nameProp
+	}
 	descriptionProp, err := expandCloudRunV2WorkerPoolDescription(d.Get("description"), d, config)
 	if err != nil {
 		return err
@@ -1278,6 +1303,11 @@ func resourceCloudRunV2WorkerPoolCreate(d *schema.ResourceData, meta interface{}
 		return err
 	} else if v, ok := d.GetOkExists("effective_annotations"); !tpgresource.IsEmptyValue(reflect.ValueOf(effectiveAnnotationsProp)) && (ok || !reflect.DeepEqual(v, effectiveAnnotationsProp)) {
 		obj["annotations"] = effectiveAnnotationsProp
+	}
+
+	obj, err = resourceCloudRunV2WorkerPoolEncoder(d, meta, obj)
+	if err != nil {
+		return err
 	}
 
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/workerPools?workerPoolId={{name}}")
@@ -1564,6 +1594,11 @@ func resourceCloudRunV2WorkerPoolUpdate(d *schema.ResourceData, meta interface{}
 		return err
 	} else if v, ok := d.GetOkExists("effective_annotations"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, effectiveAnnotationsProp)) {
 		obj["annotations"] = effectiveAnnotationsProp
+	}
+
+	obj, err = resourceCloudRunV2WorkerPoolUpdateEncoder(d, meta, obj)
+	if err != nil {
+		return err
 	}
 
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/workerPools/{{name}}")
@@ -1897,6 +1932,10 @@ func flattenCloudRunV2WorkerPoolTemplate(v interface{}, d *schema.ResourceData, 
 		flattenCloudRunV2WorkerPoolTemplateLabels(original["labels"], d, config)
 	transformed["annotations"] =
 		flattenCloudRunV2WorkerPoolTemplateAnnotations(original["annotations"], d, config)
+	transformed["client"] =
+		flattenCloudRunV2WorkerPoolTemplateClient(original["client"], d, config)
+	transformed["client_version"] =
+		flattenCloudRunV2WorkerPoolTemplateClientVersion(original["clientVersion"], d, config)
 	transformed["vpc_access"] =
 		flattenCloudRunV2WorkerPoolTemplateVpcAccess(original["vpcAccess"], d, config)
 	transformed["service_account"] =
@@ -1926,6 +1965,14 @@ func flattenCloudRunV2WorkerPoolTemplateLabels(v interface{}, d *schema.Resource
 }
 
 func flattenCloudRunV2WorkerPoolTemplateAnnotations(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCloudRunV2WorkerPoolTemplateClient(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCloudRunV2WorkerPoolTemplateClientVersion(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2288,18 +2335,23 @@ func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetPort(v int
 
 func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeaders(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
-		return nil
+		return v
 	}
-	original := v.(map[string]interface{})
-	if len(original) == 0 {
-		return nil
+	l := v.([]interface{})
+	transformed := make([]interface{}, 0, len(l))
+	for _, raw := range l {
+		original := raw.(map[string]interface{})
+		if len(original) < 1 {
+			// Do not include empty json objects coming back from the api
+			continue
+		}
+		transformed = append(transformed, map[string]interface{}{
+			"port":  flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(original["port"], d, config),
+			"name":  flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(original["name"], d, config),
+			"value": flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersValue(original["value"], d, config),
+		})
 	}
-	transformed := make(map[string]interface{})
-	transformed["port"] =
-		flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(original["port"], d, config)
-	transformed["value"] =
-		flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersValue(original["value"], d, config)
-	return []interface{}{transformed}
+	return transformed
 }
 func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	// Handles the string fixed64 format
@@ -2316,6 +2368,10 @@ func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeader
 	}
 
 	return v // let terraform core handle it otherwise
+}
+
+func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
 }
 
 func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersValue(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -2521,18 +2577,23 @@ func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetPort(v inte
 
 func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeaders(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
-		return nil
+		return v
 	}
-	original := v.(map[string]interface{})
-	if len(original) == 0 {
-		return nil
+	l := v.([]interface{})
+	transformed := make([]interface{}, 0, len(l))
+	for _, raw := range l {
+		original := raw.(map[string]interface{})
+		if len(original) < 1 {
+			// Do not include empty json objects coming back from the api
+			continue
+		}
+		transformed = append(transformed, map[string]interface{}{
+			"port":  flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(original["port"], d, config),
+			"name":  flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(original["name"], d, config),
+			"value": flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersValue(original["value"], d, config),
+		})
 	}
-	transformed := make(map[string]interface{})
-	transformed["port"] =
-		flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(original["port"], d, config)
-	transformed["value"] =
-		flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersValue(original["value"], d, config)
-	return []interface{}{transformed}
+	return transformed
 }
 func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	// Handles the string fixed64 format
@@ -2549,6 +2610,10 @@ func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeaders
 	}
 
 	return v // let terraform core handle it otherwise
+}
+
+func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
 }
 
 func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersValue(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -3114,6 +3179,10 @@ func flattenCloudRunV2WorkerPoolEffectiveAnnotations(v interface{}, d *schema.Re
 	return v
 }
 
+func expandCloudRunV2WorkerPoolName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return tpgresource.GetResourceNameFromSelfLink(v.(string)), nil
+}
+
 func expandCloudRunV2WorkerPoolDescription(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
@@ -3274,6 +3343,20 @@ func expandCloudRunV2WorkerPoolTemplate(v interface{}, d tpgresource.TerraformRe
 		transformed["annotations"] = transformedAnnotations
 	}
 
+	transformedClient, err := expandCloudRunV2WorkerPoolTemplateClient(original["client"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedClient); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["client"] = transformedClient
+	}
+
+	transformedClientVersion, err := expandCloudRunV2WorkerPoolTemplateClientVersion(original["client_version"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedClientVersion); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["clientVersion"] = transformedClientVersion
+	}
+
 	transformedVpcAccess, err := expandCloudRunV2WorkerPoolTemplateVpcAccess(original["vpc_access"], d, config)
 	if err != nil {
 		return nil, err
@@ -3364,6 +3447,14 @@ func expandCloudRunV2WorkerPoolTemplateAnnotations(v interface{}, d tpgresource.
 		m[k] = val.(string)
 	}
 	return m, nil
+}
+
+func expandCloudRunV2WorkerPoolTemplateClient(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCloudRunV2WorkerPoolTemplateClientVersion(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
 }
 
 func expandCloudRunV2WorkerPoolTemplateVpcAccess(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -3904,31 +3995,45 @@ func expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeaders
 		return nil, nil
 	}
 	l := v.([]interface{})
-	if len(l) == 0 || l[0] == nil {
-		return nil, nil
-	}
-	raw := l[0]
-	original := raw.(map[string]interface{})
-	transformed := make(map[string]interface{})
+	req := make([]interface{}, 0, len(l))
+	for _, raw := range l {
+		if raw == nil {
+			continue
+		}
+		original := raw.(map[string]interface{})
+		transformed := make(map[string]interface{})
 
-	transformedPort, err := expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(original["port"], d, config)
-	if err != nil {
-		return nil, err
-	} else if val := reflect.ValueOf(transformedPort); val.IsValid() && !tpgresource.IsEmptyValue(val) {
-		transformed["port"] = transformedPort
-	}
+		transformedPort, err := expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(original["port"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedPort); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["port"] = transformedPort
+		}
 
-	transformedValue, err := expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersValue(original["value"], d, config)
-	if err != nil {
-		return nil, err
-	} else if val := reflect.ValueOf(transformedValue); val.IsValid() && !tpgresource.IsEmptyValue(val) {
-		transformed["value"] = transformedValue
-	}
+		transformedName, err := expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(original["name"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedName); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["name"] = transformedName
+		}
 
-	return transformed, nil
+		transformedValue, err := expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersValue(original["value"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedValue); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["value"] = transformedValue
+		}
+
+		req = append(req, transformed)
+	}
+	return req, nil
 }
 
 func expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -4128,31 +4233,45 @@ func expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeaders(
 		return nil, nil
 	}
 	l := v.([]interface{})
-	if len(l) == 0 || l[0] == nil {
-		return nil, nil
-	}
-	raw := l[0]
-	original := raw.(map[string]interface{})
-	transformed := make(map[string]interface{})
+	req := make([]interface{}, 0, len(l))
+	for _, raw := range l {
+		if raw == nil {
+			continue
+		}
+		original := raw.(map[string]interface{})
+		transformed := make(map[string]interface{})
 
-	transformedPort, err := expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(original["port"], d, config)
-	if err != nil {
-		return nil, err
-	} else if val := reflect.ValueOf(transformedPort); val.IsValid() && !tpgresource.IsEmptyValue(val) {
-		transformed["port"] = transformedPort
-	}
+		transformedPort, err := expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(original["port"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedPort); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["port"] = transformedPort
+		}
 
-	transformedValue, err := expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersValue(original["value"], d, config)
-	if err != nil {
-		return nil, err
-	} else if val := reflect.ValueOf(transformedValue); val.IsValid() && !tpgresource.IsEmptyValue(val) {
-		transformed["value"] = transformedValue
-	}
+		transformedName, err := expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(original["name"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedName); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["name"] = transformedName
+		}
 
-	return transformed, nil
+		transformedValue, err := expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersValue(original["value"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedValue); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["value"] = transformedValue
+		}
+
+		req = append(req, transformed)
+	}
+	return req, nil
 }
 
 func expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -4655,6 +4774,16 @@ func expandCloudRunV2WorkerPoolEffectiveAnnotations(v interface{}, d tpgresource
 		m[k] = val.(string)
 	}
 	return m, nil
+}
+
+func resourceCloudRunV2WorkerPoolEncoder(d *schema.ResourceData, meta interface{}, obj map[string]interface{}) (map[string]interface{}, error) {
+	delete(obj, "name") // Field not allowed when creating.
+	return obj, nil
+}
+
+func resourceCloudRunV2WorkerPoolUpdateEncoder(d *schema.ResourceData, meta interface{}, obj map[string]interface{}) (map[string]interface{}, error) {
+	// Keep the original resource. This file is to override the encoder for creation.
+	return obj, nil
 }
 
 func ResourceCloudRunV2WorkerPoolFlatten(d *schema.ResourceData, meta interface{}, res map[string]interface{}, config *transport_tpg.Config, project string, userAgent string, billingProject string, url string, headers http.Header) error {

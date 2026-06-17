@@ -30,7 +30,10 @@ import (
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dns"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/networkservices"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 
@@ -53,20 +56,23 @@ var (
 )
 
 func TestAccNetworkServicesAgentGateway_networkServicesAgentGatewayFullExample(t *testing.T) {
-	t.Skip("true")
 	t.Parallel()
 
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"project":       envvar.GetTestProjectFromEnv(),
-		"name":          "tf-test-my-full-agent-gateway" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"project":                 envvar.GetTestProjectFromEnv(),
+		"dns_zone_name":           "tf-test-my-gateway-zone" + randomSuffix,
+		"name":                    "tf-test-my-full-agent-gateway" + randomSuffix,
+		"network_attachment_name": "tf-test-my-gateway-attachment" + randomSuffix,
+		"network_name":            "tf-test-my-gateway-network" + randomSuffix,
+		"subnetwork_name":         "tf-test-my-gateway-subnetwork" + randomSuffix,
+		"random_suffix":           randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckNetworkServicesAgentGatewayDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -90,6 +96,8 @@ func TestAccNetworkServicesAgentGateway_networkServicesAgentGatewayFullExample(t
 
 func testAccNetworkServicesAgentGateway_networkServicesAgentGatewayFullExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+data "google_project" "project" {}
+
 resource "google_network_services_agent_gateway" "default" {
   name     = "%{name}"
   location = "us-central1"
@@ -110,7 +118,55 @@ resource "google_network_services_agent_gateway" "default" {
 
   network_config {
     egress {
-      network_attachment = "projects/%{project}/regions/us-central1/networkAttachments/my-network-attachment"
+      network_attachment = google_compute_network_attachment.default.id
+    }
+
+    dns_peering_config {
+      domains        = [google_dns_managed_zone.default.dns_name]
+      target_project = data.google_project.project.project_id
+      target_network = google_compute_network.default.id
+    }
+  }
+
+  depends_on = [google_project_service.agent_registry]
+}
+
+resource "google_project_service" "agent_registry" {
+  service            = "agentregistry.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_compute_network" "default" {
+  name                    = "%{network_name}"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "default" {
+  name          = "%{subnetwork_name}"
+  region        = "us-central1"
+  network       = google_compute_network.default.id
+  ip_cidr_range = "10.0.0.0/16"
+}
+
+resource "google_compute_network_attachment" "default" {
+  name                  = "%{network_attachment_name}"
+  region                = "us-central1"
+  connection_preference = "ACCEPT_MANUAL"
+
+  subnetworks = [
+    google_compute_subnetwork.default.id,
+  ]
+}
+
+resource "google_dns_managed_zone" "default" {
+  name        = "%{dns_zone_name}"
+  dns_name    = "example.com."
+  description = "Private zone used by AgentGateway DNS peering"
+  visibility  = "private"
+
+  private_visibility_config {
+    networks {
+      network_url = google_compute_network.default.id
     }
   }
 }
@@ -118,7 +174,6 @@ resource "google_network_services_agent_gateway" "default" {
 }
 
 func TestAccNetworkServicesAgentGateway_networkServicesAgentGatewayClientToAgentExample(t *testing.T) {
-	t.Skip("true")
 	t.Parallel()
 
 	randomSuffix := acctest.RandString(t, 10)
@@ -131,7 +186,7 @@ func TestAccNetworkServicesAgentGateway_networkServicesAgentGatewayClientToAgent
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckNetworkServicesAgentGatewayDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -159,8 +214,6 @@ resource "google_network_services_agent_gateway" "default" {
   name     = "%{name}"
   location = "us-central1"
 
-  protocols = ["MCP"]
-
   google_managed {
     governed_access_path = "CLIENT_TO_AGENT"
   }
@@ -168,6 +221,13 @@ resource "google_network_services_agent_gateway" "default" {
   registries = [
     "//agentregistry.googleapis.com/projects/%{project}/locations/us-central1"
   ]
+
+  depends_on = [google_project_service.agent_registry]
+}
+
+resource "google_project_service" "agent_registry" {
+  service            = "agentregistry.googleapis.com"
+  disable_on_destroy = false
 }
 `, context)
 }
@@ -186,7 +246,7 @@ func TestAccNetworkServicesAgentGateway_networkServicesAgentGatewaySelfManagedEx
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckNetworkServicesAgentGatewayDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -213,8 +273,6 @@ func testAccNetworkServicesAgentGateway_networkServicesAgentGatewaySelfManagedEx
 resource "google_network_services_agent_gateway" "default" {
   name = "%{name}"
   location = "us-central1"
-
-  protocols = ["MCP"]
 
   self_managed {
     resource_uri = "projects/%{project}/locations/us-central1/gateways/my-gateway"

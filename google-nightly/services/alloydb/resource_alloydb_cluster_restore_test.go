@@ -25,6 +25,8 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/alloydb"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/backupdr"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/servicenetworking"
 )
 

@@ -30,8 +30,7 @@ import (
 	tpgcompute "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/tags"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
-
-	compute "google.golang.org/api/compute/v0.beta"
+	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 )
 
 // Unit tests
@@ -188,8 +187,8 @@ func TestIpDiffSuppress_NoId(t *testing.T) {
 func TestAccComputeSubnetwork_basic(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork1 compute.Subnetwork
-	var subnetwork2 compute.Subnetwork
+	var subnetwork1 map[string]interface{}
+	var subnetwork2 map[string]interface{}
 
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetwork1Name := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
@@ -228,7 +227,7 @@ func TestAccComputeSubnetwork_basic(t *testing.T) {
 func TestAccComputeSubnetwork_update(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetworkName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 
@@ -272,15 +271,15 @@ func TestAccComputeSubnetwork_update(t *testing.T) {
 		},
 	})
 
-	if subnetwork.PrivateIpGoogleAccess {
-		t.Errorf("Expected PrivateIpGoogleAccess to be false, got %v", subnetwork.PrivateIpGoogleAccess)
+	if v, ok := subnetwork["privateIpGoogleAccess"].(bool); ok && v {
+		t.Errorf("Expected PrivateIpGoogleAccess to be false, got %v", v)
 	}
 }
 
 func TestAccComputeSubnetwork_purposeUpdate(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetworkName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 
@@ -323,7 +322,7 @@ func TestAccComputeSubnetwork_purposeUpdate(t *testing.T) {
 func TestAccComputeSubnetwork_secondaryIpRanges(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetworkName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
@@ -389,7 +388,7 @@ func TestAccComputeSubnetwork_secondaryIpRanges(t *testing.T) {
 func TestAccComputeSubnetwork_secondaryIpRanges_sendEmpty(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetworkName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
@@ -461,7 +460,7 @@ func TestAccComputeSubnetwork_secondaryIpRanges_sendEmpty(t *testing.T) {
 func TestAccComputeSubnetwork_secondaryIpv6Ranges(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetworkName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	papName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
@@ -517,7 +516,7 @@ func TestAccComputeSubnetwork_secondaryIpv6Ranges(t *testing.T) {
 func TestAccComputeSubnetwork_flowLogs(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetworkName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
@@ -594,7 +593,7 @@ func TestAccComputeSubnetwork_flowLogs(t *testing.T) {
 func TestAccComputeSubnetwork_flowLogsMigrate(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 
 	cnName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	subnetworkName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
@@ -701,7 +700,7 @@ func TestAccComputeSubnetwork_internal_ipv6(t *testing.T) {
 func TestAccComputeSubnetwork_resourceManagerTags(t *testing.T) {
 	t.Parallel()
 
-	var subnetwork compute.Subnetwork
+	var subnetwork map[string]interface{}
 	org := envvar.GetTestOrgFromEnv(t)
 
 	suffixName := acctest.RandString(t, 10)
@@ -771,7 +770,7 @@ func TestAccComputeSubnetwork_ipv6UpdateWithPdp(t *testing.T) {
 			{
 				Config: testAccComputeSubnetwork_ipv6PdpSetup(context),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckComputeSubnetworkExists(t, subnetResName, new(compute.Subnetwork)),
+					testAccCheckComputeSubnetworkExists(t, subnetResName, new(map[string]interface{})),
 					resource.TestCheckResourceAttr(subnetResName, "name", subnetName),
 					resource.TestCheckResourceAttr(subnetResName, "stack_type", "IPV4_ONLY"),
 					resource.TestCheckResourceAttrSet(papResName, "self_link"),
@@ -783,7 +782,7 @@ func TestAccComputeSubnetwork_ipv6UpdateWithPdp(t *testing.T) {
 			{
 				Config: testAccComputeSubnetwork_ipv6PdpUpdate(context),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckComputeSubnetworkExists(t, subnetResName, new(compute.Subnetwork)),
+					testAccCheckComputeSubnetworkExists(t, subnetResName, new(map[string]interface{})),
 					resource.TestCheckResourceAttr(subnetResName, "stack_type", "IPV4_IPV6"),
 					resource.TestCheckResourceAttr(subnetResName, "ipv6_access_type", "INTERNAL"),
 					testAccCheckSubnetIpCollectionMatchesPdp(t, subnetResName, subPdpResName),
@@ -820,7 +819,7 @@ resource "google_compute_subnetwork" "acc_subnetwork_with_resource_manager_tags"
 `, context)
 }
 
-func testAccCheckComputeSubnetworkExists(t *testing.T, n string, subnetwork *compute.Subnetwork) resource.TestCheckFunc {
+func testAccCheckComputeSubnetworkExists(t *testing.T, n string, subnetwork *map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -835,59 +834,74 @@ func testAccCheckComputeSubnetworkExists(t *testing.T, n string, subnetwork *com
 		region := rs.Primary.Attributes["region"]
 		subnet_name := rs.Primary.Attributes["name"]
 
-		found, err := tpgcompute.NewClient(config, config.UserAgent).Subnetworks.Get(
-			config.Project, region, subnet_name).Do()
+		url := fmt.Sprintf("%sprojects/%s/regions/%s/subnetworks/%s", transport_tpg.BaseUrl(tpgcompute.Product, config), config.Project, region, subnet_name)
+		found, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+			Config:    config,
+			Method:    "GET",
+			Project:   config.Project,
+			RawURL:    url,
+			UserAgent: config.UserAgent,
+		})
 		if err != nil {
 			return err
 		}
 
-		if found.Name != subnet_name {
+		if found["name"].(string) != subnet_name {
 			return fmt.Errorf("Subnetwork not found")
 		}
 
-		*subnetwork = *found
+		*subnetwork = found
 
 		return nil
 	}
 }
 
-func testAccCheckComputeSubnetworkHasSecondaryIpRange(subnetwork *compute.Subnetwork, rangeName, ipCidrRange string) resource.TestCheckFunc {
+func testAccCheckComputeSubnetworkHasSecondaryIpRange(subnetwork *map[string]interface{}, rangeName, ipCidrRange string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		for _, secondaryRange := range subnetwork.SecondaryIpRanges {
-			if secondaryRange.RangeName == rangeName {
-				if secondaryRange.IpCidrRange == ipCidrRange {
-					return nil
+		if ranges, ok := (*subnetwork)["secondaryIpRanges"].([]interface{}); ok {
+			for _, raw := range ranges {
+				r := raw.(map[string]interface{})
+				if r["rangeName"].(string) == rangeName {
+					if r["ipCidrRange"].(string) == ipCidrRange {
+						return nil
+					}
+					return fmt.Errorf("Secondary range %s has the wrong ip_cidr_range. Expected %s, got %s", rangeName, ipCidrRange, r["ipCidrRange"].(string))
 				}
-				return fmt.Errorf("Secondary range %s has the wrong ip_cidr_range. Expected %s, got %s", rangeName, ipCidrRange, secondaryRange.IpCidrRange)
 			}
 		}
 
 		return fmt.Errorf("Secondary range %s not found", rangeName)
 	}
 }
-func testAccCheckComputeSubnetworkHasSecondaryIpv6Range(subnetwork *compute.Subnetwork, rangeName, ipVersion, ipCollection string) resource.TestCheckFunc {
+func testAccCheckComputeSubnetworkHasSecondaryIpv6Range(subnetwork *map[string]interface{}, rangeName, ipVersion, ipCollection string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		for _, secondaryRange := range subnetwork.SecondaryIpRanges {
-			if secondaryRange.RangeName == rangeName {
-				if secondaryRange.IpVersion != ipVersion {
-					return fmt.Errorf("Secondary range %s has wrong ipVersion. Expected %s, got %s", rangeName, ipVersion, secondaryRange.IpVersion)
+		if ranges, ok := (*subnetwork)["secondaryIpRanges"].([]interface{}); ok {
+			for _, raw := range ranges {
+				r := raw.(map[string]interface{})
+				if r["rangeName"].(string) == rangeName {
+					if r["ipVersion"].(string) != ipVersion {
+						return fmt.Errorf("Secondary range %s has wrong ipVersion. Expected %s, got %s", rangeName, ipVersion, r["ipVersion"].(string))
+					}
+					if ipCollection != "" && r["ipCollection"].(string) != ipCollection {
+						return fmt.Errorf("Secondary range %s has wrong ipCollection. Expected %s, got %s", rangeName, ipCollection, r["ipCollection"].(string))
+					}
+					return nil
 				}
-				if ipCollection != "" && secondaryRange.IpCollection != ipCollection {
-					return fmt.Errorf("Secondary range %s has wrong ipCollection. Expected %s, got %s", rangeName, ipCollection, secondaryRange.IpCollection)
-				}
-				return nil
 			}
 		}
 		return fmt.Errorf("Secondary IPv6 range %s not found", rangeName)
 	}
 }
 
-func testAccCheckComputeSubnetworkHasNotSecondaryIpRange(subnetwork *compute.Subnetwork, rangeName, ipCidrRange string) resource.TestCheckFunc {
+func testAccCheckComputeSubnetworkHasNotSecondaryIpRange(subnetwork *map[string]interface{}, rangeName, ipCidrRange string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		for _, secondaryRange := range subnetwork.SecondaryIpRanges {
-			if secondaryRange.RangeName == rangeName {
-				if secondaryRange.IpCidrRange == ipCidrRange {
-					return fmt.Errorf("Secondary range %s has the wrong ip_cidr_range. Expected %s, got %s", rangeName, ipCidrRange, secondaryRange.IpCidrRange)
+		if ranges, ok := (*subnetwork)["secondaryIpRanges"].([]interface{}); ok {
+			for _, raw := range ranges {
+				r := raw.(map[string]interface{})
+				if r["rangeName"].(string) == rangeName {
+					if r["ipCidrRange"].(string) == ipCidrRange {
+						return fmt.Errorf("Secondary range %s has the wrong ip_cidr_range. Expected %s, got %s", rangeName, ipCidrRange, r["ipCidrRange"].(string))
+					}
 				}
 			}
 		}
@@ -1414,6 +1428,145 @@ resource "google_compute_subnetwork" "subnetwork" {
 `, cnName, subnetworkName)
 }
 
+func TestAccComputeSubnetwork_secondaryIpRangeInternalRangeInUse(t *testing.T) {
+	t.Parallel()
+
+	context := map[string]interface{}{
+		"random_suffix": acctest.RandString(t, 10),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeSubnetworkDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeSubnetwork_secondaryIpRangeInternalRangeBaseline(context),
+			},
+			{
+				Config: testAccComputeSubnetwork_secondaryIpRangeAdded(context),
+			},
+			{
+				Config: testAccComputeSubnetwork_secondaryIpRangeVMDeleted(context),
+			},
+			{
+				Config: testAccComputeSubnetwork_secondaryIpRangeRangesRemoved(context),
+			},
+			{
+				Config: testAccComputeSubnetwork_secondaryIpRangeInternalRangeRemoved(context),
+			},
+			{
+				Config: testAccComputeSubnetwork_secondaryIpRangePositionalStability(context),
+			},
+		},
+	})
+}
+
+func testAccComputeSubnetwork_secondaryIpRangeInternalRangeBaseline(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "net" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_network_connectivity_internal_range" "secondary" {
+  name          = "tf-test-secondary-%{random_suffix}"
+  network       = google_compute_network.net.id
+  usage         = "FOR_VPC"
+  peering       = "FOR_SELF"
+  prefix_length = 24
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "tf-test-sub-%{random_suffix}"
+  network       = google_compute_network.net.id
+  region        = "us-central1"
+  ip_cidr_range = "10.0.0.0/16"
+  send_secondary_ip_range_if_empty = true
+
+  secondary_ip_range {
+    range_name              = "secondary-a"
+    reserved_internal_range = "networkconnectivity.googleapis.com/${google_network_connectivity_internal_range.secondary.id}"
+  }
+
+  depends_on = [google_network_connectivity_internal_range.secondary]
+}
+
+resource "google_compute_instance" "vm" {
+  name         = "tf-test-vm-%{random_suffix}"
+  machine_type = "e2-medium"
+  zone         = "us-central1-a"
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+  }
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet.id
+    alias_ip_range {
+      subnetwork_range_name = "secondary-a"
+      ip_cidr_range         = "/32"
+    }
+  }
+}
+`, context)
+}
+
+func testAccComputeSubnetwork_secondaryIpRangeAdded(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "net" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_network_connectivity_internal_range" "secondary" {
+  name          = "tf-test-secondary-%{random_suffix}"
+  network       = google_compute_network.net.id
+  usage         = "FOR_VPC"
+  peering       = "FOR_SELF"
+  prefix_length = 24
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "tf-test-sub-%{random_suffix}"
+  network       = google_compute_network.net.id
+  region        = "us-central1"
+  ip_cidr_range = "10.0.0.0/16"
+  send_secondary_ip_range_if_empty = true
+
+  secondary_ip_range {
+    range_name    = "secondary-b"
+    ip_cidr_range = "190.168.1.0/24"
+  }
+
+  secondary_ip_range {
+    range_name              = "secondary-a"
+    reserved_internal_range = "networkconnectivity.googleapis.com/${google_network_connectivity_internal_range.secondary.id}"
+  }
+
+  depends_on = [google_network_connectivity_internal_range.secondary]
+}
+
+resource "google_compute_instance" "vm" {
+  name         = "tf-test-vm-%{random_suffix}"
+  machine_type = "e2-medium"
+  zone         = "us-central1-a"
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+  }
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet.id
+    alias_ip_range {
+      subnetwork_range_name = "secondary-a"
+      ip_cidr_range         = "/32"
+    }
+  }
+}
+`, context)
+}
+
 func testAccCheckSubnetIpCollectionMatchesPdp(t *testing.T, subnetResourceName, pdpResourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		subnetRes, ok := s.RootModule().Resources[subnetResourceName]
@@ -1481,6 +1634,122 @@ resource "google_compute_subnetwork" "test_subnet" {
   region        = "%{region}"
   network       = google_compute_network.test_network.id
   stack_type    = "IPV4_ONLY"
+}
+`, context)
+}
+
+func testAccComputeSubnetwork_secondaryIpRangeVMDeleted(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "net" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_network_connectivity_internal_range" "secondary" {
+  name          = "tf-test-secondary-%{random_suffix}"
+  network       = google_compute_network.net.id
+  usage         = "FOR_VPC"
+  peering       = "FOR_SELF"
+  prefix_length = 24
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "tf-test-sub-%{random_suffix}"
+  network       = google_compute_network.net.id
+  region        = "us-central1"
+  ip_cidr_range = "10.0.0.0/16"
+  send_secondary_ip_range_if_empty = true
+
+  secondary_ip_range {
+    range_name    = "secondary-b"
+    ip_cidr_range = "190.168.1.0/24"
+  }
+
+  secondary_ip_range {
+    range_name              = "secondary-a"
+    reserved_internal_range = "networkconnectivity.googleapis.com/${google_network_connectivity_internal_range.secondary.id}"
+  }
+
+  depends_on = [google_network_connectivity_internal_range.secondary]
+}
+`, context)
+}
+
+func testAccComputeSubnetwork_secondaryIpRangeRangesRemoved(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "net" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_network_connectivity_internal_range" "secondary" {
+  name          = "tf-test-secondary-%{random_suffix}"
+  network       = google_compute_network.net.id
+  usage         = "FOR_VPC"
+  peering       = "FOR_SELF"
+  prefix_length = 24
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "tf-test-sub-%{random_suffix}"
+  network       = google_compute_network.net.id
+  region        = "us-central1"
+  ip_cidr_range = "10.0.0.0/16"
+  send_secondary_ip_range_if_empty = true
+
+  depends_on = [google_network_connectivity_internal_range.secondary]
+}
+`, context)
+}
+
+func testAccComputeSubnetwork_secondaryIpRangeInternalRangeRemoved(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "net" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "tf-test-sub-%{random_suffix}"
+  network       = google_compute_network.net.id
+  region        = "us-central1"
+  ip_cidr_range = "10.0.0.0/16"
+  send_secondary_ip_range_if_empty = true
+}
+`, context)
+}
+
+func testAccComputeSubnetwork_secondaryIpRangePositionalStability(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "net" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "tf-test-sub-%{random_suffix}"
+  network       = google_compute_network.net.id
+  region        = "us-central1"
+  ip_cidr_range = "10.0.0.0/16"
+
+  secondary_ip_range {
+    range_name    = "new-range-a"
+    ip_cidr_range = "192.168.1.0/24"
+  }
+}
+
+resource "google_compute_instance" "vm" {
+  name         = "tf-test-vm-%{random_suffix}"
+  machine_type = "e2-medium"
+  zone         = "us-central1-a"
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+  }
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet.id
+  }
 }
 `, context)
 }

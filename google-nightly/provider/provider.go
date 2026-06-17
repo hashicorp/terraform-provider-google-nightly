@@ -312,6 +312,11 @@ func Provider() *schema.Provider {
 				Optional:     true,
 				ValidateFunc: ValidateCustomEndpoint,
 			},
+			"biglake_hive_custom_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: ValidateCustomEndpoint,
+			},
 			"biglake_iceberg_custom_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -793,6 +798,11 @@ func Provider() *schema.Provider {
 				ValidateFunc: ValidateCustomEndpoint,
 			},
 			"kms_custom_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: ValidateCustomEndpoint,
+			},
+			"license_manager_custom_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: ValidateCustomEndpoint,

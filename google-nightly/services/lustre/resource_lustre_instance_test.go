@@ -26,6 +26,7 @@ import (
 	tpgcompute "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/kms"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/lustre"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 )
 
 func TestAccLustreInstance_withMaintenancePolicy(t *testing.T) {

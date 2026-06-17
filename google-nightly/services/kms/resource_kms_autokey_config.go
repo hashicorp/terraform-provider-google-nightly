@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -237,7 +236,7 @@ func resourceKMSAutokeyConfigCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	d.SetId(id)
 
-	// custom code to sleep for 10 seconds to allow the KMS key to be fully available before proceeding with any operations that depend on it
+	//custom code to sleep for 10 seconds to allow the KMS key to be fully available before proceeding with any operations that depend on it
 	time.Sleep(10 * time.Second)
 
 	log.Printf("[DEBUG] Finished creating AutokeyConfig %q: %#v", d.Id(), res)
@@ -402,7 +401,7 @@ func resourceKMSAutokeyConfigUpdate(d *schema.ResourceData, meta interface{}) er
 		log.Printf("[DEBUG] Finished updating AutokeyConfig %q: %#v", d.Id(), res)
 	}
 
-	// custom code to sleep for 10 seconds to allow the KMS key to be fully available before proceeding with any operations that depend on it
+	//custom code to sleep for 10 seconds to allow the KMS key to be fully available before proceeding with any operations that depend on it
 	time.Sleep(10 * time.Second)
 	return resourceKMSAutokeyConfigRead(d, meta)
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/ces"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/secretmanager"
 )
 

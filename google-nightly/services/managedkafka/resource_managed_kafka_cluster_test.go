@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/managedkafka"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/privateca"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 )
 
 func TestAccManagedKafkaCluster_update(t *testing.T) {

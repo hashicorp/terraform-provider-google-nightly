@@ -7,6 +7,7 @@ api_service_name: cloudsecuritycompliance.googleapis.com
 api_version: v1
 api_resource_type_kind: Framework
 autogen_status: true
+autogen_version: 1
 fields:
     - api_field: category
     - api_field: cloudControlDetails.majorRevisionId
@@ -30,6 +31,8 @@ fields:
     - api_field: majorRevisionId
     - api_field: name
     - field: organization
+      provider_only: true
+    - field: parent
       provider_only: true
     - api_field: supportedCloudProviders
     - api_field: supportedEnforcementModes

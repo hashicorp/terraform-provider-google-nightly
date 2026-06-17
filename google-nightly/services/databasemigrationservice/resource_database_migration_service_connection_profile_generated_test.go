@@ -33,6 +33,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/alloydb"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/databasemigrationservice"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/servicenetworking"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/sql"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"

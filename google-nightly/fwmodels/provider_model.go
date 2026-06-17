@@ -73,6 +73,7 @@ type ProviderModel struct {
 	BackupDRCustomEndpoint                 types.String `tfsdk:"backup_dr_custom_endpoint"`
 	BeyondcorpCustomEndpoint               types.String `tfsdk:"beyondcorp_custom_endpoint"`
 	BiglakeCustomEndpoint                  types.String `tfsdk:"biglake_custom_endpoint"`
+	BiglakeHiveCustomEndpoint              types.String `tfsdk:"biglake_hive_custom_endpoint"`
 	BiglakeIcebergCustomEndpoint           types.String `tfsdk:"biglake_iceberg_custom_endpoint"`
 	BigQueryCustomEndpoint                 types.String `tfsdk:"big_query_custom_endpoint"`
 	BigqueryAnalyticsHubCustomEndpoint     types.String `tfsdk:"bigquery_analytics_hub_custom_endpoint"`
@@ -170,6 +171,7 @@ type ProviderModel struct {
 	IntegrationConnectorsCustomEndpoint    types.String `tfsdk:"integration_connectors_custom_endpoint"`
 	IntegrationsCustomEndpoint             types.String `tfsdk:"integrations_custom_endpoint"`
 	KMSCustomEndpoint                      types.String `tfsdk:"kms_custom_endpoint"`
+	LicenseManagerCustomEndpoint           types.String `tfsdk:"license_manager_custom_endpoint"`
 	LoggingCustomEndpoint                  types.String `tfsdk:"logging_custom_endpoint"`
 	LookerCustomEndpoint                   types.String `tfsdk:"looker_custom_endpoint"`
 	LustreCustomEndpoint                   types.String `tfsdk:"lustre_custom_endpoint"`

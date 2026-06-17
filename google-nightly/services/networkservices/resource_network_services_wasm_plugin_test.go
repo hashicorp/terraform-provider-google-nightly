@@ -36,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/artifactregistry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/networkservices"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 	"google.golang.org/api/googleapi"

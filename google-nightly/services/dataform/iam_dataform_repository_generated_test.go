@@ -32,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dataform"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/kms"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/secretmanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/sourcerepo"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"

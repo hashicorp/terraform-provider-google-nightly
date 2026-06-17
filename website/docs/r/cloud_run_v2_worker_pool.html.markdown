@@ -548,6 +548,10 @@ resource "google_cloud_run_v2_worker_pool" "default" {
         http_get {
           path = "/"
           port = 8080
+          http_headers {
+            name = "TEST-HEADER"
+            value = "test-value"
+          }
         }
       }
     }
@@ -678,6 +682,14 @@ When the field is set to false, deleting the WorkerPool is allowed.
   Cloud Run API v2 does not support annotations with `run.googleapis.com`, `cloud.googleapis.com`, `serving.knative.dev`, or `autoscaling.knative.dev` namespaces, and they will be rejected.
   All system annotations in v1 now have a corresponding field in v2 WorkerPoolRevisionTemplate.
   This field follows Kubernetes annotations' namespacing, limits, and rules.
+
+* `client` -
+  (Optional)
+  Arbitrary identifier for the API client.
+
+* `client_version` -
+  (Optional)
+  Arbitrary version identifier for the API client.
 
 * `vpc_access` -
   (Optional)
@@ -916,7 +928,13 @@ When the field is set to false, deleting the WorkerPool is allowed.
 <a name="nested_template_containers_liveness_probe_http_get_http_headers"></a>The `http_headers` block supports:
 
 * `port` -
-  (Required)
+  (Optional, Deprecated)
+  Required. The header field name
+
+  ~> **Warning:** `port` field is deprecated and will be removed in a future major release. It was never supported by the API.
+
+* `name` -
+  (Optional)
   Required. The header field name
 
 * `value` -
@@ -992,7 +1010,13 @@ When the field is set to false, deleting the WorkerPool is allowed.
 <a name="nested_template_containers_startup_probe_http_get_http_headers"></a>The `http_headers` block supports:
 
 * `port` -
-  (Required)
+  (Optional, Deprecated)
+  Required. The header field name
+
+  ~> **Warning:** `port` field is deprecated and will be removed in a future major release. It was never supported by the API.
+
+* `name` -
+  (Optional)
   Required. The header field name
 
 * `value` -

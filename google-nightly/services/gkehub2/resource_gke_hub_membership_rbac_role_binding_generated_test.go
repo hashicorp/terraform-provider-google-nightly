@@ -34,6 +34,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/container"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gkehub"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gkehub2"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 

@@ -32,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dataform"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/kms"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/secretmanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/sourcerepo"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
@@ -244,7 +245,11 @@ resource "google_dataform_repository" "dataform_repository" {
     table_prefix = "prefix_"
   }
 
-  service_account = "1234567890-compute@developer.gserviceaccount.com"
+  service_account = "${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
+
+data "google_project" "project" {
+  provider = google-beta
 }
 `, context)
 }

@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -66,6 +65,7 @@ func revisionNameCustomizeDiff(_ context.Context, diff *schema.ResourceDiff, v i
 
 var cloudRunGoogleProvidedTemplateAnnotations = regexp.MustCompile(`template\.0\.metadata\.0\.annotations\.run\.googleapis\.com/sandbox`)
 var cloudRunGoogleProvidedTemplateAnnotations_autoscaling_maxscale = regexp.MustCompile(`template\.0\.metadata\.0\.annotations\.autoscaling\.knative\.dev/maxScale`)
+var cloudRunGoogleProvidedTemplateAnnotations_gpu_zonal_redundancy_disabled = regexp.MustCompile(`template\.0\.metadata\.0\.annotations\.run\.googleapis\.com/gpu-zonal-redundancy-disabled`)
 
 func cloudrunTemplateAnnotationDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
 	// Suppress diffs for the annotations provided by API
@@ -76,6 +76,16 @@ func cloudrunTemplateAnnotationDiffSuppress(k, old, new string, d *schema.Resour
 
 	if cloudRunGoogleProvidedTemplateAnnotations_autoscaling_maxscale.MatchString(k) && new == "" {
 		return true
+	}
+
+	if cloudRunGoogleProvidedTemplateAnnotations_gpu_zonal_redundancy_disabled.MatchString(k) && new == "" {
+		if limitsRaw, ok := d.GetOk("template.0.spec.0.containers.0.resources.0.limits"); ok {
+			if limits, ok := limitsRaw.(map[string]interface{}); ok {
+				if _, hasGpu := limits["nvidia.com/gpu"]; hasGpu {
+					return true
+				}
+			}
+		}
 	}
 
 	// For other keys, don't suppress diff.

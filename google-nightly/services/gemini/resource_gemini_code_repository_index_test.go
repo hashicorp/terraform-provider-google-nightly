@@ -27,6 +27,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/developerconnect"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gemini"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/kms"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 )
 
 func TestAccGeminiCodeRepositoryIndex_update(t *testing.T) {

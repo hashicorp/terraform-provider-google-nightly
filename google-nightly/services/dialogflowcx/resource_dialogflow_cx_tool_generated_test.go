@@ -34,6 +34,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dialogflowcx"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/discoveryengine"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/integrationconnectors"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 

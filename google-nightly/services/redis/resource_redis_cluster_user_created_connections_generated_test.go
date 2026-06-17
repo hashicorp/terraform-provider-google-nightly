@@ -33,6 +33,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/networkconnectivityv1"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/redis"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 

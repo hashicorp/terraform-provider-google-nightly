@@ -46,7 +46,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -469,8 +468,7 @@ func resourceSpannerDatabaseCreate(d *schema.ResourceData, meta interface{}) err
 	// statements at the time of database creation. To avoid users needing to run
 	// `terraform apply` twice to get their desired outcome, the provider does not set
 	// `extraStatements` in the call to the `create` endpoint and all DDL (other than
-	//
-	//	<CREATE DATABASE>) is run post-create, by calling the `updateDdl` endpoint
+	//  <CREATE DATABASE>) is run post-create, by calling the `updateDdl` endpoint
 	defaultTimeZoneObj, defaultTimeZoneOk := d.GetOk("default_time_zone")
 	defaultTimeZone := defaultTimeZoneObj.(string)
 	retention, retentionPeriodOk := d.GetOk("version_retention_period")
