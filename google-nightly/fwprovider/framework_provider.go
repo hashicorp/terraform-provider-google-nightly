@@ -38,6 +38,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/functions"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/fwmodels"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/fwvalidators"
+	sdkprovider "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/provider"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
 	"github.com/hashicorp/terraform-provider-google-nightly/version"
 
@@ -1454,7 +1455,10 @@ func (p *FrameworkProvider) EphemeralResources(_ context.Context) []func() ephem
 }
 
 func (p *FrameworkProvider) ListResources(_ context.Context) []func() list.ListResource {
-	return registry.FrameworkListResourceFuncs()
+	listResources := registry.FrameworkListResourceFuncs()
+	listResources = append(listResources, sdkprovider.IamMemberListResources()...)
+
+	return listResources
 }
 
 func (p *FrameworkProvider) GenerateResourceConfig(context.Context, any) (any, error) {

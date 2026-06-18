@@ -263,10 +263,10 @@ and the last a letter or a number.`,
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: verify.ValidateEnum([]string{"INTERNAL_MANAGED", "EXTERNAL_MANAGED"}),
+				ValidateFunc: verify.ValidateEnum([]string{"INTERNAL_MANAGED", "EXTERNAL_MANAGED", "INTERNAL_SELF_MANAGED"}),
 				Description: `All backend services and forwarding rules referenced by this extension must share the same load balancing scheme.
 For more information, refer to [Choosing a load balancer](https://cloud.google.com/load-balancing/docs/backend-service) and
-[Supported application load balancers](https://cloud.google.com/service-extensions/docs/callouts-overview#supported-lbs). Possible values: ["INTERNAL_MANAGED", "EXTERNAL_MANAGED"]`,
+[Supported application load balancers](https://cloud.google.com/service-extensions/docs/callouts-overview#supported-lbs). Possible values: ["INTERNAL_MANAGED", "EXTERNAL_MANAGED", "INTERNAL_SELF_MANAGED"]`,
 			},
 			"location": {
 				Type:        schema.TypeString,

@@ -721,7 +721,7 @@ The following arguments are supported:
   All backend services and forwarding rules referenced by this extension must share the same load balancing scheme.
   For more information, refer to [Choosing a load balancer](https://cloud.google.com/load-balancing/docs/backend-service) and
   [Supported application load balancers](https://cloud.google.com/service-extensions/docs/callouts-overview#supported-lbs).
-  Possible values are: `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`.
+  Possible values are: `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`, `INTERNAL_SELF_MANAGED`.
 
 * `location` -
   (Required)
