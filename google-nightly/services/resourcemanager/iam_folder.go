@@ -21,8 +21,10 @@ import (
 	"strings"
 
 	"github.com/hashicorp/errwrap"
+	"github.com/hashicorp/terraform-plugin-framework/list"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
+
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanagerv3"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgiamresource"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
@@ -167,6 +169,30 @@ func GetFolderIamPolicyByFolderName(folderName, userAgent string, config *transp
 	return v1Policy, nil
 }
 
+func FolderIamMemberResource() *schema.Resource {
+	return tpgiamresource.ResourceIamMember(
+		IamFolderSchema,
+		NewFolderIamUpdater,
+		FolderIdParseFunc,
+		tpgiamresource.IamWithBatching,
+		tpgiamresource.IamWithParentResourceIdentity(FolderIamParentResourceIdentityParser),
+	)
+}
+
+// NewFolderIamMemberListResource returns the list implementation for google_folder_iam_member
+func NewFolderIamMemberListResource() list.ListResource {
+	return tpgiamresource.NewIamMemberListResource(
+		"google_folder_iam_member",
+		FolderIamMemberResource(),
+		NewFolderIamUpdater,
+		tpgiamresource.IamMemberListCallConfig{
+			ParentResourceField: "folder",
+			EnableRoleFilter:    true,
+			EnableMemberFilter:  true,
+		},
+	)
+}
+
 func init() {
 	registry.Schema{
 		Name:        "google_folder_iam_audit_config",
@@ -184,7 +210,12 @@ func init() {
 		Name:        "google_folder_iam_member",
 		ProductName: "resourcemanager",
 		Type:        registry.SchemaTypeIAMResource,
-		Schema:      tpgiamresource.ResourceIamMember(IamFolderSchema, NewFolderIamUpdater, FolderIdParseFunc, tpgiamresource.IamWithBatching, tpgiamresource.IamWithParentResourceIdentity(FolderIamParentResourceIdentityParser)),
+		Schema:      FolderIamMemberResource(),
+	}.Register()
+	registry.FrameworkListResource{
+		Name:        "google_folder_iam_member",
+		ProductName: "resourcemanager",
+		Func:        NewFolderIamMemberListResource,
 	}.Register()
 	registry.Schema{
 		Name:        "google_folder_iam_policy",

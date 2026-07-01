@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -65,7 +64,7 @@ func TestAccAgentRegistryService_agentRegistryServiceBasicExample(t *testing.T) 
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckAgentRegistryServiceDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -90,13 +89,13 @@ func TestAccAgentRegistryService_agentRegistryServiceBasicExample(t *testing.T) 
 func testAccAgentRegistryService_agentRegistryServiceBasicExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_agent_registry_service" "default" {
-  provider     = google-nightly
   location     = "us-central1"
   service_id   = "%{service}"
-
+  description  = "My basic agent registry service"
   display_name = "My Service"
+
   interfaces {
-    url = "https://www.google.com/%{service}"
+    url              = "https://www.google.com/%{service}"
     protocol_binding = "GRPC"
   }
 
@@ -119,7 +118,7 @@ func TestAccAgentRegistryService_agentRegistryServiceMcpServerExample(t *testing
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckAgentRegistryServiceDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -144,23 +143,19 @@ func TestAccAgentRegistryService_agentRegistryServiceMcpServerExample(t *testing
 func testAccAgentRegistryService_agentRegistryServiceMcpServerExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_agent_registry_service" "default" {
-  provider     = google-nightly
   location     = "us-central1"
   service_id   = "%{service}"
-
+  description  = "My MCP agent registry service"
   display_name = "My Service"
-  interfaces {
-    url = "https://www.google.com/api/%{service}"
-    protocol_binding = "JSONRPC"
-  }
 
   interfaces {
-    url = "https://www.youtube.com/api/%{service}"
+    url              = "https://example.com"
     protocol_binding = "JSONRPC"
   }
 
   mcp_server_spec {
-    type    = "NO_SPEC"
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
   }
 }
 `, context)

@@ -1,11 +1,10 @@
 # Copyright IBM Corp. 2014, 2026
-# Copyright 2026 Google LLC
 # SPDX-License-Identifier: MPL-2.0
 resource: google_agent_registry_binding
 generation_type: mmv1
 source_file: products/agentregistry/Binding.yaml
 api_service_name: agentregistry.googleapis.com
-api_version: v1alpha
+api_version: v1
 api_resource_type_kind: Binding
 fields:
     - api_field: authProviderBinding.authProvider

@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -40,7 +39,7 @@ func TestAccDataSourceAgentRegistryEndpoint_basic(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceAgentRegistryEndpoint_serviceOnly(context),
@@ -66,7 +65,6 @@ func TestAccDataSourceAgentRegistryEndpoint_basic(t *testing.T) {
 func testAccDataSourceAgentRegistryEndpoint_serviceOnly(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_agent_registry_service" "default" {
-  provider     = google-nightly
   location     = "us-central1"
   service_id   = "%{service}"
 
@@ -86,7 +84,6 @@ resource "google_agent_registry_service" "default" {
 func testAccDataSourceAgentRegistryEndpoint_basic(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_agent_registry_service" "default" {
-  provider     = google-nightly
   location     = "us-central1"
   service_id   = "%{service}"
 
@@ -102,7 +99,6 @@ resource "google_agent_registry_service" "default" {
 }
 
 data "google_agent_registry_endpoint" "default" {
-  provider = google-nightly
   location = "us-central1"
   filter   = "displayName=\"%{display_name}\""
 

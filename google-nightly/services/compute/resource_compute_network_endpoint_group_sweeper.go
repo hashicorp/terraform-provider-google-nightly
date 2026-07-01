@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -115,7 +116,7 @@ func listAndActionComputeNetworkEndpointGroup(action sweeper.ResourceAction) err
 		}
 
 		// Prepare list URL
-		listTemplate := strings.Split("https://compute.googleapis.com/compute/beta/projects/{{project}}/aggregated/networkEndpointGroups", "?")[0]
+		listTemplate := strings.Split("https://compute.googleapis.com/compute/alpha/projects/{{project}}/aggregated/networkEndpointGroups", "?")[0]
 		listUrl, err := tpgresource.ReplaceVars(mockConfig, config, listTemplate)
 		if err != nil {
 			log.Printf("[INFO][SWEEPER_LOG] error preparing sweeper list url: %s", err)
@@ -205,7 +206,7 @@ func deleteResourceComputeNetworkEndpointGroup(config *transport_tpg.Config, d *
 		return nil
 	}
 
-	deleteTemplate := "https://compute.googleapis.com/compute/beta/projects/{{project}}/zones/{{zone}}/networkEndpointGroups/{{name}}"
+	deleteTemplate := "https://compute.googleapis.com/compute/alpha/projects/{{project}}/zones/{{zone}}/networkEndpointGroups/{{name}}"
 	if obj["zone"] == nil {
 		log.Printf("[INFO][SWEEPER_LOG] %s resource zone was nil", resourceName)
 		return fmt.Errorf("%s resource zone was nil", resourceName)
