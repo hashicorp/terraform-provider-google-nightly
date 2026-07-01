@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -117,7 +118,7 @@ func listAndActionComputeTargetTcpProxy(action sweeper.ResourceAction) error {
 		}
 
 		// Prepare list URL
-		listTemplate := strings.Split("https://compute.googleapis.com/compute/beta/projects/{{project}}/global/targetTcpProxies", "?")[0]
+		listTemplate := strings.Split("https://compute.googleapis.com/compute/alpha/projects/{{project}}/global/targetTcpProxies", "?")[0]
 		listUrl, err := tpgresource.ReplaceVars(mockConfig, config, listTemplate)
 		if err != nil {
 			log.Printf("[INFO][SWEEPER_LOG] error preparing sweeper list url: %s", err)
@@ -195,7 +196,7 @@ func deleteResourceComputeTargetTcpProxy(config *transport_tpg.Config, d *tpgres
 		return nil
 	}
 
-	deleteTemplate := "https://compute.googleapis.com/compute/beta/projects/{{project}}/global/targetTcpProxies/{{name}}"
+	deleteTemplate := "https://compute.googleapis.com/compute/alpha/projects/{{project}}/global/targetTcpProxies/{{name}}"
 
 	url, err := tpgresource.ReplaceVars(d, config, deleteTemplate)
 	if err != nil {

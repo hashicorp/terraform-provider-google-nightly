@@ -15,7 +15,7 @@
 # ----------------------------------------------------------------------------
 subcategory: "Agent Registry"
 description: |-
-  Get information about a Agent Registry Agent
+  Get information about an Agent Registry Agent
 ---
 
 # google_agent_registry_agent

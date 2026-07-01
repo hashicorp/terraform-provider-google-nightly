@@ -1,0 +1,36 @@
+# Copyright IBM Corp. 2014, 2026
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: MPL-2.0
+resource: google_compute_ha_controller
+generation_type: mmv1
+source_file: products/compute/HaController.yaml
+api_service_name: compute.googleapis.com
+api_version: beta
+api_resource_type_kind: HaController
+fields:
+    - api_field: backendServices
+    - api_field: description
+    - api_field: failoverInitiation
+    - api_field: instanceName
+    - api_field: name
+    - api_field: networkingAutoConfiguration.internal.ipAddress
+    - api_field: networkingAutoConfiguration.internal.ipv6Address
+    - api_field: networkingAutoConfiguration.internal.stackType
+    - api_field: region
+    - api_field: zoneConfigurations.nodeAffinities.key
+      field: zone_configuration.node_affinities.key
+    - api_field: zoneConfigurations.nodeAffinities.operator
+      field: zone_configuration.node_affinities.operator
+    - api_field: zoneConfigurations.nodeAffinities.values
+      field: zone_configuration.node_affinities.values
+    - api_field: zoneConfigurations.reservationAffinity.specificReservation.key
+      field: zone_configuration.reservation_affinity.specific_reservation.key
+    - api_field: zoneConfigurations.reservationAffinity.specificReservation.values
+      field: zone_configuration.reservation_affinity.specific_reservation.values
+    - api_field: zoneConfigurations.reservationAffinity.type
+      field: zone_configuration.reservation_affinity.type
+    - api_field: zoneConfigurations.zone
+      field: zone_configuration.zone
+    - api_field: selfLink
+    - field: deletion_policy
+      provider_only: true

@@ -15,7 +15,7 @@
 # ----------------------------------------------------------------------------
 subcategory: "Agent Registry"
 description: |-
-  Get information about a Agent Registry MCP Server
+  Get information about an Agent Registry MCP Server
 ---
 
 # google_agent_registry_mcp_server

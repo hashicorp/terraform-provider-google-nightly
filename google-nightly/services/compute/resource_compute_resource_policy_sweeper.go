@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -121,7 +122,7 @@ func listAndActionComputeResourcePolicy(action sweeper.ResourceAction) error {
 		}
 
 		// Prepare list URL
-		listTemplate := strings.Split("https://compute.googleapis.com/compute/beta/projects/{{project}}/regions/{{region}}/resourcePolicies", "?")[0]
+		listTemplate := strings.Split("https://compute.googleapis.com/compute/alpha/projects/{{project}}/regions/{{region}}/resourcePolicies", "?")[0]
 		listUrl, err := tpgresource.ReplaceVars(mockConfig, config, listTemplate)
 		if err != nil {
 			log.Printf("[INFO][SWEEPER_LOG] error preparing sweeper list url: %s", err)
@@ -199,7 +200,7 @@ func deleteResourceComputeResourcePolicy(config *transport_tpg.Config, d *tpgres
 		return nil
 	}
 
-	deleteTemplate := "https://compute.googleapis.com/compute/beta/projects/{{project}}/regions/{{region}}/resourcePolicies/{{name}}"
+	deleteTemplate := "https://compute.googleapis.com/compute/alpha/projects/{{project}}/regions/{{region}}/resourcePolicies/{{name}}"
 
 	url, err := tpgresource.ReplaceVars(d, config, deleteTemplate)
 	if err != nil {

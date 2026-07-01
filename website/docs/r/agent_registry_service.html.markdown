@@ -35,13 +35,13 @@ Service manages a service in a management boundary
 
 ```hcl
 resource "google_agent_registry_service" "default" {
-  provider     = google-nightly
   location     = "us-central1"
   service_id   = "service"
-
+  description  = "My basic agent registry service"
   display_name = "My Service"
+
   interfaces {
-    url = "https://www.google.com/service"
+    url              = "https://www.google.com/service"
     protocol_binding = "GRPC"
   }
 
@@ -60,23 +60,19 @@ resource "google_agent_registry_service" "default" {
 
 ```hcl
 resource "google_agent_registry_service" "default" {
-  provider     = google-nightly
   location     = "us-central1"
   service_id   = "service"
-
+  description  = "My MCP agent registry service"
   display_name = "My Service"
-  interfaces {
-    url = "https://www.google.com/api/service"
-    protocol_binding = "JSONRPC"
-  }
 
   interfaces {
-    url = "https://www.youtube.com/api/service"
+    url              = "https://example.com"
     protocol_binding = "JSONRPC"
   }
 
   mcp_server_spec {
-    type    = "NO_SPEC"
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
   }
 }
 ```

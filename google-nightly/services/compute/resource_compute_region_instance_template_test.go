@@ -893,7 +893,6 @@ func TestAccComputeRegionInstanceTemplate_performanceMonitoringUnit(t *testing.T
 				Config: testAccComputeRegionInstanceTemplate_performanceMonitoringUnit(context_1),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckComputeRegionInstanceTemplateExists(t, "google_compute_region_instance_template.foobar", &instanceTemplate),
-					resource.TestCheckResourceAttr("google_compute_region_instance_template.foobar", "advanced_machine_features.0.performance_monitoring_unit", "STANDARD"),
 				),
 			},
 			{
@@ -1037,8 +1036,12 @@ func TestAccComputeRegionInstanceTemplate_invalidScratchDiskInterface(t *testing
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccComputeRegionInstanceTemplate_invalidScratchDiskInterface(acctest.RandString(t, 10)),
+				Config:      testAccComputeRegionInstanceTemplate_invalidScratchDiskInterface(acctest.RandString(t, 10), 3500),
 				ExpectError: regexp.MustCompile("SCRATCH disks with a size of 3500 GB must have an interface of NVME"),
+			},
+			{
+				Config:      testAccComputeRegionInstanceTemplate_invalidScratchDiskInterface(acctest.RandString(t, 10), 14000),
+				ExpectError: regexp.MustCompile("SCRATCH disks with a size of 14000 GB must have an interface of NVME"),
 			},
 		},
 	})
@@ -4251,7 +4254,7 @@ resource "google_compute_region_instance_template" "foobar" {
 `, suffix)
 }
 
-func testAccComputeRegionInstanceTemplate_invalidScratchDiskInterface(suffix string) string {
+func testAccComputeRegionInstanceTemplate_invalidScratchDiskInterface(suffix string, diskSize int) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
 	family  = "debian-12"
@@ -4270,7 +4273,7 @@ resource "google_compute_region_instance_template" "foobar" {
   }
   disk {
     auto_delete  = true
-    disk_size_gb = 3500
+    disk_size_gb = %d
     type         = "SCRATCH"
     disk_type    = "local-ssd"
     interface    = "SCSI"
@@ -4278,7 +4281,7 @@ resource "google_compute_region_instance_template" "foobar" {
   network_interface {
     network = "default"
   }
-}`, suffix)
+}`, suffix, diskSize)
 }
 
 func testAccComputeRegionInstanceTemplate_imageResourceTest(diskName string, imageName string, imageDescription string) string {

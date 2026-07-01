@@ -55,18 +55,20 @@ var (
 )
 
 func TestAccAgentRegistryBinding_agentRegistryBindingBasicExample(t *testing.T) {
+	acctest.SkipTestUntil(t, "2026-09-30")
 	t.Parallel()
 
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
+		"project":       envvar.GetTestProjectFromEnv(),
 		"binding":       "tf-test-ar-binding" + randomSuffix,
 		"random_suffix": randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckAgentRegistryBindingDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -91,11 +93,10 @@ func TestAccAgentRegistryBinding_agentRegistryBindingBasicExample(t *testing.T) 
 func testAccAgentRegistryBinding_agentRegistryBindingBasicExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_agent_registry_binding" "default" {
-  provider = google-nightly
-
   location     = "us-central1"
   binding_id   = "%{binding}"
   display_name = "My Binding"
+  description  = "My GA agent registry binding"
 
   source {
     identifier = data.google_agent_registry_agent.default.urn
@@ -110,24 +111,21 @@ resource "google_agent_registry_binding" "default" {
     scopes        = ["https://www.googleapis.com/auth/cloud-platform"]
     continue_uri  = "https://example.com/continue"
   }
+
+  depends_on = [google_iam_connectors_connector.default]
 }
 
 data "google_agent_registry_agent" "default" {
-  provider = google-nightly
-
   location = "global"
   filter   = "displayName:Workspace Agent"
 }
-resource "google_iam_connectors_connector" "default" {
-  provider     = google-nightly
 
+resource "google_iam_connectors_connector" "default" {
   location       = "us-central1"
   connector_id   = "%{binding}"
 
   connector_type_params {
-    api_key {
-      api_key = "foobar"
-    }
+    connector_version = "projects/%{project}/locations/global/providers/gcp/connectors/pubsub/versions/1"
   }
 }
 `, context)

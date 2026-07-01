@@ -152,7 +152,7 @@ func ResourceComputeRegionInstanceTemplate() *schema.Resource {
 							Optional:    true,
 							ForceNew:    true,
 							Computed:    true,
-							Description: `The size of the image in gigabytes. If not specified, it will inherit the size of its base image. For SCRATCH disks, the size must be one of 375, 3000, 3500 or 7000 GB, with a default of 375 GB.`,
+							Description: `The size of the image in gigabytes. If not specified, it will inherit the size of its base image. For SCRATCH disks, the size must be one of 375, 3000, 3500, 7000 or 14000 GB, with a default of 375 GB.`,
 						},
 
 						"disk_type": {
@@ -1151,11 +1151,12 @@ be from 0 to 999,999,999 inclusive.`,
 							Description: `The number of physical cores to expose to an instance. Multiply by the number of threads per core to compute the total number of virtual CPUs to expose to the instance. If unset, the number of cores is inferred from the instance\'s nominal CPU count and the underlying platform\'s SMT width.`,
 						},
 						"performance_monitoring_unit": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ForceNew:     true,
-							ValidateFunc: validation.StringInSlice([]string{"STANDARD", "ENHANCED", "ARCHITECTURAL"}, false),
-							Description:  `The PMU is a hardware component within the CPU core that monitors how the processor runs code. Valid values for the level of PMU are "STANDARD", "ENHANCED", and "ARCHITECTURAL".`,
+							Type:             schema.TypeString,
+							Optional:         true,
+							ForceNew:         true,
+							DiffSuppressFunc: tpgresource.EmptyOrDefaultStringSuppress("STANDARD"),
+							ValidateFunc:     validation.StringInSlice([]string{"STANDARD", "ENHANCED", "ARCHITECTURAL"}, false),
+							Description:      `The PMU is a hardware component within the CPU core that monitors how the processor runs code. Valid values for the level of PMU are "STANDARD", "ENHANCED", and "ARCHITECTURAL".`,
 						},
 						"enable_uefi_networking": {
 							Type:        schema.TypeBool,
@@ -1344,7 +1345,7 @@ func resourceComputeRegionInstanceTemplateCreate(d *schema.ResourceData, meta in
 	if err != nil {
 		return err
 	}
-	PartnerMetadata, err := convertPartnerMetadataToCompute(partnerMetadataMap)
+	PartnerMetadata, err := convertPartnerMetadataToComputeTyped(partnerMetadataMap)
 	if err != nil {
 		return err
 	}
@@ -1400,11 +1401,7 @@ func resourceComputeRegionInstanceTemplateCreate(d *schema.ResourceData, meta in
 		instanceProperties["keyRevocationActionType"] = v
 	}
 	if metadata != nil {
-		metadataMap, err := tpgresource.ConvertToMap(metadata)
-		if err != nil {
-			return fmt.Errorf("Error converting metadata: %s", err)
-		}
-		instanceProperties["metadata"] = metadataMap
+		instanceProperties["metadata"] = metadata
 	}
 	if networkPerformanceConfig != nil {
 		instanceProperties["networkPerformanceConfig"] = networkPerformanceConfig
@@ -1419,11 +1416,7 @@ func resourceComputeRegionInstanceTemplateCreate(d *schema.ResourceData, meta in
 		instanceProperties["shieldedInstanceConfig"] = sic
 	}
 	if amf := expandAdvancedMachineFeatures(d); amf != nil {
-		amfMap, err := tpgresource.ConvertToMap(amf)
-		if err != nil {
-			return fmt.Errorf("Error converting advancedMachineFeatures: %s", err)
-		}
-		instanceProperties["advancedMachineFeatures"] = amfMap
+		instanceProperties["advancedMachineFeatures"] = amf
 	}
 	if reservationAffinity != nil {
 		instanceProperties["reservationAffinity"] = reservationAffinity
@@ -1757,7 +1750,7 @@ func resourceComputeRegionInstanceTemplateRead(d *schema.ResourceData, meta inte
 		}
 	}
 	if instanceTemplate.Properties.AdvancedMachineFeatures != nil {
-		if err = d.Set("advanced_machine_features", flattenAdvancedMachineFeatures(instanceTemplate.Properties.AdvancedMachineFeatures)); err != nil {
+		if err = d.Set("advanced_machine_features", flattenAdvancedMachineFeaturesTyped(instanceTemplate.Properties.AdvancedMachineFeatures)); err != nil {
 			return fmt.Errorf("Error setting advanced_machine_features: %s", err)
 		}
 	}
