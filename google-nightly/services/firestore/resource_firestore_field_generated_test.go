@@ -20,6 +20,7 @@ package firestore_test
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -40,6 +41,7 @@ import (
 var (
 	_ = fmt.Sprintf
 	_ = log.Print
+	_ = regexp.MatchString
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
@@ -525,6 +527,75 @@ resource "google_firestore_database" "database" {
 `, context)
 }
 
+func TestAccFirestoreField_firestoreFieldSkipWaitExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"project_id":              envvar.GetTestProjectFromEnv(),
+		"database_id":             "tf-test-database-id" + randomSuffix,
+		"delete_protection_state": "DELETE_PROTECTION_DISABLED",
+		"random_suffix":           randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckFirestoreFieldDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccFirestoreField_firestoreFieldSkipWaitExample(context),
+			},
+			{
+				ResourceName:            "google_firestore_field.skip_wait",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"collection", "database", "field", "skip_wait"},
+			},
+			{
+				ResourceName:       "google_firestore_field.skip_wait",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccFirestoreField_firestoreFieldSkipWaitExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_firestore_database" "database" {
+  project     = "%{project_id}"
+  name        = "%{database_id}"
+  location_id = "nam5"
+  type        = "FIRESTORE_NATIVE"
+
+  delete_protection_state = "%{delete_protection_state}"
+  deletion_policy         = "DELETE"
+}
+
+resource "google_firestore_field" "skip_wait" {
+  project    = "%{project_id}"
+  database   = google_firestore_database.database.name
+  collection = "chatrooms_%{random_suffix}"
+  field      = "skip_wait"
+
+  index_config {
+    indexes {
+      order       = "ASCENDING"
+      query_scope = "COLLECTION_GROUP"
+    }
+    indexes {
+      array_config = "CONTAINS"
+    }
+  }
+
+  skip_wait = true
+}
+`, context)
+}
+
 func testAccCheckFirestoreFieldDestroyProducer(t *testing.T) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
 		for name, rs := range s.RootModule().Resources {
@@ -558,6 +629,10 @@ func testAccCheckFirestoreFieldDestroyProducer(t *testing.T) func(s *terraform.S
 					// The acceptance test has provisioned the resources under test in a new project, and the destroy check is seeing the
 					// effects of the project not existing. This means the service isn't enabled, and that the resource is definitely destroyed.
 					// We do not return the error in this case - destroy was successful
+					return nil
+				}
+				if e.Code == 404 && regexp.MustCompile(`Project .* or database .* does not exist`).MatchString(e.Message) {
+					// The project or database does not exist, which means the resource is destroyed.
 					return nil
 				}
 

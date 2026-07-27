@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -19,6 +18,7 @@ package accesscontextmanager_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -534,8 +534,6 @@ func (tc *IdentityTypeDiffSuppressFuncDiffSuppressTestCase) Test(t *testing.T) {
 	}
 }
 
-// ----------------- Singular Test Case -----------------
-
 func testAccAccessContextManagerServicePerimeter_nonGcpServicePatternsTest(t *testing.T) {
 	org := envvar.GetTestOrgFromEnv(t)
 
@@ -556,17 +554,158 @@ func testAccAccessContextManagerServicePerimeter_nonGcpServicePatternsTest(t *te
 	})
 }
 
+func testAccAccessContextManagerServicePerimeter_pscEndpointTest(t *testing.T) {
+	org := envvar.GetTestOrgFromEnv(t)
+	forwardingRule := os.Getenv("PSC_FORWARDING_RULE")
+	if forwardingRule == "" {
+		t.Skip("PSC_FORWARDING_RULE is not set; skipping test to avoid using internal hardcoded fallbacks.")
+	}
+	policyTitle := acctest.RandString(t, 10)
+	perimeterTitle := "perimeter"
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckAccessContextManagerServicePerimeterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAccessContextManagerServicePerimeter_pscEndpoint(org, policyTitle, perimeterTitle, forwardingRule),
+			},
+			{
+				Config: testAccAccessContextManagerServicePerimeter_pscEndpoint_destroy(org, policyTitle, perimeterTitle),
+			},
+		},
+	})
+}
+
+func testAccAccessContextManagerServicePerimeter_pscEndpoint(org, policyTitle, perimeterTitleName, forwardingRule string) string {
+	return fmt.Sprintf(`
+data "google_project" "project" {}
+
+resource "google_access_context_manager_access_policy" "test-access" {
+  parent = "organizations/%s"
+  title  = "%s"
+  scopes = ["projects/${data.google_project.project.number}"]
+}
+
+resource "google_access_context_manager_service_perimeter" "test-access" {
+  parent                    = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
+  name                      = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/servicePerimeters/%s"
+  title                     = "%s"
+  use_explicit_dry_run_spec = true
+
+  status {
+    restricted_services = ["storage.googleapis.com"]
+    ingress_policies {
+      ingress_from {
+        identity_type = "ANY_IDENTITY"
+        sources {
+          psc_endpoint {
+            forwarding_rule = "%s"
+          }
+        }
+      }
+      ingress_to {
+        operations {
+          service_name = "storage.googleapis.com"
+          method_selectors { method = "*" }
+        }
+        resources = ["*"]
+      }
+    }
+    egress_policies {
+      egress_from {
+        identity_type      = "ANY_IDENTITY"
+        source_restriction = "SOURCE_RESTRICTION_ENABLED"
+        sources {
+          psc_endpoint {
+            forwarding_rule = "%s"
+          }
+        }
+      }
+      egress_to {
+        operations {
+          service_name = "storage.googleapis.com"
+          method_selectors { method = "*" }
+        }
+        resources = ["*"]
+      }
+    }
+  }
+
+  spec {
+    restricted_services = ["storage.googleapis.com"]
+    ingress_policies {
+      ingress_from {
+        identity_type = "ANY_IDENTITY"
+        sources {
+          psc_endpoint {
+            forwarding_rule = "%s"
+          }
+        }
+      }
+      ingress_to {
+        operations {
+          service_name = "storage.googleapis.com"
+          method_selectors { method = "*" }
+        }
+        resources = ["*"]
+      }
+    }
+    egress_policies {
+      egress_from {
+        identity_type      = "ANY_IDENTITY"
+        source_restriction = "SOURCE_RESTRICTION_ENABLED"
+        sources {
+          psc_endpoint {
+            forwarding_rule = "%s"
+          }
+        }
+      }
+      egress_to {
+        operations {
+          service_name = "storage.googleapis.com"
+          method_selectors { method = "*" }
+        }
+        resources = ["*"]
+      }
+    }
+  }
+}
+`, org, policyTitle, perimeterTitleName, perimeterTitleName, forwardingRule, forwardingRule, forwardingRule, forwardingRule)
+}
+
+func testAccAccessContextManagerServicePerimeter_pscEndpoint_destroy(org, policyTitle, perimeterTitleName string) string {
+	return fmt.Sprintf(`
+data "google_project" "project" {}
+
+resource "google_access_context_manager_access_policy" "test-access" {
+  parent = "organizations/%s"
+  title  = "%s"
+  scopes = ["projects/${data.google_project.project.number}"]
+}
+
+resource "google_access_context_manager_service_perimeter" "test-access" {
+  parent = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
+  name   = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/servicePerimeters/%s"
+  title  = "%s"
+  status {
+    restricted_services = ["storage.googleapis.com"]
+  }
+}
+`, org, policyTitle, perimeterTitleName, perimeterTitleName)
+}
+
 func testAccAccessContextManagerServicePerimeter_nonGcpServicePatterns(org, policyTitle, levelTitleName, perimeterTitleName string) string {
 	return fmt.Sprintf(`
-# Access Policy Title: %s
-
-data "google_access_context_manager_access_policy" "test-access" {
+resource "google_access_context_manager_access_policy" "test-access" {
   parent = "organizations/%s"
+  title  = "%s"
 }
 
 resource "google_access_context_manager_access_level" "test-access" {
-  parent   = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}"
-  name     = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}/accessLevels/%s"
+  parent   = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
+  name     = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/%s"
   title    = "%s"
   basic {
     conditions {
@@ -576,17 +715,46 @@ resource "google_access_context_manager_access_level" "test-access" {
 }
 
 resource "google_access_context_manager_service_perimeter" "test-access" {
-  parent   = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}"
-  name     = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}/servicePerimeters/%s"
+  parent   = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
+  name     = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/servicePerimeters/%s"
   title    = "%s"
-  status {
-    access_levels = [google_access_context_manager_access_level.test-access.name]
 
+  use_explicit_dry_run_spec = true
+
+  spec {
+    access_levels = [google_access_context_manager_access_level.test-access.name]
+    
     vpc_accessible_services {
       enable_restriction = true
       allowed_services   = ["RESTRICTED-SERVICES"]
-
+      
       service_patterns_enforcement_scopes = ["GOOGLE_APIS_VIA_PRIVATE_PATH"]
+      allowed_service_patterns {
+        service = "storage.googleapis.com"
+      }
+      allowed_service_patterns {
+        pattern = "maps.googleapis.com/*"
+        modifiers {
+          add_request_header {
+            key   = "X-GoogApps-Allowed-Domains"
+            value = "google.com"
+          }
+        }
+      }
+    }
+  }
+
+  status {
+    access_levels = [google_access_context_manager_access_level.test-access.name]
+    
+    vpc_accessible_services {
+      enable_restriction = true
+      allowed_services   = ["RESTRICTED-SERVICES"]
+      
+      service_patterns_enforcement_scopes = ["GOOGLE_APIS_VIA_PRIVATE_PATH"]
+      allowed_service_patterns {
+        service = "storage.googleapis.com"
+      }
       allowed_service_patterns {
         pattern = "maps.googleapis.com/*"
         modifiers {
@@ -599,7 +767,7 @@ resource "google_access_context_manager_service_perimeter" "test-access" {
     }
   }
 }
-`, policyTitle, org, levelTitleName, levelTitleName, perimeterTitleName, perimeterTitleName)
+`, org, policyTitle, levelTitleName, levelTitleName, perimeterTitleName, perimeterTitleName)
 }
 
 // ----------------- Plural Test Case -----------------
@@ -626,15 +794,14 @@ func testAccAccessContextManagerServicePerimeters_nonGcpServicePatternsTest(t *t
 
 func testAccAccessContextManagerServicePerimeters_nonGcpServicePatterns(org, policyTitle, levelTitleName, perimeterTitleName string) string {
 	return fmt.Sprintf(`
-# Access Policy Title: %s
-
-data "google_access_context_manager_access_policy" "test-access" {
+resource "google_access_context_manager_access_policy" "test-access" {
   parent = "organizations/%s"
+  title  = "%s"
 }
 
 resource "google_access_context_manager_access_level" "test-access" {
-  parent   = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}"
-  name     = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}/accessLevels/%s"
+  parent   = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
+  name     = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/%s"
   title    = "%s"
   basic {
     conditions {
@@ -644,19 +811,48 @@ resource "google_access_context_manager_access_level" "test-access" {
 }
 
 resource "google_access_context_manager_service_perimeters" "test-access" {
-  parent   = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}"
+  parent   = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
 
   service_perimeters {
-    name           = "accessPolicies/${data.google_access_context_manager_access_policy.test-access.name}/servicePerimeters/%s"
+    name           = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/servicePerimeters/%s"
     title          = "%s"
-    status {
-      access_levels = [google_access_context_manager_access_level.test-access.name]
+    
+    use_explicit_dry_run_spec = true
 
+    spec {
+      access_levels = [google_access_context_manager_access_level.test-access.name]
+      
       vpc_accessible_services {
         enable_restriction = true
         allowed_services   = ["RESTRICTED-SERVICES"]
-
+        
         service_patterns_enforcement_scopes = ["GOOGLE_APIS_VIA_PRIVATE_PATH"]
+        allowed_service_patterns {
+          service = "storage.googleapis.com"
+        }
+        allowed_service_patterns {
+          pattern = "maps.googleapis.com/*"
+          modifiers {
+            add_request_header {
+              key   = "X-GoogApps-Allowed-Domains"
+              value = "google.com"
+            }
+          }
+        }
+      }
+    }
+
+    status {
+      access_levels = [google_access_context_manager_access_level.test-access.name]
+      
+      vpc_accessible_services {
+        enable_restriction = true
+        allowed_services   = ["RESTRICTED-SERVICES"]
+        
+        service_patterns_enforcement_scopes = ["GOOGLE_APIS_VIA_PRIVATE_PATH"]
+        allowed_service_patterns {
+          service = "storage.googleapis.com"
+        }
         allowed_service_patterns {
           pattern = "maps.googleapis.com/*"
           modifiers {
@@ -670,5 +866,5 @@ resource "google_access_context_manager_service_perimeters" "test-access" {
     }
   }
 }
-`, policyTitle, org, levelTitleName, levelTitleName, perimeterTitleName, perimeterTitleName)
+`, org, policyTitle, levelTitleName, levelTitleName, perimeterTitleName, perimeterTitleName)
 }

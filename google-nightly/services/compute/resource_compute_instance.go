@@ -144,6 +144,11 @@ var (
 		"shielded_instance_config.0.enable_vtpm",
 		"shielded_instance_config.0.enable_integrity_monitoring",
 	}
+
+	workloadIdentityConfigKeys = []string{
+		"workload_identity_config.0.identity",
+		"workload_identity_config.0.identity_certificate_enabled",
+	}
 )
 
 // This checks if the project provided in subnetwork's self_link matches
@@ -248,6 +253,26 @@ func ResourceComputeInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(20 * time.Minute),
 			Update: schema.DefaultTimeout(20 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
+		},
+
+		Identity: &schema.ResourceIdentity{
+			Version: 1,
+			SchemaFunc: func() map[string]*schema.Schema {
+				return map[string]*schema.Schema{
+					"project": {
+						Type:              schema.TypeString,
+						OptionalForImport: true,
+					},
+					"zone": {
+						Type:              schema.TypeString,
+						OptionalForImport: true,
+					},
+					"name": {
+						Type:              schema.TypeString,
+						RequiredForImport: true,
+					},
+				}
+			},
 		},
 
 		// A compute instance is more or less a superset of a compute instance
@@ -1167,7 +1192,7 @@ func ResourceComputeInstance() *schema.Resource {
 							Computed:     true,
 							ForceNew:     true,
 							AtLeastOneOf: schedulingKeys,
-							Description:  `Whether the instance is spot. If this is set as SPOT.`,
+							Description:  `Describes the desired provisioning model for the instance. Possible values are STANDARD, SPOT, FLEX_START, and RESERVATION_BOUND. For STANDARD, resources are provisioned immediately. For SPOT, resources are offered at a discount compared to standard pricing but may be preempted. For FLEX_START, resources are offered at a discount with flexible start times. For RESERVATION_BOUND, the instance is bound to a specific reservation and will only consume capacity from that reservation.`,
 						},
 
 						"instance_termination_action": {
@@ -1708,6 +1733,28 @@ be from 0 to 999,999,999 inclusive.`,
 				Default:     false,
 				Description: `Specifies whether the disks restored from source snapshots or source machine image should erase Windows specific VSS signature.`,
 			},
+			"workload_identity_config": {
+				Type:        schema.TypeList,
+				MaxItems:    1,
+				Optional:    true,
+				Description: `Workload identity config.`,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"identity": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							ForceNew:    true,
+							Description: `Identity SPIFFE id.`,
+						},
+						"identity_certificate_enabled": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							ForceNew:    true,
+							Description: `Specifies whether identity certificates are enabled.`,
+						},
+					},
+				},
+			},
 			//UDP schema start
 			"deletion_policy": tpgresource.DeletionPolicySchemaEntry("DELETE"),
 			//UDP schema end
@@ -1851,30 +1898,6 @@ func expandComputeInstance(project string, d *schema.ResourceData, config *trans
 		disks = append(disks, disk)
 	}
 
-	scheduling, err := expandScheduling(d.Get("scheduling"))
-	if err != nil {
-		return nil, fmt.Errorf("Error creating scheduling: %s", err)
-	}
-
-	params, err := expandParamsTyped(d)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating params: %s", err)
-	}
-
-	metadata, err := resourceInstanceMetadataTyped(d)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating metadata: %s", err)
-	}
-
-	partnerMetadataMap, err := resourceInstancePartnerMetadata(d)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating partner metadata: %s", err)
-	}
-	PartnerMetadata, err := convertPartnerMetadataToComputeTyped(partnerMetadataMap)
-	if err != nil {
-		return nil, fmt.Errorf("Error converting partner metadata: %s", err)
-	}
-
 	networkInterfaces, err := expandNetworkInterfacesTyped(d, config)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating network interfaces: %s", err)
@@ -1931,27 +1954,28 @@ func expandComputeInstance(project string, d *schema.ResourceData, config *trans
 		Description:              d.Get("description").(string),
 		Disks:                    disks,
 		MachineType:              machineTypeUrl,
-		Metadata:                 metadata,
-		PartnerMetadata:          PartnerMetadata,
 		Name:                     d.Get("name").(string),
 		NetworkInterfaces:        networkInterfaces,
 		NetworkPerformanceConfig: networkPerformanceConfig,
 		Tags:                     tags,
-		Params:                   params,
 		Labels:                   tpgresource.ExpandEffectiveLabels(d),
 		ServiceAccounts:          expandServiceAccountsTyped(d.Get("service_account").([]interface{})),
 		GuestAccelerators:        accels,
 		MinCpuPlatform:           d.Get("min_cpu_platform").(string),
-		Scheduling:               scheduling,
 		DeletionProtection:       d.Get("deletion_protection").(bool),
 		Hostname:                 d.Get("hostname").(string),
 		ForceSendFields:          []string{"CanIpForward", "DeletionProtection"},
-		AdvancedMachineFeatures:  expandAdvancedMachineFeaturesTyped(d),
 		ResourcePolicies:         tpgresource.ConvertStringArr(d.Get("resource_policies").([]interface{})),
 		ReservationAffinity:      reservationAffinity,
 		KeyRevocationActionType:  d.Get("key_revocation_action_type").(string),
 		InstanceEncryptionKey:    instanceEncryptionKey,
 		EraseWindowsVssSignature: d.Get("erase_windows_vss_signature").(bool),
+	}
+	if wic := expandWorkloadIdentityConfig(d); wic != nil {
+		instance.WorkloadIdentityConfig = &compute.WorkloadIdentityConfig{
+			Identity:                   wic["identity"].(string),
+			IdentityCertificateEnabled: wic["identityCertificateEnabled"].(bool),
+		}
 	}
 	if cic := expandConfidentialInstanceConfig(d); cic != nil {
 		instance.ConfidentialInstanceConfig = &compute.ConfidentialInstanceConfig{
@@ -2109,6 +2133,38 @@ func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return fmt.Errorf("Error converting instance: %s", err)
 	}
+	schedulingBody, err := expandScheduling(d.Get("scheduling"))
+	if err != nil {
+		return fmt.Errorf("Error creating scheduling: %s", err)
+	}
+	if schedulingBody != nil {
+		instanceBody["scheduling"] = schedulingBody
+	}
+	if amf := expandAdvancedMachineFeatures(d); amf != nil {
+		instanceBody["advancedMachineFeatures"] = amf
+	}
+	paramsBody, err := expandParams(d)
+	if err != nil {
+		return fmt.Errorf("Error creating params: %s", err)
+	}
+	instanceBody["params"] = paramsBody
+
+	metadataMap, err := resourceInstanceMetadata(d)
+	if err != nil {
+		return fmt.Errorf("Error creating metadata: %s", err)
+	}
+	instanceBody["metadata"] = metadataMap
+	partnerMetadataMap, err := resourceInstancePartnerMetadata(d)
+	if err != nil {
+		return fmt.Errorf("Error creating partner metadata: %s", err)
+	}
+	partnerMetadataConverted, err := convertPartnerMetadataToCompute(partnerMetadataMap)
+	if err != nil {
+		return fmt.Errorf("Error converting partner metadata: %s", err)
+	}
+	if len(partnerMetadataConverted) > 0 {
+		instanceBody["partnerMetadata"] = partnerMetadataConverted
+	}
 	insertUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instances")
 	if err != nil {
 		return fmt.Errorf("Error generating URL: %s", err)
@@ -2153,6 +2209,14 @@ func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) err
 				return fmt.Errorf("Error changing instance status after creation: %s", err)
 			}
 		}
+	}
+
+	if err := tpgresource.SetResourceIdentityAttributes(d, map[string]interface{}{
+		"project": project,
+		"zone":    z,
+		"name":    instance.Name,
+	}); err != nil {
+		return err
 	}
 
 	return resourceComputeInstanceRead(d, meta)
@@ -2217,7 +2281,11 @@ func resourceComputeInstanceRead(d *schema.ResourceData, meta interface{}) error
 
 	// Workaround: restore nanos from state since the API doesn't persist it (see comment above).
 	if hadNanos {
-		scheduling := flattenScheduling(instance.Scheduling)
+		schedulingMap, err := tpgresource.ConvertToMap(instance.Scheduling)
+		if err != nil {
+			return fmt.Errorf("Error converting scheduling for nanos workaround: %s", err)
+		}
+		scheduling := flattenScheduling(schedulingMap)
 		graceful_shutdown := scheduling[0]["graceful_shutdown"].([]interface{})[0].(map[string]interface{})
 		max_duration := graceful_shutdown["max_duration"].([]interface{})[0].(map[string]interface{})
 		max_duration["nanos"] = int64(savedNanos.(int))
@@ -2235,11 +2303,27 @@ func resourceComputeInstanceRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 
+	if err := tpgresource.SetResourceIdentityAttributes(d, map[string]interface{}{
+		"project": project,
+		"zone":    zone,
+		"name":    instance.Name,
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func populateComputeInstanceResourceData(d *schema.ResourceData, instance *compute.Instance, project, zone string, config *transport_tpg.Config) error {
-	if err := d.Set("metadata", flattenMetadataBeta(instance.Metadata)); err != nil {
+	var metadataMap map[string]interface{}
+	if instance.Metadata != nil {
+		var err error
+		metadataMap, err = tpgresource.ConvertToMap(instance.Metadata)
+		if err != nil {
+			return fmt.Errorf("Error converting metadata: %s", err)
+		}
+	}
+	if err := d.Set("metadata", flattenMetadataBeta(metadataMap)); err != nil {
 		return fmt.Errorf("Error setting metadata: %s", err)
 	}
 
@@ -2422,9 +2506,25 @@ func populateComputeInstanceResourceData(d *schema.ResourceData, instance *compu
 		return fmt.Errorf("Error setting scratch_disk: %s", err)
 	}
 
-	if err := d.Set("scheduling", flattenScheduling(instance.Scheduling)); err != nil {
+	// Workaroud: API doesn't update the scheduling.graceful_shutdown.max_duration.nanos field.
+	// To avoid diff, we need to set the value from the state not from API response.
+	schedulingMap, err := tpgresource.ConvertToMap(instance.Scheduling)
+	if err != nil {
+		return fmt.Errorf("Error converting scheduling: %s", err)
+	}
+	scheduling := flattenScheduling(schedulingMap)
+	if nanos, ok := d.GetOk("scheduling.0.graceful_shutdown.0.max_duration.0.nanos"); ok {
+		graceful_shutdown := scheduling[0]["graceful_shutdown"].([]interface{})[0].(map[string]interface{})
+		max_duration := graceful_shutdown["max_duration"].([]interface{})[0].(map[string]interface{})
+		max_duration["nanos"] = int64(nanos.(int))
+
+		graceful_shutdown["max_duration"] = []interface{}{max_duration}
+		scheduling[0]["graceful_shutdown"] = []interface{}{graceful_shutdown}
+	}
+	if err := d.Set("scheduling", scheduling); err != nil {
 		return fmt.Errorf("Error setting scheduling: %s", err)
 	}
+
 	if err := d.Set("guest_accelerator", flattenGuestAccelerators(guestAcceleratorsToInterface(instance.GuestAccelerators))); err != nil {
 		return fmt.Errorf("Error setting guest_accelerator: %s", err)
 	}
@@ -2491,7 +2591,11 @@ func populateComputeInstanceResourceData(d *schema.ResourceData, instance *compu
 			return fmt.Errorf("Error setting confidential_instance_config: %s", err)
 		}
 	}
-	if err := d.Set("advanced_machine_features", flattenAdvancedMachineFeaturesTyped(instance.AdvancedMachineFeatures)); err != nil {
+	amfMap, err := tpgresource.ConvertToMap(instance.AdvancedMachineFeatures)
+	if err != nil {
+		return fmt.Errorf("Error converting advanced_machine_features: %s", err)
+	}
+	if err := d.Set("advanced_machine_features", flattenAdvancedMachineFeatures(amfMap)); err != nil {
 		return fmt.Errorf("Error setting advanced_machine_features: %s", err)
 	}
 	if d.Get("desired_status") != "" {
@@ -2525,7 +2629,11 @@ func populateComputeInstanceResourceData(d *schema.ResourceData, instance *compu
 		return fmt.Errorf("Error setting instance_encryption_key: %s", err)
 	}
 	if instance.PartnerMetadata != nil {
-		partnerMetadata, err := flattenPartnerMetadata(convertPartnerMetadataFromCompute(instance.PartnerMetadata))
+		partnerMetadataMap, err := tpgresource.ConvertToMap(instance.PartnerMetadata)
+		if err != nil {
+			return fmt.Errorf("Error converting partner metadata: %s", err)
+		}
+		partnerMetadata, err := flattenPartnerMetadata(convertPartnerMetadataFromCompute(partnerMetadataMap))
 		if err != nil {
 			return fmt.Errorf("Error parsing partner metadata: %s", err)
 		}
@@ -2893,14 +3001,9 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 	bootRequiredSchedulingChange := schedulingHasChangeRequiringReboot(d)
 	bootNotRequiredSchedulingChange := schedulingHasChangeWithoutReboot(d)
 	if bootNotRequiredSchedulingChange {
-		scheduling, err := expandScheduling(d.Get("scheduling"))
+		schedulingBody, err := expandScheduling(d.Get("scheduling"))
 		if err != nil {
 			return fmt.Errorf("Error creating request data to update scheduling: %s", err)
-		}
-
-		schedulingBody, err := tpgresource.ConvertToMap(scheduling)
-		if err != nil {
-			return fmt.Errorf("Error converting scheduling: %s", err)
 		}
 		url, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instances/{{name}}/setScheduling")
 		if err != nil {
@@ -3923,14 +4026,9 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 
 		if bootRequiredSchedulingChange {
-			scheduling, err := expandScheduling(d.Get("scheduling"))
+			schedulingBody, err := expandScheduling(d.Get("scheduling"))
 			if err != nil {
 				return fmt.Errorf("Error creating request data to update scheduling: %s", err)
-			}
-
-			schedulingBody, err := tpgresource.ConvertToMap(scheduling)
-			if err != nil {
-				return fmt.Errorf("Error converting scheduling: %s", err)
 			}
 			url, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instances/{{name}}/setScheduling")
 			if err != nil {
@@ -4047,6 +4145,14 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 
 	// We made it, disable partial mode
 	d.Partial(false)
+
+	if err := tpgresource.SetResourceIdentityAttributes(d, map[string]interface{}{
+		"project": project,
+		"zone":    zone,
+		"name":    instance.Name,
+	}); err != nil {
+		return err
+	}
 
 	return resourceComputeInstanceRead(d, meta)
 }

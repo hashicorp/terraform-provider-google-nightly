@@ -18,6 +18,7 @@ fields:
     - api_field: servicePerimeters.spec.egressPolicies.egressFrom.identityType
     - api_field: servicePerimeters.spec.egressPolicies.egressFrom.sourceRestriction
     - api_field: servicePerimeters.spec.egressPolicies.egressFrom.sources.accessLevel
+    - api_field: servicePerimeters.spec.egressPolicies.egressFrom.sources.pscEndpoint.forwardingRule
     - api_field: servicePerimeters.spec.egressPolicies.egressFrom.sources.resource
     - api_field: servicePerimeters.spec.egressPolicies.egressTo.externalResources
     - api_field: servicePerimeters.spec.egressPolicies.egressTo.operations.methodSelectors.method
@@ -29,6 +30,7 @@ fields:
     - api_field: servicePerimeters.spec.ingressPolicies.ingressFrom.identities
     - api_field: servicePerimeters.spec.ingressPolicies.ingressFrom.identityType
     - api_field: servicePerimeters.spec.ingressPolicies.ingressFrom.sources.accessLevel
+    - api_field: servicePerimeters.spec.ingressPolicies.ingressFrom.sources.pscEndpoint.forwardingRule
     - api_field: servicePerimeters.spec.ingressPolicies.ingressFrom.sources.resource
     - api_field: servicePerimeters.spec.ingressPolicies.ingressTo.operations.methodSelectors.method
     - api_field: servicePerimeters.spec.ingressPolicies.ingressTo.operations.methodSelectors.permission
@@ -50,6 +52,7 @@ fields:
     - api_field: servicePerimeters.status.egressPolicies.egressFrom.identityType
     - api_field: servicePerimeters.status.egressPolicies.egressFrom.sourceRestriction
     - api_field: servicePerimeters.status.egressPolicies.egressFrom.sources.accessLevel
+    - api_field: servicePerimeters.status.egressPolicies.egressFrom.sources.pscEndpoint.forwardingRule
     - api_field: servicePerimeters.status.egressPolicies.egressFrom.sources.resource
     - api_field: servicePerimeters.status.egressPolicies.egressTo.externalResources
     - api_field: servicePerimeters.status.egressPolicies.egressTo.operations.methodSelectors.method
@@ -61,6 +64,7 @@ fields:
     - api_field: servicePerimeters.status.ingressPolicies.ingressFrom.identities
     - api_field: servicePerimeters.status.ingressPolicies.ingressFrom.identityType
     - api_field: servicePerimeters.status.ingressPolicies.ingressFrom.sources.accessLevel
+    - api_field: servicePerimeters.status.ingressPolicies.ingressFrom.sources.pscEndpoint.forwardingRule
     - api_field: servicePerimeters.status.ingressPolicies.ingressFrom.sources.resource
     - api_field: servicePerimeters.status.ingressPolicies.ingressTo.operations.methodSelectors.method
     - api_field: servicePerimeters.status.ingressPolicies.ingressTo.operations.methodSelectors.permission

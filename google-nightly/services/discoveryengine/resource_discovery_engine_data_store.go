@@ -167,6 +167,17 @@ string with a length limit of 128 characters.`,
 				Description: `The geographic location where the data store should reside. The value can
 only be one of "global", "us" and "eu".`,
 			},
+			"acl_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Description: `Immutable. Whether data in the DataStore has ACL information. If set to 'true',
+the source data must have ACL. ACL will be ingested when data is ingested by
+DocumentService.ImportDocuments methods. When ACL is enabled for the DataStore,
+Document can't be accessed by calling DocumentService.GetDocument or
+DocumentService.ListDocuments. Currently ACL is only supported in the 'GENERIC'
+industry vertical with non-'PUBLIC_WEBSITE' content config.`,
+			},
 			"advanced_site_search_config": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -270,10 +281,20 @@ config will be applied to all file types for Document parsing.`,
 										MaxItems:    1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
+												"enable_get_processed_document": {
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Description: `If true, the processed document will be made available for the GetProcessedDocument API.`,
+												},
 												"enable_image_annotation": {
 													Type:        schema.TypeBool,
 													Optional:    true,
 													Description: `If true, the LLM based annotation is added to the image during parsing.`,
+												},
+												"enable_llm_layout_parsing": {
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Description: `If true, the pdf layout will be refined using an LLM.`,
 												},
 												"enable_table_annotation": {
 													Type:        schema.TypeBool,
@@ -365,10 +386,20 @@ config will be applied to all file types for Document parsing.`,
 										MaxItems:    1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
+												"enable_get_processed_document": {
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Description: `If true, the processed document will be made available for the GetProcessedDocument API.`,
+												},
 												"enable_image_annotation": {
 													Type:        schema.TypeBool,
 													Optional:    true,
 													Description: `If true, the LLM based annotation is added to the image during parsing.`,
+												},
+												"enable_llm_layout_parsing": {
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Description: `If true, the pdf layout will be refined using an LLM.`,
 												},
 												"enable_table_annotation": {
 													Type:        schema.TypeBool,
@@ -543,6 +574,12 @@ func resourceDiscoveryEngineDataStoreCreate(d *schema.ResourceData, meta interfa
 		return err
 	} else if v, ok := d.GetOkExists("content_config"); !tpgresource.IsEmptyValue(reflect.ValueOf(contentConfigProp)) && (ok || !reflect.DeepEqual(v, contentConfigProp)) {
 		obj["contentConfig"] = contentConfigProp
+	}
+	aclEnabledProp, err := expandDiscoveryEngineDataStoreAclEnabled(d.Get("acl_enabled"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("acl_enabled"); !tpgresource.IsEmptyValue(reflect.ValueOf(aclEnabledProp)) && (ok || !reflect.DeepEqual(v, aclEnabledProp)) {
+		obj["aclEnabled"] = aclEnabledProp
 	}
 	advancedSiteSearchConfigProp, err := expandDiscoveryEngineDataStoreAdvancedSiteSearchConfig(d.Get("advanced_site_search_config"), d, config)
 	if err != nil {
@@ -949,6 +986,10 @@ func flattenDiscoveryEngineDataStoreContentConfig(v interface{}, d *schema.Resou
 	return v
 }
 
+func flattenDiscoveryEngineDataStoreAclEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenDiscoveryEngineDataStoreAdvancedSiteSearchConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return nil
@@ -1093,6 +1134,10 @@ func flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfig
 		flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableTableAnnotation(original["enableTableAnnotation"], d, config)
 	transformed["enable_image_annotation"] =
 		flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableImageAnnotation(original["enableImageAnnotation"], d, config)
+	transformed["enable_llm_layout_parsing"] =
+		flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableLlmLayoutParsing(original["enableLlmLayoutParsing"], d, config)
+	transformed["enable_get_processed_document"] =
+		flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableGetProcessedDocument(original["enableGetProcessedDocument"], d, config)
 	transformed["structured_content_types"] =
 		flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigStructuredContentTypes(original["structuredContentTypes"], d, config)
 	transformed["exclude_html_elements"] =
@@ -1108,6 +1153,14 @@ func flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfig
 }
 
 func flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableImageAnnotation(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableLlmLayoutParsing(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableGetProcessedDocument(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1179,6 +1232,10 @@ func flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverrid
 		flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableTableAnnotation(original["enableTableAnnotation"], d, config)
 	transformed["enable_image_annotation"] =
 		flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableImageAnnotation(original["enableImageAnnotation"], d, config)
+	transformed["enable_llm_layout_parsing"] =
+		flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableLlmLayoutParsing(original["enableLlmLayoutParsing"], d, config)
+	transformed["enable_get_processed_document"] =
+		flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableGetProcessedDocument(original["enableGetProcessedDocument"], d, config)
 	transformed["structured_content_types"] =
 		flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigStructuredContentTypes(original["structuredContentTypes"], d, config)
 	transformed["exclude_html_elements"] =
@@ -1194,6 +1251,14 @@ func flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverrid
 }
 
 func flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableImageAnnotation(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableLlmLayoutParsing(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableGetProcessedDocument(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1230,6 +1295,10 @@ func expandDiscoveryEngineDataStoreSolutionTypes(v interface{}, d tpgresource.Te
 }
 
 func expandDiscoveryEngineDataStoreContentConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandDiscoveryEngineDataStoreAclEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1496,6 +1565,20 @@ func expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigL
 		transformed["enableImageAnnotation"] = transformedEnableImageAnnotation
 	}
 
+	transformedEnableLlmLayoutParsing, err := expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableLlmLayoutParsing(original["enable_llm_layout_parsing"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnableLlmLayoutParsing); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enableLlmLayoutParsing"] = transformedEnableLlmLayoutParsing
+	}
+
+	transformedEnableGetProcessedDocument, err := expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableGetProcessedDocument(original["enable_get_processed_document"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnableGetProcessedDocument); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enableGetProcessedDocument"] = transformedEnableGetProcessedDocument
+	}
+
 	transformedStructuredContentTypes, err := expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigStructuredContentTypes(original["structured_content_types"], d, config)
 	if err != nil {
 		return nil, err
@@ -1532,6 +1615,14 @@ func expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigL
 }
 
 func expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableImageAnnotation(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableLlmLayoutParsing(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandDiscoveryEngineDataStoreDocumentProcessingConfigDefaultParsingConfigLayoutParsingConfigEnableGetProcessedDocument(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1665,6 +1756,20 @@ func expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverride
 		transformed["enableImageAnnotation"] = transformedEnableImageAnnotation
 	}
 
+	transformedEnableLlmLayoutParsing, err := expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableLlmLayoutParsing(original["enable_llm_layout_parsing"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnableLlmLayoutParsing); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enableLlmLayoutParsing"] = transformedEnableLlmLayoutParsing
+	}
+
+	transformedEnableGetProcessedDocument, err := expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableGetProcessedDocument(original["enable_get_processed_document"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnableGetProcessedDocument); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enableGetProcessedDocument"] = transformedEnableGetProcessedDocument
+	}
+
 	transformedStructuredContentTypes, err := expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigStructuredContentTypes(original["structured_content_types"], d, config)
 	if err != nil {
 		return nil, err
@@ -1704,6 +1809,14 @@ func expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverride
 	return v, nil
 }
 
+func expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableLlmLayoutParsing(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigEnableGetProcessedDocument(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandDiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverridesLayoutParsingConfigStructuredContentTypes(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
@@ -1739,6 +1852,9 @@ func ResourceDiscoveryEngineDataStoreFlatten(d *schema.ResourceData, meta interf
 		return fmt.Errorf("Error reading DataStore: %s", err)
 	}
 	if err = d.Set("content_config", flattenDiscoveryEngineDataStoreContentConfig(res["contentConfig"], d, config)); err != nil {
+		return fmt.Errorf("Error reading DataStore: %s", err)
+	}
+	if err = d.Set("acl_enabled", flattenDiscoveryEngineDataStoreAclEnabled(res["aclEnabled"], d, config)); err != nil {
 		return fmt.Errorf("Error reading DataStore: %s", err)
 	}
 	if err = d.Set("advanced_site_search_config", flattenDiscoveryEngineDataStoreAdvancedSiteSearchConfig(res["advancedSiteSearchConfig"], d, config)); err != nil {

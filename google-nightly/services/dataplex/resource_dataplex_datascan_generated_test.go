@@ -20,6 +20,7 @@ package dataplex_test
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -44,6 +45,7 @@ import (
 var (
 	_ = fmt.Sprintf
 	_ = log.Print
+	_ = regexp.MatchString
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
@@ -900,7 +902,9 @@ resource "google_dataplex_datascan" "documentation" {
     }
   }
 
-  data_documentation_spec {}
+  data_documentation_spec {
+    catalog_publishing_enabled = true
+  }
 
   project = "%{project_name}"
 }
