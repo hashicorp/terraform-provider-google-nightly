@@ -20,6 +20,7 @@ package compute_test
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -41,6 +42,7 @@ import (
 var (
 	_ = fmt.Sprintf
 	_ = log.Print
+	_ = regexp.MatchString
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
@@ -75,7 +77,7 @@ func TestAccComputeInterconnect_computeInterconnectBasicTestExample(t *testing.T
 				ResourceName:            "google_compute_interconnect.example-interconnect",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"labels", "location", "params", "terraform_labels"},
+				ImportStateVerifyIgnore: []string{"effective_location", "labels", "location", "params", "terraform_labels"},
 			},
 			{
 				ResourceName:       "google_compute_interconnect.example-interconnect",
@@ -96,7 +98,7 @@ resource "google_compute_interconnect" "example-interconnect" {
   customer_name        = "internal_customer" # Special customer only available for Google testing.
   interconnect_type    = "DEDICATED"
   link_type            = "LINK_TYPE_ETHERNET_10G_LR"
-  location             = "https://www.googleapis.com/compute/v1/${data.google_project.project.id}/global/interconnectLocations/z2z-us-east4-zone1-lciadl-a" # Special location only available for Google testing.
+  location             = "https://www.googleapis.com/compute/v1/projects/${data.google_project.project.project_id}/global/interconnectLocations/z2z-us-east4-zone1-lciadl-a" # Special location only available for Google testing.
   requested_link_count = 1
   admin_enabled        = true
   description          = "example description"

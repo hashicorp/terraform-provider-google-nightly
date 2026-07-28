@@ -20,6 +20,7 @@ package compute_test
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -41,6 +42,7 @@ import (
 var (
 	_ = fmt.Sprintf
 	_ = log.Print
+	_ = regexp.MatchString
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
@@ -245,7 +247,7 @@ func TestAccComputeRouter_routerNccGwExample(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckComputeRouterDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -270,13 +272,11 @@ func TestAccComputeRouter_routerNccGwExample(t *testing.T) {
 func testAccComputeRouter_routerNccGwExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_compute_network" "network" {
-  provider = google-beta
   name        = "%{network_name}"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "subnetwork" {
-  provider = google-beta
   name          = "tf-test-subnet%{random_suffix}"
   ip_cidr_range = "10.0.0.0/28"
   region        = "us-central1"
@@ -284,7 +284,6 @@ resource "google_compute_subnetwork" "subnetwork" {
 }
 
 resource "google_network_connectivity_hub" "basic_hub" {
-  provider = google-beta
   name        = "%{hub_name}"
   description = "A sample hub"
   labels = {
@@ -294,7 +293,6 @@ resource "google_network_connectivity_hub" "basic_hub" {
 }
 
 resource "google_network_connectivity_spoke" "primary" {
-  provider = google-beta
   name        = "%{ncc_gw_name}"
   location = "us-central1"
   description = "A sample spoke of type Gateway"
@@ -313,7 +311,6 @@ resource "google_network_connectivity_spoke" "primary" {
 
 
 resource "google_compute_router" "foobar" {
-  provider = google-beta
   name    = "%{router_name}"
   bgp {
     asn               = 64514

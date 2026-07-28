@@ -20,6 +20,7 @@ package discoveryengine_test
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -41,6 +42,7 @@ import (
 var (
 	_ = fmt.Sprintf
 	_ = log.Print
+	_ = regexp.MatchString
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
@@ -373,18 +375,29 @@ resource "google_discovery_engine_data_store" "document_processing_config_layout
   document_processing_config {
     default_parsing_config {
       layout_parsing_config {
-        enable_table_annotation  = true
-        enable_image_annotation  = true
-        structured_content_types = ["shareholder-structure"]
-        exclude_html_elements    = ["nav", "footer"]
-        exclude_html_classes     = ["overlay", "screenreader"]
-        exclude_html_ids         = ["cookie-banner"]
+        enable_table_annotation       = true
+        enable_image_annotation       = true
+        enable_llm_layout_parsing     = true
+        enable_get_processed_document = true
+        structured_content_types      = ["shareholder-structure"]
+        exclude_html_elements         = ["nav", "footer"]
+        exclude_html_classes          = ["overlay", "screenreader"]
+        exclude_html_ids              = ["cookie-banner"]
       }
     }
     chunking_config {
       layout_based_chunking_config {
         chunk_size                = 500
         include_ancestor_headings = true
+      }
+    }
+    parsing_config_overrides {
+      file_type = "pdf"
+      layout_parsing_config {
+        enable_table_annotation       = true
+        enable_image_annotation       = true
+        enable_llm_layout_parsing     = true
+        enable_get_processed_document = true
       }
     }
   }
@@ -441,6 +454,61 @@ resource "google_discovery_engine_data_store" "advanced_site_search_config" {
   advanced_site_search_config {
     disable_initial_index = true
     disable_automatic_refresh = true
+  }
+}
+`, context)
+}
+
+func TestAccDiscoveryEngineDataStore_discoveryengineDatastoreAclConfigExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"data_store_id": "tf-test-data-store-id" + randomSuffix,
+		"random_suffix": randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckDiscoveryEngineDataStoreDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDiscoveryEngineDataStore_discoveryengineDatastoreAclConfigExample(context),
+			},
+			{
+				ResourceName:            "google_discovery_engine_data_store.acl_config",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"create_advanced_site_search", "data_store_id", "kms_key_name", "location", "skip_default_schema_creation"},
+			},
+			{
+				ResourceName:       "google_discovery_engine_data_store.acl_config",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccDiscoveryEngineDataStore_discoveryengineDatastoreAclConfigExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_discovery_engine_data_store" "acl_config" {
+  location                     = "global"
+  data_store_id                = "%{data_store_id}"
+  display_name                 = "tf-test-acl-datastore"
+  industry_vertical            = "GENERIC"
+  content_config               = "CONTENT_REQUIRED"
+  solution_types               = ["SOLUTION_TYPE_SEARCH"]
+  create_advanced_site_search  = false
+  acl_enabled                  = true
+
+  document_processing_config {
+    default_parsing_config {
+      digital_parsing_config {}
+    }
   }
 }
 `, context)

@@ -3849,6 +3849,36 @@ func TestAccContainerCluster_withNodePoolNodeDrainConfig(t *testing.T) {
 	})
 }
 
+func TestAccContainerCluster_withNodePoolMaintenancePolicy(t *testing.T) {
+	t.Parallel()
+
+	cluster := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	np := fmt.Sprintf("tf-test-np-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_withNodePoolMaintenancyPolicy(cluster, np, networkName, subnetworkName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.with_node_pool_maintenance_policy",
+						"node_pool.0.maintenance_policy.0.exclusion_until_end_of_support.0.enabled", "true"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.with_node_pool_maintenance_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"min_master_version", "deletion_protection"},
+			},
+		},
+	})
+}
+
 func TestAccContainerCluster_withClusterDisruptionBudget(t *testing.T) {
 	t.Parallel()
 
@@ -3875,7 +3905,7 @@ func TestAccContainerCluster_withClusterDisruptionBudget(t *testing.T) {
 	})
 }
 
-func TestAccContainerCluster_withMaintenanceWindow(t *testing.T) {
+func TestAccContainerCluster_withDailyMaintenanceWindow(t *testing.T) {
 	t.Parallel()
 
 	clusterName := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
@@ -3889,7 +3919,7 @@ func TestAccContainerCluster_withMaintenanceWindow(t *testing.T) {
 		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccContainerCluster_withMaintenanceWindow(clusterName, "03:00", networkName, subnetworkName),
+				Config: testAccContainerCluster_withDailyMaintenanceWindow(clusterName, "03:00", networkName, subnetworkName),
 			},
 			{
 				ResourceName:            resourceName,
@@ -3898,16 +3928,70 @@ func TestAccContainerCluster_withMaintenanceWindow(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"deletion_protection"},
 			},
 			{
-				Config: testAccContainerCluster_withMaintenanceWindow(clusterName, "", networkName, subnetworkName),
+				Config: testAccContainerCluster_withDailyMaintenanceWindow(clusterName, "", networkName, subnetworkName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr(resourceName,
 						"maintenance_policy.0.daily_maintenance_window.0.start_time"),
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.recurring_maintenance_window.0.window_start_time"),
 				),
 			},
 			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+				// maintenance_policy.# = 0 is equivalent to no maintenance policy at all,
+				// but will still cause an import diff
+				ImportStateVerifyIgnore: []string{"maintenance_policy.#", "deletion_protection"},
+			},
+		},
+	})
+}
+
+func TestAccContainerCluster_withRecurringTimeWindow(t *testing.T) {
+	t.Parallel()
+	cluster := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	resourceName := "google_container_cluster.with_recurring_maintenance_window"
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_withRecurringTimeWindow(cluster, "2019-01-01T00:00:00Z", "2019-01-02T00:00:00Z", networkName, subnetworkName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.daily_maintenance_window.0.start_time"),
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.recurring_maintenance_window.0.window_start_time"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportStateIdPrefix:     "us-central1-a/",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
+			},
+			{
+				Config: testAccContainerCluster_withRecurringTimeWindow(cluster, "", "", networkName, subnetworkName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.daily_maintenance_window.0.start_time"),
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.recurring_window.0.start_time"),
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.recurring_maintenance_window.0.window_start_time"),
+				),
+			},
+			{
+				ResourceName:        resourceName,
+				ImportStateIdPrefix: "us-central1-a/",
+				ImportState:         true,
+				ImportStateVerify:   true,
 				// maintenance_policy.# = 0 is equivalent to no maintenance policy at all,
 				// but will still cause an import diff
 				ImportStateVerifyIgnore: []string{"maintenance_policy.#", "deletion_protection"},
@@ -3929,10 +4013,12 @@ func TestAccContainerCluster_withRecurringMaintenanceWindow(t *testing.T) {
 		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccContainerCluster_withRecurringMaintenanceWindow(cluster, "2019-01-01T00:00:00Z", "2019-01-02T00:00:00Z", networkName, subnetworkName),
+				Config: testAccContainerCluster_withRecurringMaintenanceWindow(cluster, 2019, 1, 1, 10, 0, "24h", networkName, subnetworkName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr(resourceName,
 						"maintenance_policy.0.daily_maintenance_window.0.start_time"),
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.recurring_window.0.start_time"),
 				),
 			},
 			{
@@ -3943,22 +4029,22 @@ func TestAccContainerCluster_withRecurringMaintenanceWindow(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"deletion_protection"},
 			},
 			{
-				Config: testAccContainerCluster_withRecurringMaintenanceWindow(cluster, "", "", networkName, subnetworkName),
+				Config: testAccContainerCluster_withRecurringMaintenanceWindow(cluster, 0, 0, 0, 10, 0, "4h", networkName, subnetworkName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr(resourceName,
 						"maintenance_policy.0.daily_maintenance_window.0.start_time"),
 					resource.TestCheckNoResourceAttr(resourceName,
 						"maintenance_policy.0.recurring_window.0.start_time"),
+					resource.TestCheckNoResourceAttr(resourceName,
+						"maintenance_policy.0.recurring_maintenance_window.0.delay_until.0.year"),
 				),
 			},
 			{
-				ResourceName:        resourceName,
-				ImportStateIdPrefix: "us-central1-a/",
-				ImportState:         true,
-				ImportStateVerify:   true,
-				// maintenance_policy.# = 0 is equivalent to no maintenance policy at all,
-				// but will still cause an import diff
-				ImportStateVerifyIgnore: []string{"maintenance_policy.#", "deletion_protection"},
+				ResourceName:            resourceName,
+				ImportStateIdPrefix:     "us-central1-a/",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
 			},
 		},
 	})
@@ -11778,6 +11864,33 @@ resource "google_container_cluster" "with_node_pool_node_drain_config" {
 `, cluster, np, privateName, privateVal, networkName, subnetworkName)
 }
 
+func testAccContainerCluster_withNodePoolMaintenancyPolicy(cluster, np, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1a" {
+  location = "us-central1-a"
+}
+
+resource "google_container_cluster" "with_node_pool_maintenance_policy" {
+  name     = "%s"
+  location = "us-central1-a"
+  min_master_version = data.google_container_engine_versions.central1a.latest_master_version
+  node_pool {
+    name       = "%s"
+    initial_node_count = 1
+	maintenance_policy {
+		exclusion_until_end_of_support {
+			enabled = true
+		}
+	}
+  }
+
+  network    = "%s"
+  subnetwork = "%s"
+  deletion_protection = false
+}
+`, cluster, np, networkName, subnetworkName)
+}
+
 func testAccContainerCluster_withClusterDisruptionBudget(clusterName, interval, networkName, subnetworkName string) string {
 	return fmt.Sprintf(`
 resource "google_container_cluster" "with_cluster_disruption_budget" {
@@ -11802,7 +11915,7 @@ resource "google_container_cluster" "with_cluster_disruption_budget" {
 `, clusterName, interval, interval, networkName, subnetworkName)
 }
 
-func testAccContainerCluster_withMaintenanceWindow(clusterName, startTime, networkName, subnetworkName string) string {
+func testAccContainerCluster_withDailyMaintenanceWindow(clusterName, startTime, networkName, subnetworkName string) string {
 	maintenancePolicy := ""
 	if len(startTime) > 0 {
 		maintenancePolicy = fmt.Sprintf(`
@@ -11828,7 +11941,7 @@ resource "google_container_cluster" "with_maintenance_window" {
 `, clusterName, maintenancePolicy, networkName, subnetworkName)
 }
 
-func testAccContainerCluster_withRecurringMaintenanceWindow(clusterName, startTime, endTime, networkName, subnetworkName string) string {
+func testAccContainerCluster_withRecurringTimeWindow(clusterName, startTime, endTime, networkName, subnetworkName string) string {
 	maintenancePolicy := ""
 	if len(startTime) > 0 {
 		maintenancePolicy = fmt.Sprintf(`
@@ -11854,6 +11967,51 @@ resource "google_container_cluster" "with_recurring_maintenance_window" {
   deletion_protection = false
 }
 `, clusterName, maintenancePolicy, networkName, subnetworkName)
+
+}
+
+func testAccContainerCluster_withRecurringMaintenanceWindow(clusterName string, startYear, startMonth, startDay, startHours, startMinutes int, duration string, networkName, subnetworkName string) string {
+	maintenancePolicy := ""
+	delayUntil := ""
+	if startYear != 0 && startMonth != 0 && startDay != 0 {
+		delayUntil = fmt.Sprintf(`
+			delay_until {
+				year  = %d
+				month = %d
+				day   = %d
+			}
+		`, startYear, startMonth, startDay)
+	}
+
+	maintenancePolicy = fmt.Sprintf(`
+		maintenance_policy {
+			recurring_maintenance_window {
+			  %s
+		
+			  window_duration = "%s"
+		
+			  window_start_time {
+				hours = %d
+				minutes = %d
+				seconds = 0
+			  }
+			  recurrence = "FREQ=DAILY"
+			}
+		}
+		`, delayUntil, duration, startHours, startMinutes)
+
+	return fmt.Sprintf(`
+		resource "google_container_cluster" "with_recurring_maintenance_window" {
+		  name               = "%s"
+		  location           = "us-central1-a"
+		  initial_node_count = 1
+		  %s
+		  network    = "%s"
+		  subnetwork = "%s"
+		
+		  deletion_protection = false
+		}
+	`, clusterName, maintenancePolicy, networkName, subnetworkName)
 
 }
 
@@ -18501,6 +18659,103 @@ func TestAccContainerCluster_withNodeCreationConfig(t *testing.T) {
 	})
 }
 
+func TestAccContainerCluster_withCustomNodeInitGcs(t *testing.T) {
+	t.Parallel()
+
+	cluster := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	bucketName := fmt.Sprintf("tf-test-bucket-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_withCustomNodeInitGcs(cluster, bucketName, networkName, subnetworkName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.primary", "node_config.0.linux_node_config.0.custom_node_init.0.init_script.0.gcs_uri", fmt.Sprintf("gs://%s/script.sh", bucketName)),
+					resource.TestCheckResourceAttrSet("google_container_cluster.primary", "node_config.0.linux_node_config.0.custom_node_init.0.init_script.0.gcs_generation"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection", "min_master_version"},
+			},
+		},
+	})
+}
+
+func TestAccContainerCluster_withCustomNodeInitSecret(t *testing.T) {
+	t.Parallel()
+
+	cluster := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	secretId := fmt.Sprintf("tf-test-secret-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"time": {},
+		},
+		CheckDestroy: testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_withCustomNodeInitSecret(cluster, secretId, networkName, subnetworkName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("google_container_cluster.primary", "node_config.0.linux_node_config.0.custom_node_init.0.init_script.0.gcp_secret_manager_secret_uri"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection", "min_master_version"},
+			},
+		},
+	})
+}
+
+func TestAccContainerCluster_withCustomNodeInitInline(t *testing.T) {
+	t.Parallel()
+
+	cluster := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	bucketName := fmt.Sprintf("tf-test-bucket-%s", acctest.RandString(t, 10))
+	secretId := fmt.Sprintf("tf-test-secret-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"time": {},
+		},
+		CheckDestroy: testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_withCustomNodeInitInline(cluster, bucketName, secretId, networkName, subnetworkName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.primary", "node_pool.0.node_config.0.linux_node_config.0.custom_node_init.0.init_script.0.gcs_uri", fmt.Sprintf("gs://%s/script.sh", bucketName)),
+					resource.TestCheckResourceAttrSet("google_container_cluster.primary", "node_pool.0.node_config.0.linux_node_config.0.custom_node_init.0.init_script.0.gcs_generation"),
+					resource.TestCheckResourceAttrSet("google_container_cluster.primary", "node_pool.1.node_config.0.linux_node_config.0.custom_node_init.0.init_script.0.gcp_secret_manager_secret_uri"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection", "min_master_version"},
+			},
+		},
+	})
+}
+
 func testAccContainerCluster_withNodeCreationConfig(name, networkName, subnetworkName string, mode string) string {
 	return fmt.Sprintf(`
 resource "google_container_cluster" "primary" {
@@ -18515,6 +18770,211 @@ resource "google_container_cluster" "primary" {
   }
 }
  `, name, networkName, subnetworkName, mode)
+}
+
+func testAccContainerCluster_withCustomNodeInitGcs(cluster, bucket, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1a" {
+  location = "us-central1-a"
+}
+
+resource "google_storage_bucket" "bucket" {
+  name     = "%s"
+  location = "US"
+  force_destroy = true
+}
+
+resource "google_storage_bucket_object" "script" {
+  name   = "script.sh"
+  bucket = google_storage_bucket.bucket.name
+  content = "#!/bin/bash\necho 'Hello World' > /tmp/hello.txt"
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1-a"
+  initial_node_count = 1
+  min_master_version = data.google_container_engine_versions.central1a.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork    = "%s"
+
+  node_config {
+    image_type = "COS_CONTAINERD"
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+    ]
+    linux_node_config {
+      custom_node_init {
+        init_script {
+          gcs_uri = "gs://${google_storage_bucket.bucket.name}/${google_storage_bucket_object.script.name}"
+          gcs_generation = google_storage_bucket_object.script.generation
+        }
+      }
+    }
+  }
+}
+`, bucket, cluster, networkName, subnetworkName)
+}
+
+func testAccContainerCluster_withCustomNodeInitSecret(cluster, secretId, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1a" {
+  location = "us-central1-a"
+}
+
+data "google_project" "project" {}
+
+resource "google_secret_manager_secret" "secret" {
+  secret_id = "%s"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "version" {
+  secret = google_secret_manager_secret.secret.id
+  secret_data = "#!/bin/bash\necho 'Hello World' > /tmp/hello.txt"
+}
+
+resource "google_secret_manager_secret_iam_member" "secret_accessor" {
+  secret_id = google_secret_manager_secret.secret.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
+
+resource "time_sleep" "wait_60_seconds" {
+  create_duration = "60s"
+  depends_on = [
+    google_secret_manager_secret_iam_member.secret_accessor
+  ]
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1-a"
+  initial_node_count = 1
+  min_master_version = data.google_container_engine_versions.central1a.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork    = "%s"
+
+  node_config {
+    image_type = "COS_CONTAINERD"
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+    ]
+    linux_node_config {
+      custom_node_init {
+        init_script {
+          gcp_secret_manager_secret_uri = google_secret_manager_secret_version.version.name
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    time_sleep.wait_60_seconds
+  ]
+}
+`, secretId, cluster, networkName, subnetworkName)
+}
+
+func testAccContainerCluster_withCustomNodeInitInline(cluster, bucket, secretId, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1a" {
+  location = "us-central1-a"
+}
+
+data "google_project" "project" {}
+
+resource "google_storage_bucket" "bucket" {
+  name     = "%s"
+  location = "US"
+  force_destroy = true
+}
+
+resource "google_storage_bucket_object" "script" {
+  name   = "script.sh"
+  bucket = google_storage_bucket.bucket.name
+  content = "#!/bin/bash\necho 'Hello World' > /tmp/hello.txt"
+}
+
+resource "google_secret_manager_secret" "secret" {
+  secret_id = "%s"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "version" {
+  secret = google_secret_manager_secret.secret.id
+  secret_data = "#!/bin/bash\necho 'Hello World' > /tmp/hello.txt"
+}
+
+resource "google_secret_manager_secret_iam_member" "secret_accessor" {
+  secret_id = google_secret_manager_secret.secret.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
+
+resource "time_sleep" "wait_60_seconds" {
+  create_duration = "60s"
+  depends_on = [
+    google_secret_manager_secret_iam_member.secret_accessor
+  ]
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1-a"
+  min_master_version = data.google_container_engine_versions.central1a.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork    = "%s"
+
+  node_pool {
+    name = "gcs-pool"
+    initial_node_count = 1
+    node_config {
+      image_type = "COS_CONTAINERD"
+      oauth_scopes = [
+        "https://www.googleapis.com/auth/cloud-platform",
+      ]
+      linux_node_config {
+        custom_node_init {
+          init_script {
+            gcs_uri = "gs://${google_storage_bucket.bucket.name}/${google_storage_bucket_object.script.name}"
+            gcs_generation = google_storage_bucket_object.script.generation
+          }
+        }
+      }
+    }
+  }
+
+  node_pool {
+    name = "secret-pool"
+    initial_node_count = 1
+    node_config {
+      image_type = "COS_CONTAINERD"
+      oauth_scopes = [
+        "https://www.googleapis.com/auth/cloud-platform",
+      ]
+      linux_node_config {
+        custom_node_init {
+          init_script {
+            gcp_secret_manager_secret_uri = google_secret_manager_secret_version.version.name
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    time_sleep.wait_60_seconds
+  ]
+}
+`, bucket, secretId, cluster, networkName, subnetworkName)
 }
 
 func TestAccContainerCluster_withSlurmOperatorConfig(t *testing.T) {
@@ -18860,4 +19320,518 @@ resource "google_container_node_pool" "extra" {
   }
 }
 `, suffix, suffix, clusterName, skipRefresh, poolName)
+}
+
+func TestAccContainerCluster_desiredEmulatedVersion(t *testing.T) {
+	t.Parallel()
+	clusterName := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			// Step 1 (Create): Spin up a standard cluster at STABLE default
+			{
+				Config: testAccContainerCluster_desiredEmulatedVersionBase(clusterName, networkName, subnetworkName),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"min_master_version", "deletion_protection"},
+			},
+			// Step 2 (Soak Upgrade): Upgrade master to target version (RAPID latest) and activate soak
+			{
+				Config: testAccContainerCluster_desiredEmulatedVersionSoak(clusterName, networkName, subnetworkName),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_container_cluster.primary", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// Assert that the computed emulated_version field is populated in state during soak
+					resource.TestCheckResourceAttrSet("google_container_cluster.primary", "emulated_version"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"min_master_version", "deletion_protection", "rollback_safe_upgrade"},
+			},
+			// Step 3 (Declarative Complete): Set desired_emulated_version to complete the upgrade
+			{
+				Config: testAccContainerCluster_desiredEmulatedVersionComplete(clusterName, networkName, subnetworkName),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_container_cluster.primary", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// Assert that the computed emulated_version field is cleared in state after completion
+					resource.TestCheckResourceAttr("google_container_cluster.primary", "emulated_version", ""),
+					testAccCheckContainerClusterEmulatedVersion(t, "google_container_cluster.primary"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"min_master_version", "deletion_protection", "desired_emulated_version", "rollback_safe_upgrade"},
+			},
+		},
+	})
+}
+
+func testAccCheckContainerClusterEmulatedVersion(t *testing.T, resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("not found: %s", resourceName)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("no GKE cluster ID is set in state")
+		}
+
+		config := acctest.GoogleProviderConfig(t)
+		clusterName := rs.Primary.Attributes["name"]
+		location := rs.Primary.Attributes["location"]
+		project := rs.Primary.Attributes["project"]
+
+		// Retrieve the live GKE cluster object from Google's REST GKE API client
+		cluster, err := container.NewClient(config, config.UserAgent).Projects.Locations.Clusters.Get(
+			fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)).Do()
+		if err != nil {
+			return fmt.Errorf("failed to get GKE cluster details from API: %v", err)
+		}
+
+		// Verify GKE emulated version has advanced on the server side and is cleared post-upgrade
+		if cluster.CurrentEmulatedVersion != "" {
+			return fmt.Errorf("expected emulated version to be empty post-upgrade, but live GKE cluster has %q", cluster.CurrentEmulatedVersion)
+		}
+
+		return nil
+	}
+}
+
+func testAccContainerCluster_desiredEmulatedVersionBase(clusterName, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1" {
+  location = "us-central1"
+}
+
+locals {
+  valid_minors = distinct([
+    for v in data.google_container_engine_versions.central1.valid_master_versions :
+    regex("^[0-9]+\\.([0-9]+)\\.", v)[0]
+  ])
+  target_minor  = local.valid_minors[0]
+  base_minor    = local.valid_minors[1]
+}
+
+data "google_container_engine_versions" "base" {
+  location       = "us-central1"
+  version_prefix = "1.${local.base_minor}."
+}
+
+data "google_container_engine_versions" "target" {
+  location       = "us-central1"
+  version_prefix = "1.${local.target_minor}."
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1"
+  initial_node_count = 1
+
+  release_channel {
+    channel = "RAPID"
+  }
+
+  min_master_version = data.google_container_engine_versions.base.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork = "%s"
+
+  node_config {
+    machine_type = "e2-standard-2"
+  }
+}
+`, clusterName, networkName, subnetworkName)
+}
+
+func testAccContainerCluster_desiredEmulatedVersionSoak(clusterName, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1" {
+  location = "us-central1"
+}
+
+locals {
+  valid_minors = distinct([
+    for v in data.google_container_engine_versions.central1.valid_master_versions :
+    regex("^[0-9]+\\.([0-9]+)\\.", v)[0]
+  ])
+  target_minor  = local.valid_minors[0]
+  base_minor    = local.valid_minors[1]
+}
+
+data "google_container_engine_versions" "base" {
+  location       = "us-central1"
+  version_prefix = "1.${local.base_minor}."
+}
+
+data "google_container_engine_versions" "target" {
+  location       = "us-central1"
+  version_prefix = "1.${local.target_minor}."
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1"
+  initial_node_count = 1
+
+  release_channel {
+    channel = "RAPID"
+  }
+
+  min_master_version = data.google_container_engine_versions.target.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork = "%s"
+
+  rollback_safe_upgrade {
+    control_plane_soak_duration = "259200s"
+  }
+
+  node_config {
+    machine_type = "e2-standard-2"
+  }
+}
+`, clusterName, networkName, subnetworkName)
+}
+
+func testAccContainerCluster_desiredEmulatedVersionComplete(clusterName, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1" {
+  location = "us-central1"
+}
+
+locals {
+  valid_minors = distinct([
+    for v in data.google_container_engine_versions.central1.valid_master_versions :
+    regex("^[0-9]+\\.([0-9]+)\\.", v)[0]
+  ])
+  target_minor  = local.valid_minors[0]
+  base_minor    = local.valid_minors[1]
+}
+
+data "google_container_engine_versions" "base" {
+  location       = "us-central1"
+  version_prefix = "1.${local.base_minor}."
+}
+
+data "google_container_engine_versions" "target" {
+  location       = "us-central1"
+  version_prefix = "1.${local.target_minor}."
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1"
+  initial_node_count = 1
+
+  release_channel {
+    channel = "RAPID"
+  }
+
+  min_master_version = data.google_container_engine_versions.target.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork = "%s"
+
+  rollback_safe_upgrade {
+    control_plane_soak_duration = "259200s"
+  }
+
+  desired_emulated_version = regex("^[0-9]+\\.[0-9]+", data.google_container_engine_versions.target.latest_master_version)
+
+  node_config {
+    machine_type = "e2-standard-2"
+  }
+}
+`, clusterName, networkName, subnetworkName)
+}
+
+func TestAccContainerCluster_desiredEmulatedVersionAutopilot(t *testing.T) {
+	t.Parallel()
+	clusterName := fmt.Sprintf("tf-test-cluster-auto-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			// Step 1 (Create): Spin up a regional GKE Autopilot cluster at STABLE default
+			{
+				Config: testAccContainerCluster_desiredEmulatedVersionAutopilotBase(clusterName, networkName, subnetworkName),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"min_master_version", "deletion_protection", "node_pool.0.node_count"},
+			},
+			// Step 2 (Soak Upgrade): Upgrade regional master to target version (RAPID latest) with soak active
+			{
+				Config: testAccContainerCluster_desiredEmulatedVersionAutopilotSoak(clusterName, networkName, subnetworkName),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_container_cluster.primary", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// Assert that the computed emulated_version field is populated in state during soak
+					resource.TestCheckResourceAttrSet("google_container_cluster.primary", "emulated_version"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"min_master_version", "deletion_protection", "node_pool.0.node_count", "rollback_safe_upgrade"},
+			},
+			// Step 3 (Declarative Complete): Set desired_emulated_version to complete the upgrade
+			{
+				Config: testAccContainerCluster_desiredEmulatedVersionAutopilotComplete(clusterName, networkName, subnetworkName),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_container_cluster.primary", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// Assert that the computed emulated_version field is cleared in state after completion
+					resource.TestCheckResourceAttr("google_container_cluster.primary", "emulated_version", ""),
+					testAccCheckContainerClusterEmulatedVersion(t, "google_container_cluster.primary"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"min_master_version", "deletion_protection", "node_pool.0.node_count", "desired_emulated_version", "rollback_safe_upgrade"},
+			},
+		},
+	})
+}
+
+func testAccContainerCluster_desiredEmulatedVersionAutopilotBase(clusterName, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1" {
+  location = "us-central1"
+}
+
+locals {
+  valid_minors = distinct([
+    for v in data.google_container_engine_versions.central1.valid_master_versions :
+    regex("^[0-9]+\\.([0-9]+)\\.", v)[0]
+  ])
+  target_minor  = local.valid_minors[0]
+  base_minor    = local.valid_minors[1]
+}
+
+data "google_container_engine_versions" "base" {
+  location       = "us-central1"
+  version_prefix = "1.${local.base_minor}."
+}
+
+data "google_container_engine_versions" "target" {
+  location       = "us-central1"
+  version_prefix = "1.${local.target_minor}."
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1"
+  enable_autopilot   = true
+  min_master_version = data.google_container_engine_versions.base.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork = "%s"
+  ip_allocation_policy {}
+
+  release_channel {
+    channel = "RAPID"
+  }
+}
+`, clusterName, networkName, subnetworkName)
+}
+
+func testAccContainerCluster_desiredEmulatedVersionAutopilotSoak(clusterName, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1" {
+  location = "us-central1"
+}
+
+locals {
+  valid_minors = distinct([
+    for v in data.google_container_engine_versions.central1.valid_master_versions :
+    regex("^[0-9]+\\.([0-9]+)\\.", v)[0]
+  ])
+  target_minor  = local.valid_minors[0]
+  base_minor    = local.valid_minors[1]
+}
+
+data "google_container_engine_versions" "base" {
+  location       = "us-central1"
+  version_prefix = "1.${local.base_minor}."
+}
+
+data "google_container_engine_versions" "target" {
+  location       = "us-central1"
+  version_prefix = "1.${local.target_minor}."
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1"
+  enable_autopilot   = true
+  min_master_version = data.google_container_engine_versions.target.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork = "%s"
+  ip_allocation_policy {}
+
+  release_channel {
+    channel = "RAPID"
+  }
+
+  rollback_safe_upgrade {
+    control_plane_soak_duration = "259200s"
+  }
+}
+`, clusterName, networkName, subnetworkName)
+}
+
+func testAccContainerCluster_desiredEmulatedVersionAutopilotComplete(clusterName, networkName, subnetworkName string) string {
+	return fmt.Sprintf(`
+data "google_container_engine_versions" "central1" {
+  location = "us-central1"
+}
+
+locals {
+  valid_minors = distinct([
+    for v in data.google_container_engine_versions.central1.valid_master_versions :
+    regex("^[0-9]+\\.([0-9]+)\\.", v)[0]
+  ])
+  target_minor  = local.valid_minors[0]
+  base_minor    = local.valid_minors[1]
+}
+
+data "google_container_engine_versions" "base" {
+  location       = "us-central1"
+  version_prefix = "1.${local.base_minor}."
+}
+
+data "google_container_engine_versions" "target" {
+  location       = "us-central1"
+  version_prefix = "1.${local.target_minor}."
+}
+
+resource "google_container_cluster" "primary" {
+  name               = "%s"
+  location           = "us-central1"
+  enable_autopilot   = true
+  min_master_version = data.google_container_engine_versions.target.latest_master_version
+  deletion_protection = false
+  network    = "%s"
+  subnetwork = "%s"
+  ip_allocation_policy {}
+
+  release_channel {
+    channel = "RAPID"
+  }
+
+  rollback_safe_upgrade {
+    control_plane_soak_duration = "259200s"
+  }
+
+  desired_emulated_version = regex("^[0-9]+\\.[0-9]+", data.google_container_engine_versions.target.latest_master_version)
+}
+`, clusterName, networkName, subnetworkName)
+}
+
+func TestAccContainerCluster_withNodeReadinessConfig(t *testing.T) {
+	t.Parallel()
+
+	clusterName := fmt.Sprintf("tf-test-nrc-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_switchNodeReadinessConfig(clusterName, networkName, subnetworkName, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.with_nrc_config", "addons_config.0.node_readiness_config.0.enabled", "true"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.with_nrc_config",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
+			},
+			{
+				Config: testAccContainerCluster_switchNodeReadinessConfig(clusterName, networkName, subnetworkName, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.with_nrc_config", "addons_config.0.node_readiness_config.0.enabled", "false"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.with_nrc_config",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
+			},
+			{
+				Config: testAccContainerCluster_switchNodeReadinessConfig(clusterName, networkName, subnetworkName, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.with_nrc_config", "addons_config.0.node_readiness_config.0.enabled", "true"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.with_nrc_config",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
+			},
+		},
+	})
+}
+
+func testAccContainerCluster_switchNodeReadinessConfig(clusterName, networkName, subnetworkName string, enabled bool) string {
+	return fmt.Sprintf(`
+resource "google_container_cluster" "with_nrc_config" {
+  name                = "%s"
+  location            = "us-central1-a"
+  initial_node_count  = 1
+  network             = "%s"
+  subnetwork          = "%s"
+  deletion_protection = false
+
+  addons_config {
+    node_readiness_config {
+      enabled = %t
+    }
+  }
+}
+`, clusterName, networkName, subnetworkName, enabled)
 }

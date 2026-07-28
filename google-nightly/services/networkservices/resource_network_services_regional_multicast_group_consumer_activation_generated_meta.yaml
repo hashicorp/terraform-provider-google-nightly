@@ -1,0 +1,33 @@
+# Copyright IBM Corp. 2014, 2026
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: MPL-2.0
+resource: google_network_services_regional_multicast_group_consumer_activation
+generation_type: mmv1
+source_file: products/networkservices/RegionalMulticastGroupConsumerActivation.yaml
+api_service_name: networkservices.googleapis.com
+api_version: v1alpha1
+api_resource_type_kind: RegionalMulticastGroupConsumerActivation
+autogen_status: true
+autogen_version: 1
+fields:
+    - api_field: createTime
+    - api_field: description
+    - field: effective_labels
+      provider_only: true
+    - api_field: interconnectAttachments
+    - api_field: labels
+    - field: location
+      provider_only: true
+    - api_field: logConfig.enabled
+    - api_field: name
+    - api_field: regionalMulticastConsumerAssociation
+    - field: regional_multicast_group_consumer_activation_id
+      provider_only: true
+    - api_field: regionalMulticastGroupRangeActivation
+    - api_field: state.state
+    - field: terraform_labels
+      provider_only: true
+    - api_field: uniqueId
+    - api_field: updateTime
+    - field: deletion_policy
+      provider_only: true

@@ -21,6 +21,7 @@ package vertexai_test
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -46,6 +47,7 @@ import (
 var (
 	_ = fmt.Sprintf
 	_ = log.Print
+	_ = regexp.MatchString
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
@@ -689,6 +691,10 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
   region       = "us-central1"
   provider     = google-beta
 
+  traffic_config {
+    traffic_split_always_latest {}
+  }
+
   context_spec {
     memory_bank_config {
       generation_config {
@@ -858,6 +864,59 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
 
 data "google_project" "project" {
   provider = google-beta
+}
+`, context)
+}
+
+func TestAccVertexAIReasoningEngine_vertexAiReasoningEngineTrafficConfigExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"name":          "tf-test-re-traffic-cfg" + randomSuffix,
+		"random_suffix": randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		CheckDestroy:             testAccCheckVertexAIReasoningEngineDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVertexAIReasoningEngine_vertexAiReasoningEngineTrafficConfigExample(context),
+			},
+			{
+				ResourceName:            "google_vertex_ai_reasoning_engine.reasoning_engine",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_policy", "labels", "region", "spec.0.source_code_spec.0.inline_source", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_vertex_ai_reasoning_engine.reasoning_engine",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccVertexAIReasoningEngine_vertexAiReasoningEngineTrafficConfigExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
+  display_name = "%{name}"
+  description  = "Reasoning engine with traffic config"
+  region       = "us-central1"
+  provider     = google-beta
+
+  spec {
+    agent_framework = "langchain"
+  }
+
+  traffic_config {
+    traffic_split_always_latest {}
+  }
 }
 `, context)
 }

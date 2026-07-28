@@ -165,6 +165,15 @@ The following arguments are supported:
   The content config of the data store.
   Possible values are: `NO_CONTENT`, `CONTENT_REQUIRED`, `PUBLIC_WEBSITE`.
 
+* `acl_enabled` -
+  (Optional)
+  Immutable. Whether data in the DataStore has ACL information. If set to `true`,
+  the source data must have ACL. ACL will be ingested when data is ingested by
+  DocumentService.ImportDocuments methods. When ACL is enabled for the DataStore,
+  Document can't be accessed by calling DocumentService.GetDocument or
+  DocumentService.ListDocuments. Currently ACL is only supported in the `GENERIC`
+  industry vertical with non-`PUBLIC_WEBSITE` content config.
+
 * `advanced_site_search_config` -
   (Optional)
   Configuration data for advance site search.
@@ -302,6 +311,14 @@ The following arguments are supported:
   (Optional)
   If true, the LLM based annotation is added to the image during parsing.
 
+* `enable_llm_layout_parsing` -
+  (Optional)
+  If true, the pdf layout will be refined using an LLM.
+
+* `enable_get_processed_document` -
+  (Optional)
+  If true, the processed document will be made available for the GetProcessedDocument API.
+
 * `structured_content_types` -
   (Optional)
   Contains the required structure types to extract from the document. Supported values: `shareholder-structure`.
@@ -352,6 +369,14 @@ The following arguments are supported:
 * `enable_image_annotation` -
   (Optional)
   If true, the LLM based annotation is added to the image during parsing.
+
+* `enable_llm_layout_parsing` -
+  (Optional)
+  If true, the pdf layout will be refined using an LLM.
+
+* `enable_get_processed_document` -
+  (Optional)
+  If true, the processed document will be made available for the GetProcessedDocument API.
 
 * `structured_content_types` -
   (Optional)
