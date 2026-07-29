@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -23,9 +24,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	mrand "math/rand"
 	"net/http"
+	"os"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/errwrap"
@@ -1575,11 +1580,37 @@ be from 0 to 999,999,999 inclusive.`,
 			},
 
 			"zone": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
-				ForceNew:    true,
-				Description: `The zone of the instance. If self_link is provided, this value is ignored. If neither self_link nor zone are provided, the provider zone is used.`,
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ForceNew:         true,
+				ConflictsWith:    []string{"zones"},
+				DiffSuppressFunc: compareZonesDiffSuppress,
+				Description:      `The zone of the instance. If self_link is provided, this value is ignored. If neither self_link nor zone are provided, the provider zone is used.`,
+			},
+
+			"zones": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				ForceNew:      false,
+				ConflictsWith: []string{"zone"},
+				Set: func(v interface{}) int {
+					m := v.(map[string]interface{})
+					if z, ok := m["zone"].(string); ok && z != "" {
+						return tpgresource.SelfLinkNameHash(z)
+					}
+					return 0
+				},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"zone": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: `The zone of the instance.`,
+						},
+					},
+				},
+				Description: `A list of two zones in the same region where the instance can exist. Mutually exclusive with zone.`,
 			},
 
 			"cpu_platform": {
@@ -1762,7 +1793,32 @@ be from 0 to 999,999,999 inclusive.`,
 		CustomizeDiff: customdiff.All(
 			tpgresource.DefaultProviderDeletionPolicy("DELETE"),
 			tpgresource.DefaultProviderProject,
-			tpgresource.DefaultProviderZone,
+			customdiff.If(
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
+					return d.Get("zones.#").(int) == 0
+				},
+				tpgresource.DefaultProviderZone,
+			),
+			customdiff.If(
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
+					return d.Get("zones.#").(int) > 0
+				},
+				validateZonesArgument,
+			),
+			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
+				setNew, setNewVal, setNewComputed := customizeZonesDiffFunc(d)
+				if setNew {
+					if err := d.SetNew("zone", setNewVal); err != nil {
+						return err
+					}
+				}
+				if setNewComputed {
+					if err := d.SetNewComputed("zone"); err != nil {
+						return err
+					}
+				}
+				return nil
+			},
 			customdiff.If(
 				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 					return d.HasChange("guest_accelerator")
@@ -1780,11 +1836,200 @@ be from 0 to 999,999,999 inclusive.`,
 	}
 }
 
+func parseZones(v interface{}) []string {
+	var zones []string
+	var list []interface{}
+	if s, ok := v.(*schema.Set); ok {
+		list = s.List()
+	} else if l, ok := v.([]interface{}); ok {
+		list = l
+	}
+	for _, item := range list {
+		if item != nil {
+			if m, ok := item.(map[string]interface{}); ok {
+				if z, ok := m["zone"].(string); ok && z != "" {
+					zones = append(zones, tpgresource.GetResourceNameFromSelfLink(z))
+				}
+			}
+		}
+	}
+	return zones
+}
+
+func compareZonesDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
+	// Case 1: From scratch
+	remoteZoneVal, _ := d.GetChange("zone")
+	remoteZone, _ := remoteZoneVal.(string)
+	remoteZone = tpgresource.GetResourceNameFromSelfLink(remoteZone)
+	if remoteZone == "" {
+		return false
+	}
+
+	// Case 2: Configured multi-zone
+	_, configZonesSdk := d.GetChange("zones")
+	configZones := parseZones(configZonesSdk)
+	if len(configZones) > 0 {
+		return slices.Contains(configZones, remoteZone)
+	}
+
+	// Case 3: Configured single-zone
+	_, configZoneSdk := d.GetChange("zone")
+	configZone, _ := configZoneSdk.(string)
+	configZone = tpgresource.GetResourceNameFromSelfLink(configZone)
+	if configZone != "" && configZone == remoteZone {
+		return true
+	}
+
+	return false
+}
+
+func validateZonesArgument(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	return validateZones(d)
+}
+
+func validateZones(d tpgresource.TerraformResourceDiff) error {
+	var zones []interface{}
+	if s, ok := d.Get("zones").(*schema.Set); ok {
+		zones = s.List()
+	} else if l, ok := d.Get("zones").([]interface{}); ok {
+		zones = l
+	}
+	if len(zones) < 2 {
+		return fmt.Errorf("zones argument must be an array of at least 2 elements")
+	}
+
+	seenZones := make(map[string]bool)
+	var firstRegion string
+
+	for _, zVal := range zones {
+		if zVal == nil {
+			return fmt.Errorf("every element in zones must be a valid zone string")
+		}
+		zoneMap, ok := zVal.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("every element in zones must be a valid zone map")
+		}
+		zone, ok := zoneMap["zone"].(string)
+		if !ok || zone == "" {
+			return fmt.Errorf("every element in zones must be a valid zone string")
+		}
+		zone = tpgresource.GetResourceNameFromSelfLink(zone)
+		if seenZones[zone] {
+			return fmt.Errorf("zones argument must contain distinct zones, found duplicate: %s", zone)
+		}
+		seenZones[zone] = true
+
+		region := tpgresource.GetRegionFromZone(zone)
+		if region == "" {
+			return fmt.Errorf("invalid zone format for: %s", zone)
+		}
+		if firstRegion == "" {
+			firstRegion = region
+		} else if region != firstRegion {
+			return fmt.Errorf("zones must belong to the same region, found %s and %s", firstRegion, region)
+		}
+	}
+	return nil
+}
+
+func customizeZonesDiffFunc(d tpgresource.TerraformResourceDiff) (bool, interface{}, bool) {
+	remoteZoneVal, configZoneVal := d.GetChange("zone")
+	remoteZone := remoteZoneVal.(string)
+	remoteZone = tpgresource.GetResourceNameFromSelfLink(remoteZone)
+	configZone := configZoneVal.(string)
+	configZone = tpgresource.GetResourceNameFromSelfLink(configZone)
+	configZones := parseZones(d.Get("zones"))
+
+	var setNew bool
+	var setNewVal interface{}
+	var setNewComputed bool
+
+	if len(configZones) >= 2 {
+		if remoteZone != "" && configZone == "" {
+			setNew = true
+			setNewVal = remoteZone
+			configZone = remoteZone
+		}
+
+		inNewZones := slices.Contains(configZones, configZone)
+
+		if !inNewZones {
+			setNewComputed = true
+		}
+	}
+
+	return setNew, setNewVal, setNewComputed
+}
+
+func getInstanceFromZones(config *transport_tpg.Config, d *schema.ResourceData, project string, zones []string) (*compute.Instance, error) {
+	type instanceFetchResult struct {
+		zone     string
+		instance *compute.Instance
+		err      error
+	}
+
+	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	var wg sync.WaitGroup
+	results := make([]instanceFetchResult, len(zones))
+	name := d.Get("name").(string)
+
+	log.Printf("[DEBUG] Checking instance existence concurrently for %s across zones: %v", name, zones)
+
+	for i, z := range zones {
+		wg.Add(1)
+		go func(index int, zoneName string) {
+			defer wg.Done()
+			log.Printf("[DEBUG] Querying instance %s in zone %s", name, zoneName)
+			inst, err := NewClient(config, userAgent).Instances.Get(project, zoneName, name).View("FULL").Do()
+			results[index] = instanceFetchResult{zone: zoneName, instance: inst, err: err}
+		}(i, z)
+	}
+	wg.Wait()
+
+	var foundInstances []*compute.Instance
+	var foundZones []string
+
+	for _, res := range results {
+		if res.err == nil && res.instance != nil {
+			foundInstances = append(foundInstances, res.instance)
+			foundZones = append(foundZones, res.zone)
+		} else if res.err != nil && !transport_tpg.IsGoogleApiErrorWithCode(res.err, 404) {
+			return nil, res.err
+		}
+	}
+
+	if len(foundInstances) > 1 {
+		if os.Getenv("TF_COMPUTE_INSTANCE_DISABLE_MULTIPLE_ZONE_CHECK") == "" {
+			return nil, fmt.Errorf("instance %s exists in multiple zones (%v), which is not supported.", name, foundZones)
+		}
+		log.Printf("[WARN] instance %s exists in multiple zones (%v), ignoring multiple zone check", name, foundZones)
+	}
+
+	if len(foundInstances) == 0 {
+		if d.Id() != "" {
+			return nil, fmt.Errorf("instance %s was modified or deleted outside of Terraform and cannot be mapped to the user configuration", name)
+		}
+		return nil, transport_tpg.HandleNotFoundError(results[0].err, d, fmt.Sprintf("Instance %s", name))
+	}
+
+	return foundInstances[0], nil
+}
+
 func getInstance(config *transport_tpg.Config, d *schema.ResourceData) (*compute.Instance, error) {
 	project, err := tpgresource.GetProject(d, config)
 	if err != nil {
 		return nil, err
 	}
+
+	zones := parseZones(d.Get("zones"))
+	if len(zones) >= 2 {
+		return getInstanceFromZones(config, d, project, zones)
+	}
+
 	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
 	if err != nil {
 		return nil, err
@@ -2100,6 +2345,241 @@ func waitUntilInstanceHasDesiredStatus(config *transport_tpg.Config, d *schema.R
 	return nil
 }
 
+func buildRegularInsertPayload(d *schema.ResourceData, meta interface{}, config *transport_tpg.Config, project string) (map[string]interface{}, error) {
+	instance, err := expandComputeInstance(project, d, config)
+	if err != nil {
+		return nil, err
+	}
+
+	instanceBody, err := tpgresource.ConvertToMap(instance)
+	if err != nil {
+		return nil, fmt.Errorf("Error converting instance: %s", err)
+	}
+
+	schedulingBody, err := expandScheduling(d.Get("scheduling"))
+	if err != nil {
+		return nil, fmt.Errorf("Error creating scheduling: %s", err)
+	}
+	if schedulingBody != nil {
+		instanceBody["scheduling"] = schedulingBody
+	}
+	if amf := expandAdvancedMachineFeatures(d); amf != nil {
+		instanceBody["advancedMachineFeatures"] = amf
+	}
+	paramsBody, err := expandParams(d)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating params: %s", err)
+	}
+	instanceBody["params"] = paramsBody
+
+	metadataMap, err := resourceInstanceMetadata(d)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating metadata: %s", err)
+	}
+	instanceBody["metadata"] = metadataMap
+	partnerMetadataMap, err := resourceInstancePartnerMetadata(d)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating partner metadata: %s", err)
+	}
+	partnerMetadataConverted, err := convertPartnerMetadataToCompute(partnerMetadataMap)
+	if err != nil {
+		return nil, fmt.Errorf("Error converting partner metadata: %s", err)
+	}
+	if len(partnerMetadataConverted) > 0 {
+		instanceBody["partnerMetadata"] = partnerMetadataConverted
+	}
+
+	return instanceBody, nil
+}
+
+func normalizeForBulkInsert(instanceBody map[string]interface{}) map[string]interface{} {
+	instanceProperties := make(map[string]interface{})
+	for k, v := range instanceBody {
+		if k == "machineType" && v != nil {
+			if machineTypeUrl, ok := v.(string); ok {
+				instanceProperties[k] = tpgresource.GetResourceNameFromSelfLink(machineTypeUrl)
+			}
+		} else if k == "disks" && v != nil {
+			if disks, ok := v.([]interface{}); ok {
+				for _, d := range disks {
+					if diskMap, ok := d.(map[string]interface{}); ok {
+						if initParams, ok := diskMap["initializeParams"].(map[string]interface{}); ok {
+							if diskType, ok := initParams["diskType"].(string); ok {
+								initParams["diskType"] = tpgresource.GetResourceNameFromSelfLink(diskType)
+							}
+						}
+					}
+				}
+				instanceProperties[k] = disks
+			}
+		} else if k != "name" {
+			instanceProperties[k] = v
+		}
+	}
+	return instanceProperties
+}
+
+func buildBulkInsertPayload(d *schema.ResourceData, meta interface{}, config *transport_tpg.Config, project, region, userAgent string, zones []string) (map[string]interface{}, error) {
+	// Set first zone temporarily for payload generation
+	d.Set("zone", zones[0])
+	payload, err := buildRegularInsertPayload(d, meta, config, project)
+	if err != nil {
+		return nil, err
+	}
+
+	instanceProperties := normalizeForBulkInsert(payload)
+
+	denyMap := make(map[string]interface{})
+	zoneList, err := NewClient(config, userAgent).Zones.List(project).Filter(fmt.Sprintf("region eq .*%s", region)).Do()
+	if err != nil {
+		return nil, fmt.Errorf("Error listing zones for region %s: %s", region, err)
+	}
+	allowedZonesMap := make(map[string]bool, len(zones))
+	for _, z := range zones {
+		allowedZonesMap[z] = true
+	}
+	for _, zObj := range zoneList.Items {
+		if !allowedZonesMap[zObj.Name] {
+			denyMap[fmt.Sprintf("zones/%s", zObj.Name)] = map[string]interface{}{
+				"preference": "DENY",
+			}
+		}
+	}
+
+	locationPolicy := map[string]interface{}{
+		"locations": denyMap,
+	}
+
+	bulkBody := map[string]interface{}{
+		"perInstanceProperties": map[string]interface{}{
+			d.Get("name").(string): map[string]interface{}{},
+		},
+		"instanceProperties": instanceProperties,
+		"locationPolicy":     locationPolicy,
+	}
+
+	return bulkBody, nil
+}
+
+func regularInsert(d *schema.ResourceData, meta interface{}, config *transport_tpg.Config, project, zone, userAgent string) error {
+	d.Set("zone", zone)
+	payload, err := buildRegularInsertPayload(d, meta, config, project)
+	if err != nil {
+		return err
+	}
+
+	insertUrl, err := tpgresource.ReplaceVars(d, config, fmt.Sprintf("{{ComputeBasePath}}projects/{{project}}/zones/%s/instances", zone))
+	if err != nil {
+		return fmt.Errorf("Error generating URL: %s", err)
+	}
+	log.Printf("[INFO] Requesting instance creation in zone %s", zone)
+	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+		Config:    config,
+		Method:    "POST",
+		Project:   project,
+		RawURL:    insertUrl,
+		UserAgent: userAgent,
+		Body:      payload,
+	})
+	if err != nil {
+		return fmt.Errorf("Error creating instance: %s", err)
+	}
+
+	d.SetId(fmt.Sprintf("projects/%s/zones/%s/instances/%s", project, zone, d.Get("name").(string)))
+
+	waitErr := ComputeOperationWaitTime(config, res, project, "instance to create", userAgent, d.Timeout(schema.TimeoutCreate))
+	if waitErr != nil {
+		d.SetId("")
+		return waitErr
+	}
+
+	return nil
+}
+
+func randomInsert(d *schema.ResourceData, meta interface{}, config *transport_tpg.Config, project, userAgent string) error {
+	zones := parseZones(d.Get("zones"))
+
+	// Shuffle the zones to attempt creation in random order
+	shuffled := make([]string, len(zones))
+	copy(shuffled, zones)
+	mrand.Shuffle(len(shuffled), func(i, j int) {
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	})
+
+	log.Printf("[DEBUG] Starting randomInsert for instance %s. Try order: %v", d.Get("name").(string), shuffled)
+
+	var errs []string
+	for _, z := range shuffled {
+		err := regularInsert(d, meta, config, project, z, userAgent)
+		if err == nil {
+			return nil
+		}
+		log.Printf("[WARN] Failed to create instance in zone %s: %s. Trying next zone...", z, err)
+		errs = append(errs, fmt.Sprintf("%s: %s", z, err.Error()))
+	}
+
+	return fmt.Errorf("Error creating instance in all specified zones: %s", strings.Join(errs, "; "))
+}
+
+func bulkInsert(d *schema.ResourceData, meta interface{}, config *transport_tpg.Config, project, userAgent string) error {
+	zones := parseZones(d.Get("zones"))
+	if len(zones) == 0 {
+		return fmt.Errorf("either zone or zones must be configured to create a compute instance")
+	}
+
+	log.Printf("[DEBUG] Starting bulkInsert for instance %s in zones: %v", d.Get("name").(string), zones)
+
+	region := tpgresource.GetRegionFromZone(zones[0])
+	bulkBody, err := buildBulkInsertPayload(d, meta, config, project, region, userAgent, zones)
+	if err != nil {
+		return err
+	}
+
+	bulkUrl, err := tpgresource.ReplaceVars(d, config, fmt.Sprintf("{{ComputeBasePath}}projects/{{project}}/regions/%s/instances/bulkInsert", region))
+	if err != nil {
+		return fmt.Errorf("Error generating bulkInsert URL: %s", err)
+	}
+
+	log.Printf("[INFO] Requesting instance bulkInsert in region %s", region)
+	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+		Config:    config,
+		Method:    "POST",
+		Project:   project,
+		RawURL:    bulkUrl,
+		UserAgent: userAgent,
+		Body:      bulkBody,
+	})
+	if err != nil {
+		return fmt.Errorf("Error bulk creating instance: %s", err)
+	}
+
+	waitErr := ComputeOperationWaitTime(config, res, project, "instance to bulk create", userAgent, d.Timeout(schema.TimeoutCreate))
+	if waitErr != nil {
+		d.SetId("")
+		return waitErr
+	}
+
+	var createdZone string
+	for _, z := range zones {
+		log.Printf("[DEBUG] Checking if instance %s was created in zone %s", d.Get("name").(string), z)
+		inst, err := NewClient(config, userAgent).Instances.Get(project, z, d.Get("name").(string)).View("FULL").Do()
+		if err == nil && inst != nil {
+			createdZone = z
+			break
+		}
+		if err != nil && !transport_tpg.IsGoogleApiErrorWithCode(err, 404) {
+			return fmt.Errorf("Error checking instance existence in zone %s: %s", z, err)
+		}
+	}
+	if createdZone == "" {
+		d.SetId("")
+		return fmt.Errorf("Error finding created instance %s in zones %v after bulkInsert", d.Get("name").(string), zones)
+	}
+	log.Printf("[DEBUG] Resolved created zone %s for instance %s", createdZone, d.Get("name").(string))
+	d.Set("zone", createdZone)
+	return nil
+}
+
 func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*transport_tpg.Config)
 	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
@@ -2112,87 +2592,29 @@ func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) err
 		return err
 	}
 
-	// Get the zone
-	z, err := tpgresource.GetZone(d, config)
+	staticZone := d.Get("zone").(string)
+	if staticZone != "" {
+		err = regularInsert(d, meta, config, project, staticZone, userAgent)
+	} else if d.Get("scheduling.0.node_affinities.#").(int) > 0 {
+		err = randomInsert(d, meta, config, project, userAgent)
+	} else {
+		err = bulkInsert(d, meta, config, project, userAgent)
+	}
+
 	if err != nil {
 		return err
 	}
 
-	instance, err := expandComputeInstance(project, d, config)
-	if err != nil {
-		return err
-	}
+	actualZone := d.Get("zone").(string)
+	instanceName := d.Get("name").(string)
+
+	d.SetId(fmt.Sprintf("projects/%s/zones/%s/instances/%s", project, actualZone, instanceName))
 
 	securityPolicies, err := computeInstanceMapSecurityPoliciesCreate(d, config)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error creating security policies map: %s", err)
 	}
-
-	log.Printf("[INFO] Requesting instance creation")
-	instanceBody, err := tpgresource.ConvertToMap(instance)
-	if err != nil {
-		return fmt.Errorf("Error converting instance: %s", err)
-	}
-	schedulingBody, err := expandScheduling(d.Get("scheduling"))
-	if err != nil {
-		return fmt.Errorf("Error creating scheduling: %s", err)
-	}
-	if schedulingBody != nil {
-		instanceBody["scheduling"] = schedulingBody
-	}
-	if amf := expandAdvancedMachineFeatures(d); amf != nil {
-		instanceBody["advancedMachineFeatures"] = amf
-	}
-	paramsBody, err := expandParams(d)
-	if err != nil {
-		return fmt.Errorf("Error creating params: %s", err)
-	}
-	instanceBody["params"] = paramsBody
-
-	metadataMap, err := resourceInstanceMetadata(d)
-	if err != nil {
-		return fmt.Errorf("Error creating metadata: %s", err)
-	}
-	instanceBody["metadata"] = metadataMap
-	partnerMetadataMap, err := resourceInstancePartnerMetadata(d)
-	if err != nil {
-		return fmt.Errorf("Error creating partner metadata: %s", err)
-	}
-	partnerMetadataConverted, err := convertPartnerMetadataToCompute(partnerMetadataMap)
-	if err != nil {
-		return fmt.Errorf("Error converting partner metadata: %s", err)
-	}
-	if len(partnerMetadataConverted) > 0 {
-		instanceBody["partnerMetadata"] = partnerMetadataConverted
-	}
-	insertUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instances")
-	if err != nil {
-		return fmt.Errorf("Error generating URL: %s", err)
-	}
-	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-		Config:    config,
-		Method:    "POST",
-		Project:   project,
-		RawURL:    insertUrl,
-		UserAgent: userAgent,
-		Body:      instanceBody,
-	})
-	if err != nil {
-		return fmt.Errorf("Error creating instance: %s", err)
-	}
-
-	// Store the ID now
-	d.SetId(fmt.Sprintf("projects/%s/zones/%s/instances/%s", project, z, instance.Name))
-
-	// Wait for the operation to complete
-	waitErr := ComputeOperationWaitTime(config, res, project, "instance to create", userAgent, d.Timeout(schema.TimeoutCreate))
-	if waitErr != nil {
-		// The resource didn't actually create
-		d.SetId("")
-		return waitErr
-	}
-
-	err = computeInstanceAddSecurityPolicy(d, config, securityPolicies, project, z, userAgent, instance.Name)
+	err = computeInstanceAddSecurityPolicy(d, config, securityPolicies, project, actualZone, userAgent, instanceName)
 	if err != nil {
 		return fmt.Errorf("Error creating instance while setting the security policies: %s", err)
 	}
@@ -2204,7 +2626,7 @@ func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) err
 
 	if val, ok := d.GetOk("desired_status"); ok {
 		if val.(string) != "RUNNING" {
-			err = changeInstanceStatusOnCreation(config, d, project, z, val.(string), userAgent)
+			err = changeInstanceStatusOnCreation(config, d, project, actualZone, val.(string), userAgent)
 			if err != nil {
 				return fmt.Errorf("Error changing instance status after creation: %s", err)
 			}
@@ -2213,8 +2635,8 @@ func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) err
 
 	if err := tpgresource.SetResourceIdentityAttributes(d, map[string]interface{}{
 		"project": project,
-		"zone":    z,
-		"name":    instance.Name,
+		"zone":    actualZone,
+		"name":    instanceName,
 	}); err != nil {
 		return err
 	}

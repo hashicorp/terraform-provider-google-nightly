@@ -95,7 +95,12 @@ resource "google_compute_instance" "vm" {
   provider     = google-private
   name         = "%{hac_name}-inst"
   machine_type = "e2-micro"
-  zone         = local.zone1
+  zones {
+    zone = local.zone1
+  }
+  zones {
+    zone = local.zone2
+  }
 
   boot_disk {
     auto_delete = false
