@@ -61,7 +61,12 @@ resource "google_compute_instance" "vm" {
   provider     = google-private
   name         = "hac-bs-inst"
   machine_type = "e2-micro"
-  zone         = local.zone1
+  zones {
+    zone = local.zone1
+  }
+  zones {
+    zone = local.zone2
+  }
 
   boot_disk {
     auto_delete = false
@@ -164,7 +169,12 @@ resource "google_compute_instance" "vm" {
   provider     = google-private
   name         = "hac-rv-inst"
   machine_type = "e2-micro"
-  zone         = local.zone1
+  zones {
+    zone = local.zone1
+  }
+  zones {
+    zone = local.zone2
+  }
 
   boot_disk {
     auto_delete = false
@@ -296,7 +306,12 @@ resource "google_compute_instance" "vm" {
   provider     = google-private
   name         = "hac-st-inst"
   machine_type = "n1-standard-1"
-  zone         = local.zone1
+  zones {
+    zone = local.zone1
+  }
+  zones {
+    zone = local.zone2
+  }
 
   depends_on = [
     google_compute_node_group.sole_tenant_group1,

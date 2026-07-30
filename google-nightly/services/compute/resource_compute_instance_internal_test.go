@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -147,5 +148,165 @@ func TestComputeInstance_networkIPCustomizedDiff(t *testing.T) {
 		if tc.ExpectedForceNew != d.IsForceNew {
 			t.Errorf("%v: expected d.IsForceNew to be %v, but was %v", tn, tc.ExpectedForceNew, d.IsForceNew)
 		}
+	}
+}
+
+func TestComputeInstance_validateZones(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		Zones       []interface{}
+		ExpectError bool
+	}{
+		"success - 2 distinct zones in same region": {
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+			},
+			ExpectError: false,
+		},
+		"success - 3 distinct zones in same region": {
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+				map[string]interface{}{"zone": "us-central1-c"},
+			},
+			ExpectError: false,
+		},
+		"failure - fewer than 2 zones": {
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+			},
+			ExpectError: true,
+		},
+		"failure - duplicate zones": {
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+				map[string]interface{}{"zone": "us-central1-a"},
+			},
+			ExpectError: true,
+		},
+		"failure - mismatching regions": {
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "europe-west1-b"},
+			},
+			ExpectError: true,
+		},
+		"failure - invalid zone format": {
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "uscentral1a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+			},
+			ExpectError: true,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			d := &tpgresource.ResourceDiffMock{
+				After: map[string]interface{}{
+					"zones": tc.Zones,
+				},
+			}
+			err := validateZones(d)
+			if tc.ExpectError && err == nil {
+				t.Fatalf("expected error, but got nil")
+			}
+			if !tc.ExpectError && err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestComputeInstance_customizeZonesDiffFunc(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		RemoteZone     string
+		ConfigZone     string
+		Zones          []interface{}
+		ExpectSetNew   bool
+		ExpectVal      interface{}
+		ExpectComputed bool
+	}{
+		"fewer than 2 zones - no change": {
+			RemoteZone:     "us-central1-a",
+			ConfigZone:     "us-central1-b",
+			Zones:          []interface{}{map[string]interface{}{"zone": "us-central1-a"}},
+			ExpectSetNew:   false,
+			ExpectVal:      nil,
+			ExpectComputed: false,
+		},
+		"2 zones, remoteZone not empty, configZone empty, remoteZone is in zones": {
+			RemoteZone: "us-central1-a",
+			ConfigZone: "",
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+			},
+			ExpectSetNew:   true,
+			ExpectVal:      "us-central1-a",
+			ExpectComputed: false,
+		},
+		"2 zones, remoteZone not empty, configZone empty, remoteZone is not in zones": {
+			RemoteZone: "us-central1-c",
+			ConfigZone: "",
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+			},
+			ExpectSetNew:   true,
+			ExpectVal:      "us-central1-c",
+			ExpectComputed: true,
+		},
+		"2 zones, configZone is in zones": {
+			RemoteZone: "us-central1-a",
+			ConfigZone: "us-central1-b",
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+			},
+			ExpectSetNew:   false,
+			ExpectVal:      nil,
+			ExpectComputed: false,
+		},
+		"2 zones, configZone is not in zones": {
+			RemoteZone: "us-central1-a",
+			ConfigZone: "us-central1-c",
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+			},
+			ExpectSetNew:   false,
+			ExpectVal:      nil,
+			ExpectComputed: true,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			d := &tpgresource.ResourceDiffMock{
+				Before: map[string]interface{}{
+					"zone": tc.RemoteZone,
+				},
+				After: map[string]interface{}{
+					"zone":  tc.ConfigZone,
+					"zones": tc.Zones,
+				},
+			}
+			setNew, setNewVal, setNewComputed := customizeZonesDiffFunc(d)
+			if setNew != tc.ExpectSetNew {
+				t.Errorf("setNew was %v, expected %v", setNew, tc.ExpectSetNew)
+			}
+			if setNewVal != tc.ExpectVal {
+				t.Errorf("setNewVal was %v, expected %v", setNewVal, tc.ExpectVal)
+			}
+			if setNewComputed != tc.ExpectComputed {
+				t.Errorf("setNewComputed was %v, expected %v", setNewComputed, tc.ExpectComputed)
+			}
+		})
 	}
 }

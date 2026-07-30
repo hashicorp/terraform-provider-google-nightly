@@ -1,4 +1,5 @@
 # Copyright IBM Corp. 2014, 2026
+# Copyright 2026 Google LLC
 # SPDX-License-Identifier: MPL-2.0
 resource: 'google_compute_instance_from_template'
 generation_type: 'handwritten'
@@ -260,6 +261,8 @@ fields:
   - api_field: 'workloadIdentityConfig.identity'
   - api_field: 'workloadIdentityConfig.identityCertificateEnabled'
   - api_field: 'zone'
+  - field: 'zones.zone'
+    provider_only: true
   - api_field: 'eraseWindowsVssSignature'
   - field: 'deletion_policy'
     provider_only: true

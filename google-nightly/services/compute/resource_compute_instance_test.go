@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -18,8 +19,10 @@ package compute_test
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -5339,6 +5342,295 @@ func testAccComputeInstance_nic_securityPolicyCreateWithoutAccessConfig(t *testi
 	})
 }
 
+func TestAccComputeInstance_multiZone_basic(t *testing.T) {
+	t.Parallel()
+
+	var instance map[string]interface{}
+	zone1 := "us-central1-a"
+	zone2 := "us-central1-b"
+	zone3 := "us-central1-c"
+	context := map[string]interface{}{
+		"instance_name": fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10)),
+		"zones":         fmt.Sprintf("zones {\n zone = %q\n }\n zones {\n zone = %q\n }\n zones {\n zone = %q\n }", zone1, zone2, zone3),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeInstanceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeInstance_multiZone(context),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+					testAccCheckComputeInstanceInZones("google_compute_instance.foobar", []string{zone1, zone2, zone3}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccComputeInstance_multiZone_basic_soleTenancy(t *testing.T) {
+	t.Parallel()
+
+	var instance map[string]interface{}
+	zone1 := "asia-east1-a"
+	zone2 := "asia-east1-b"
+	region := "asia-east1"
+	context := map[string]interface{}{
+		"instance_name": fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10)),
+		"zone_1":        zone1,
+		"zone_2":        zone2,
+		"region":        region,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeInstanceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeInstance_multiZone_soleTenancy(context),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+					testAccCheckComputeInstanceInZones("google_compute_instance.foobar", []string{zone1, zone2}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccComputeInstance_multiZone_zoneAndZones_inPlaceUpdate(t *testing.T) {
+	t.Parallel()
+
+	var instance map[string]interface{}
+	zone1 := "us-central1-a"
+	zone2 := "us-central1-b"
+
+	context := map[string]interface{}{
+		"instance_name": fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10)),
+		"single_zone":   zone1,
+		"zones":         fmt.Sprintf("zones {\n zone = %q\n }\n zones {\n zone = %q\n }", zone1, zone2),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeInstanceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeInstance_singleZone(context),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+				),
+			},
+			{
+				Config: testAccComputeInstance_multiZone(context),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_instance.foobar", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+					testAccCheckComputeInstanceInZones("google_compute_instance.foobar", []string{zone1, zone2}),
+				),
+			},
+			{
+				Config: testAccComputeInstance_singleZone(context),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_instance.foobar", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+				),
+			},
+		},
+	})
+}
+
+func TestAccComputeInstance_multiZone_zoneAndZones_recreate(t *testing.T) {
+	t.Parallel()
+
+	var instance map[string]interface{}
+	zone1 := "us-central1-a"
+	zone2 := "us-central1-b"
+	zone3 := "us-central1-c"
+
+	context := map[string]interface{}{
+		"instance_name": fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10)),
+		"single_zone":   zone1,
+		"zones":         fmt.Sprintf("zones {\n zone = %q\n }\n zones {\n zone = %q\n }", zone2, zone3),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeInstanceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeInstance_singleZone(context),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+				),
+			},
+			{
+				Config: testAccComputeInstance_multiZone(context),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_instance.foobar", plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+					testAccCheckComputeInstanceInZones("google_compute_instance.foobar", []string{zone2, zone3}),
+				),
+			},
+			{
+				Config: testAccComputeInstance_singleZone(context),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_instance.foobar", plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+				),
+			},
+		},
+	})
+}
+
+func TestAccComputeInstance_multiZone_import(t *testing.T) {
+	t.Parallel()
+
+	var instance map[string]interface{}
+	zone1 := "us-central1-a"
+	zone2 := "us-central1-b"
+	zone3 := "us-central1-c"
+
+	context := map[string]interface{}{
+		"instance_name": fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10)),
+		"single_zone":   zone1,
+		"zones":         fmt.Sprintf("zones {\n zone = %q\n }\n zones {\n zone = %q\n }", zone1, zone2),
+	}
+
+	differentZonesContext := map[string]interface{}{
+		"instance_name": context["instance_name"],
+		"zones":         fmt.Sprintf("zones {\n zone = %q\n }\n zones {\n zone = %q\n }", zone2, zone3),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeInstanceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeInstance_singleZone(context),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar", &instance),
+				),
+			},
+			{
+				Config:                  testAccComputeInstance_multiZone(context),
+				ResourceName:            "google_compute_instance.foobar",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"allow_stopping_for_update"},
+			},
+			{
+				Config: testAccComputeInstance_multiZone(differentZonesContext),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_instance.foobar", plancheck.ResourceActionReplace),
+					},
+				},
+				ResourceName: "google_compute_instance.foobar",
+				ImportState:  true,
+			},
+		},
+	})
+}
+
+func TestAccComputeInstance_multiZone_switchZones_noDiff(t *testing.T) {
+	t.Parallel()
+
+	os.Setenv("TF_COMPUTE_INSTANCE_DISABLE_MULTIPLE_ZONE_CHECK", "1")
+
+	var instance map[string]interface{}
+	zone1 := "us-central1-a"
+	zone2 := "us-central1-b"
+
+	instanceName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
+	beforeContext := map[string]interface{}{
+		"instance_name": instanceName,
+		"zones_block":   fmt.Sprintf("zone = %q", zone1),
+		"single_zone":   zone2,
+	}
+
+	afterContext := map[string]interface{}{
+		"instance_name": instanceName,
+		"zones_block":   fmt.Sprintf("zones {\n zone = %q\n }\n zones {\n zone = %q\n }", zone1, zone2),
+		"single_zone":   zone2,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeInstanceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeInstance_switchZones(beforeContext),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar1", &instance),
+					testAccCheckComputeInstanceExists(
+						t, "google_compute_instance.foobar2", &instance),
+				),
+			},
+			{
+				Config: testAccComputeInstance_switchZones(afterContext),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_instance.foobar1", plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				PreConfig: func() {
+					config := acctest.GoogleProviderConfig(t)
+					client := tpgcompute.NewClient(config, config.UserAgent)
+
+					op, err := client.Instances.Delete(config.Project, zone1, instanceName).Do()
+					if err != nil {
+						t.Fatalf("Failed to trigger out-of-band deletion: %s", err)
+					}
+					if waitErr := tpgcompute.ComputeOperationWaitTime(config, op, config.Project, "waiting out-of-band instance deletion to finish", config.UserAgent, 10*time.Minute); waitErr != nil {
+						t.Fatalf("Error waiting for out-of-band instance deletion: %s", waitErr)
+					}
+				},
+				Config:             testAccComputeInstance_switchZones(afterContext),
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckComputeResourcesHaveSameState(
+						"google_compute_instance.foobar1", "google_compute_instance.foobar2", []string{"zones"}),
+				),
+			},
+		},
+	})
+}
+
 func testAccComputeInstance_GracefulShutdownUpdate(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 data "google_compute_image" "my_image" {
@@ -6988,6 +7280,76 @@ func testAccCheckComputeInstanceNicAccessConfigHasNoSecurityPolicy(instance *map
 				if sp, _ := ac["securityPolicy"].(string); sp != "" {
 					return fmt.Errorf("Security Policy with name %s is present", sp)
 				}
+			}
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckComputeInstanceInZones(n string, zones []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+		zone := rs.Primary.Attributes["zone"]
+		if !slices.Contains(zones, zone) {
+			return fmt.Errorf("Expected instance zone to be one of %q, got %q", zones, zone)
+		}
+		return nil
+	}
+}
+
+func testAccCheckComputeResourcesHaveSameState(res1, res2 string, ignoredAttributes []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs1, ok := s.RootModule().Resources[res1]
+		if !ok {
+			return fmt.Errorf("Not found: %s", res1)
+		}
+
+		rs2, ok := s.RootModule().Resources[res2]
+		if !ok {
+			return fmt.Errorf("Not found: %s", res2)
+		}
+
+		ignoredKeys := make(map[string]bool, len(ignoredAttributes))
+		for _, attr := range ignoredAttributes {
+			ignoredKeys[attr] = true
+		}
+
+		isIgnored := func(stateKey string) bool {
+			if ignoredKeys[stateKey] {
+				return true
+			}
+			// Prefix match for flattened arrays/maps (e.g., "zones." matches "zones.1")
+			for ignoredBaseKey := range ignoredKeys {
+				if strings.HasPrefix(stateKey, ignoredBaseKey+".") {
+					return true
+				}
+			}
+			return false
+		}
+
+		for key, val1 := range rs1.Primary.Attributes {
+			if isIgnored(key) {
+				continue
+			}
+			val2, exists := rs2.Primary.Attributes[key]
+			if !exists {
+				return fmt.Errorf("attribute %q exists in %s but not in %s", key, res1, res2)
+			}
+			if val1 != val2 {
+				return fmt.Errorf("attribute %q differs:\n  %s: %s\n  %s: %s", key, res1, val1, res2, val2)
+			}
+		}
+
+		for key := range rs2.Primary.Attributes {
+			if isIgnored(key) {
+				continue
+			}
+			if _, exists := rs1.Primary.Attributes[key]; !exists {
+				return fmt.Errorf("attribute %q exists in %s but not in %s", key, res2, res1)
 			}
 		}
 
@@ -14649,6 +15011,232 @@ resource "google_compute_instance" "foobar" {
   network_interface {
     network = "default"
   }
+}
+`, context)
+}
+
+func testAccComputeInstance_multiZone(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_compute_image" "my_image" {
+  family   = "debian-12"
+  project  = "debian-cloud"
+}
+
+resource "google_compute_instance" "foobar" {
+  name         = "%{instance_name}"
+  machine_type = "e2-micro"
+  %{zones}
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.my_image.self_link
+      type = "pd-balanced"
+      size = 15
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  allow_stopping_for_update = true
+}
+`, context)
+}
+
+func testAccComputeInstance_singleZone(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_compute_image" "my_image" {
+  family   = "debian-12"
+  project  = "debian-cloud"
+}
+
+resource "google_compute_instance" "foobar" {
+  name         = "%{instance_name}"
+  machine_type = "e2-micro"
+  zone         = "%{single_zone}"
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.my_image.self_link
+      type = "pd-balanced"
+      size = 15
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  allow_stopping_for_update = true
+}
+`, context)
+}
+
+func testAccComputeInstance_refresh(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_compute_image" "my_image" {
+  family   = "debian-12"
+  project  = "debian-cloud"
+}
+
+resource "google_compute_instance" "foobar1" {
+  name         = "%{instance_name}"
+  machine_type = "e2-micro"
+  %{zones_block}
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.my_image.self_link
+      type = "pd-balanced"
+      size = 15
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  allow_stopping_for_update = true
+}
+
+resource "google_compute_instance" "foobar2" {
+  name         = "%{instance_name}"
+  machine_type = "e2-micro"
+  zone         = "%{single_zone}"
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.my_image.self_link
+      type = "pd-balanced"
+      size = 15
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  allow_stopping_for_update = true
+}
+`, context)
+}
+
+func testAccComputeInstance_switchZones(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_compute_image" "my_image" {
+  family   = "debian-12"
+  project  = "debian-cloud"
+}
+
+resource "google_compute_instance" "foobar1" {
+  name         = "%{instance_name}"
+  machine_type = "e2-micro"
+  %{zones_block}
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.my_image.self_link
+      type = "pd-balanced"
+      size = 15
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  allow_stopping_for_update = true
+}
+
+resource "google_compute_instance" "foobar2" {
+  name         = "%{instance_name}"
+  machine_type = "e2-micro"
+  zone         = "%{single_zone}"
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.my_image.self_link
+      type = "pd-balanced"
+      size = 15
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  allow_stopping_for_update = true
+}
+`, context)
+}
+
+func testAccComputeInstance_multiZone_soleTenancy(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_compute_image" "my_image" {
+  family   = "debian-12"
+  project  = "debian-cloud"
+}
+
+resource "google_compute_node_template" "node_template" {
+  name      = "%{instance_name}-ntmpl"
+  region    = "%{region}"
+  node_type = "n1-node-96-624"
+  node_affinity_labels = {
+    workload = "synthetic"
+  }
+}
+
+resource "google_compute_node_group" "sole_tenant_group1" {
+  name          = "%{instance_name}-stgrp1"
+  zone          = "%{zone_1}"
+  node_template = google_compute_node_template.node_template.id
+  initial_size  = 1
+}
+
+resource "google_compute_node_group" "sole_tenant_group2" {
+  name          = "%{instance_name}-stgrp2"
+  zone          = "%{zone_2}"
+  node_template = google_compute_node_template.node_template.id
+  initial_size  = 1
+}
+
+resource "google_compute_instance" "foobar" {
+  name         = "%{instance_name}"
+  machine_type = "n1-standard-1"
+  zones {
+    zone = "%{zone_1}"
+  }
+  zones {
+    zone = "%{zone_2}"
+  }
+
+  depends_on = [
+    google_compute_node_group.sole_tenant_group1,
+    google_compute_node_group.sole_tenant_group2,
+  ]
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.my_image.self_link
+      type = "pd-balanced"
+      size = 15
+    }
+  }
+
+  network_interface {
+    subnetwork = "default"
+  }
+
+  scheduling {
+    node_affinities {
+      key      = "workload"
+      operator = "IN"
+      values   = ["synthetic"]
+    }
+  }
+
+  allow_stopping_for_update = true
 }
 `, context)
 }
