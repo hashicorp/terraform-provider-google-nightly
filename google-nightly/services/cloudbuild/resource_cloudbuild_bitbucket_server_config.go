@@ -670,6 +670,7 @@ func resourceCloudBuildBitbucketServerConfigUpdate(d *schema.ResourceData, meta 
 	if err != nil {
 		return err
 	}
+
 	// remove connectedRepositories from updateMask
 	for i, field := range updateMask {
 		if field == "connectedRepositories" {
@@ -946,7 +947,8 @@ func flattenCloudBuildBitbucketServerConfigConnectedRepositories(v interface{}, 
 	}
 	l := v.([]interface{})
 	transformed := schema.NewSet(schema.HashResource(cloudbuildBitbucketServerConfigConnectedRepositoriesSchema()), []interface{}{})
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

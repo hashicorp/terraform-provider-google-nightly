@@ -1287,7 +1287,6 @@ func TestAccSqlDatabaseInstance_updateMCPEnabled(t *testing.T) {
 		},
 	})
 }
-
 func TestAccSqlDatabaseInstance_withPSCEnabled_withAutoConnectionPolicy(t *testing.T) {
 	t.Parallel()
 
@@ -5905,9 +5904,6 @@ resource "google_sql_database_instance" "instance" {
   settings {
     tier = "%s"
     edition = "%s"
-	backup_configuration {
-	  transaction_log_retention_days = 7
-    }
   }
 }`, databaseName, tier, edition)
 }
@@ -7446,7 +7442,6 @@ resource "google_sql_database_instance" "instance" {
 }
 `, projectId, projectId, orgId, billingAccount, instanceName)
 }
-
 func testAccSqlDatabaseInstance_withPSCEnabled_withAutoConnectionPolicy(instanceName string, networkName string, projectId string) string {
 	return fmt.Sprintf(`
 resource "google_project_service_identity" "gcp_sa_cloud_sql" {
@@ -8819,6 +8814,14 @@ resource "google_sql_database_instance" "instance" {
       running_threads_threshold         = 100
       seconds_behind_source_threshold   = 3600
       transaction_duration_threshold    = 300
+      cpu_utilization_threshold_percent     = 80
+      memory_usage_threshold_percent        = 80
+      history_list_length_threshold_count   = 100000
+      semaphore_wait_threshold_count        = 100
+      transaction_lock_wait_threshold_count = 100
+      transaction_kill_threshold_seconds    = 600
+      transaction_kill_type                 = "READ_ONLY_TRANSACTIONS"
+      transaction_kill_excluded_user_hosts  = ["app_user", "admin@10.1.2.3"]
     }
   }
 }
@@ -8846,6 +8849,14 @@ resource "google_sql_database_instance" "instance" {
       running_threads_threshold         = 200
       seconds_behind_source_threshold   = 3700
       transaction_duration_threshold    = 300
+      cpu_utilization_threshold_percent     = 90
+      memory_usage_threshold_percent        = 90
+      history_list_length_threshold_count   = 200000
+      semaphore_wait_threshold_count        = 200
+      transaction_lock_wait_threshold_count = 200
+      transaction_kill_threshold_seconds    = 700
+      transaction_kill_type                 = "ALL_TRANSACTIONS"
+      transaction_kill_excluded_user_hosts  = ["app_user"]
     }
   }
 }

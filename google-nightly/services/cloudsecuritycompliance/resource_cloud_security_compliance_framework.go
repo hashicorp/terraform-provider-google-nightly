@@ -359,12 +359,13 @@ Format:
 				},
 			},
 			"supported_enforcement_modes": {
-				Type:        schema.TypeList,
+				Type:        schema.TypeSet,
 				Computed:    true,
 				Description: `The supported enforcement modes of the framework.`,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				Set: schema.HashString,
 			},
 			"supported_target_resource_types": {
 				Type:        schema.TypeList,
@@ -700,6 +701,7 @@ func resourceCloudSecurityComplianceFrameworkUpdate(d *schema.ResourceData, meta
 	if err != nil {
 		return err
 	}
+
 	if d.Get("parent").(string) == "" && d.Get("organization").(string) != "" {
 		if err := d.Set("parent", "organizations/"+d.Get("organization").(string)); err != nil {
 			return err
@@ -830,7 +832,8 @@ func flattenCloudSecurityComplianceFrameworkCloudControlDetails(v interface{}, d
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -858,7 +861,8 @@ func flattenCloudSecurityComplianceFrameworkCloudControlDetailsParameters(v inte
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -1013,7 +1017,10 @@ func flattenCloudSecurityComplianceFrameworkSupportedCloudProviders(v interface{
 }
 
 func flattenCloudSecurityComplianceFrameworkSupportedEnforcementModes(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
-	return v
+	if v == nil {
+		return v
+	}
+	return schema.NewSet(schema.HashString, v.([]interface{}))
 }
 
 func flattenCloudSecurityComplianceFrameworkSupportedTargetResourceTypes(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {

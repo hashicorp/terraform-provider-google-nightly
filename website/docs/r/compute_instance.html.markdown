@@ -147,7 +147,9 @@ The following arguments are supported:
 * `name` - (Required) A unique name for the resource, required by GCE.
     Changing this forces a new resource to be created.
 
-* `zone` - (Optional) The zone that the machine should be created in. If it is not provided, the provider zone is used.
+* `zone` - (Optional) The zone in which you want to create the instance. If a zone isn't provided, the provider zone is used. Mutually exclusive with `zones`.
+
+* `zones` - (Optional) A set of at least two zones in the same region where the instance can be created. Compute Engine selects a zone from this set based on resource availability. If multiple zones have available resources, Compute Engine automatically selects one. Structure is [documented below](#nested_zones). Mutually exclusive with `zone`.
 
 * `network_interface` - (Required) Networks to attach to the instance. This can
     be specified multiple times. Structure is [documented below](#nested_network_interface).
@@ -619,7 +621,7 @@ specified, then this instance will have no external IPv6 Internet access. Struct
 
 * `on_instance_stop_action` - (Optional) Specifies the action to be performed when the instance is terminated using `max_run_duration` and `STOP` `instance_termination_action`. Only support `true` `discard_local_ssd` at this point. Structure is [documented below](#nested_on_instance_stop_action).
 
-* `host_error_timeout_seconds` - (Optional) [Beta](../guides/provider_versions.html.markdown) Specifies the time in seconds for host error detection, the value must be within the range of [90, 330] with the increment of 30, if unset, the default behavior of host error recovery will be used.
+* `host_error_timeout_seconds` - (Optional) Specifies the time in seconds for host error detection, the value must be within the range of [90, 330] with the increment of 30, if unset, the default behavior of host error recovery will be used.
 
 * `maintenance_interval` - (Optional) [Beta](../guides/provider_versions.html.markdown) Specifies the frequency of planned maintenance events. The accepted values are: `PERIODIC`.
 
@@ -752,6 +754,10 @@ specified, then this instance will have no external IPv6 Internet access. Struct
 * `identity` - (Required) Identity SPIFFE id.
 
 * `identity_certificate_enabled` - (Required) Specifies whether identity certificates are enabled.
+
+<a name="nested_zones"></a>The `zones` block supports:
+
+* `zone` - (Required) The zone in which you want to create the instance.
 
 ## Attributes Reference
 

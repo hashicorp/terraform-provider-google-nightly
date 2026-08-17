@@ -482,6 +482,7 @@ func resourceDialogflowSipTrunkUpdate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return err
 	}
+
 	location := d.Get("location").(string)
 	universeDomain := config.UniverseDomain
 
@@ -646,7 +647,8 @@ func flattenDialogflowSipTrunkConnections(v interface{}, d *schema.ResourceData,
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

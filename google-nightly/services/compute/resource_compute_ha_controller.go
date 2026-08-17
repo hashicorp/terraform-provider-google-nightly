@@ -145,15 +145,16 @@ func ResourceComputeHaController() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Description: `Name of the instance that HaController is in charge of.
-Must comply with RFC1035. Instance must exist in one of two provided zones.`,
+				Description: `The name of the instance that the HA Controller manages.
+The name must comply with RFC1035.
+The instance must exist in one of the two zones specified in the zone_configuration block.`,
 			},
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Description: `Name of the resource.
-The name must be 1-63 characters long, and comply with RFC1035.`,
+				Description: `The name for the resource.
+The name must be 1-63 characters long and comply with RFC1035.`,
 			},
 			"region": {
 				Type:             schema.TypeString,
@@ -167,7 +168,7 @@ The name must be 1-63 characters long, and comply with RFC1035.`,
 				Type:        schema.TypeSet,
 				Required:    true,
 				ForceNew:    true,
-				Description: `Set of 2 distinct zones configurations.`,
+				Description: `A set of exactly two distinct zone configurations.`,
 				MinItems:    2,
 				MaxItems:    2,
 				Elem:        computeHaControllerZoneConfigurationSchema(),
@@ -178,9 +179,9 @@ The name must be 1-63 characters long, and comply with RFC1035.`,
 				Computed: true,
 				Optional: true,
 				ForceNew: true,
-				Description: `Currently, only one backend service can be specified,
-and it must be for an L4 Internal Load Balancer (ILB).
-Provide the full URL of the backend service.`,
+				Description: `The full URL of the backend service.
+Currently, you can specify only one backend service,
+and it must be an L4 Internal Load Balancer (ILB).`,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -197,10 +198,9 @@ Maximum length of 2048 characters.`,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: verify.ValidateEnum([]string{"AUTOMATIC", "MANUAL_ONLY", ""}),
-				Description: `Indicates how failover should be initiated.
-Possible values are:
-- "AUTOMATIC": Automatically detect zonal outages and perform failover.
-- "MANUAL_ONLY": Failover is not initiated automatically, a user has to perform it manually. Possible values: ["AUTOMATIC", "MANUAL_ONLY"]`,
+				Description: `Specifies how to initiate failover. Valid values are the following:
+* 'AUTOMATIC': Automatically detects zonal outages and performs failover.
+* 'MANUAL_ONLY': Requires you to manually initiate failover. Possible values: ["AUTOMATIC", "MANUAL_ONLY"]`,
 			},
 			"networking_auto_configuration": {
 				Type:     schema.TypeList,
@@ -226,16 +226,18 @@ forwarding rules will be automatically created with default parameters.`,
 										Computed: true,
 										Optional: true,
 										ForceNew: true,
-										Description: `IP addresses will be automatically allocated according to
-StackType if not provided.`,
+										Description: `The IP address. If you don't provide this value,
+then Terraform automatically allocates the IP address based on
+the stack_type.`,
 									},
 									"ipv6_address": {
 										Type:     schema.TypeString,
 										Computed: true,
 										Optional: true,
 										ForceNew: true,
-										Description: `IP addresses will be automatically allocated according to
-StackType if not provided.`,
+										Description: `The IPv6 address. If you don't provide this value,
+then Terraform automatically allocates the IPv6 address based on
+the stack_type.`,
 									},
 									"stack_type": {
 										Type:         schema.TypeString,
@@ -245,9 +247,9 @@ StackType if not provided.`,
 										ValidateFunc: verify.ValidateEnum([]string{"IPV4_ONLY", "IPV4_IPV6", "IPV6_ONLY", ""}),
 										Description: `Determine which IP addresses to automatically create.
 Possible values:
-- "IPV4_ONLY": Assign IPv4 address only.
-- "IPV4_IPV6": Assign both IPv4 and IPv6 addresses.
-- "IPV6_ONLY": Assign IPv6 address only. Possible values: ["IPV4_ONLY", "IPV4_IPV6", "IPV6_ONLY"]`,
+- 'IPV4_ONLY': Assign IPv4 address only.
+- 'IPV4_IPV6': Assign both IPv4 and IPv6 addresses.
+- 'IPV6_ONLY': Assign IPv6 address only. Possible values: ["IPV4_ONLY", "IPV4_IPV6", "IPV6_ONLY"]`,
 									},
 								},
 							},
@@ -289,15 +291,15 @@ func computeHaControllerZoneConfigurationSchema() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: `Required, should be unique for every set item.`,
+				Description: `The name of the zone. The zone must be unique for each block.`,
 			},
 			"node_affinities": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
 				Description: `Specifies node affinities or anti-affinities to determine
-which sole-tenant nodes your instances and managed instance groups
-will use as host systems`,
+which sole-tenant nodes your instances and managed instance groups (MIGs) use
+as host systems.`,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"key": {
@@ -313,8 +315,8 @@ will use as host systems`,
 							ValidateFunc: verify.ValidateEnum([]string{"IN", "NOT_IN", ""}),
 							Description: `Defines the operation of node selection.
 Possible values:
-- "IN": Requires Compute Engine to seek for matched nodes.
-- "NOT_IN": Requires Compute Engine to avoid certain nodes. Possible values: ["IN", "NOT_IN"]`,
+- 'IN': Requires Compute Engine to seek for matched nodes.
+- 'NOT_IN': Requires Compute Engine to avoid certain nodes. Possible values: ["IN", "NOT_IN"]`,
 						},
 						"values": {
 							Type:        schema.TypeList,
@@ -372,12 +374,12 @@ Limited to a single value.`,
 							ForceNew:     true,
 							ValidateFunc: verify.ValidateEnum([]string{"NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION", "SPECIFIC_THEN_ANY_RESERVATION", "SPECIFIC_THEN_NO_RESERVATION", "ANY_RESERVATION_THEN_FAIL", ""}),
 							Description: `Specifies the type of reservation from which this instance can consume resources. Possible values:
-- "NO_RESERVATION": Do not consume from any allocated capacity.
-- "ANY_RESERVATION": Consume any allocation available.
-- "SPECIFIC_RESERVATION": Must consume from a specific reservation (key and values must be set).
-- "SPECIFIC_THEN_ANY_RESERVATION": Prefer specific, fallback to any.
-- "SPECIFIC_THEN_NO_RESERVATION": Prefer specific, fallback to on-demand.
-- "ANY_RESERVATION_THEN_FAIL": Consume any, fail if none. Possible values: ["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION", "SPECIFIC_THEN_ANY_RESERVATION", "SPECIFIC_THEN_NO_RESERVATION", "ANY_RESERVATION_THEN_FAIL"]`,
+- 'NO_RESERVATION': The instance doesn't consume any reservations, even if existing, matching reservations have capacity available.
+- 'ANY_RESERVATION': The instance automatically consumes any reservation with matching properties.
+- 'SPECIFIC_RESERVATION': The instance consumes a specific, matching reservation. You must also provide key and values to consume the reservation. Otherwise, you encounter errors.
+- 'SPECIFIC_THEN_ANY_RESERVATION': The instance consumes a specific, matching reservation if available. Otherwise, the instance consumes any reservation with matching properties.
+- 'SPECIFIC_THEN_NO_RESERVATION': The instance consumes a specific, matching reservation if available. Otherwise, the instance doesn't consume any reservations.
+- 'ANY_RESERVATION_THEN_FAIL': The instance automatically consumes any reservation with matching properties. Otherwise, creating the instance fails. Possible values: ["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION", "SPECIFIC_THEN_ANY_RESERVATION", "SPECIFIC_THEN_NO_RESERVATION", "ANY_RESERVATION_THEN_FAIL"]`,
 						},
 					},
 				},

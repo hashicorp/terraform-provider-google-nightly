@@ -626,6 +626,7 @@ func resourceComputeNetworkEndpointsUpdate(d *schema.ResourceData, meta interfac
 
 	log.Printf("[DEBUG] Updating NetworkEndpoints %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
 	detachUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/networkEndpointGroups/{{network_endpoint_group}}/detachNetworkEndpoints")
 	o, n := d.GetChange("network_endpoints")
 
@@ -862,7 +863,8 @@ func flattenComputeNetworkEndpointsNetworkEndpoints(v interface{}, d *schema.Res
 	}
 	l := v.([]interface{})
 	transformed := schema.NewSet(schema.HashResource(computeNetworkEndpointsNetworkEndpointsSchema()), []interface{}{})
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

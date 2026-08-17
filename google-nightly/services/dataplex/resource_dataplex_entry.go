@@ -892,6 +892,7 @@ func resourceDataplexEntryUpdate(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return err
 	}
+
 	if d.HasChange("aspects") {
 		url, err = transport_tpg.AddQueryParams(url, map[string]string{"deleteMissingAspects": "true"})
 		if err != nil {
@@ -1219,7 +1220,8 @@ func flattenDataplexEntryEntrySourceAncestors(v interface{}, d *schema.ResourceD
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

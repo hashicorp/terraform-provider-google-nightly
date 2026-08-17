@@ -247,6 +247,11 @@ func Provider() *schema.Provider {
 				Optional:     true,
 				ValidateFunc: ValidateCustomEndpoint,
 			},
+			"agentic_applications_custom_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: ValidateCustomEndpoint,
+			},
 			"agent_identity_custom_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -468,6 +473,11 @@ func Provider() *schema.Provider {
 				ValidateFunc: ValidateCustomEndpoint,
 			},
 			"cloud_security_compliance_custom_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: ValidateCustomEndpoint,
+			},
+			"cloud_support_custom_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: ValidateCustomEndpoint,
@@ -1093,6 +1103,11 @@ func Provider() *schema.Provider {
 				ValidateFunc: ValidateCustomEndpoint,
 			},
 			"storage_control_custom_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: ValidateCustomEndpoint,
+			},
+			"storage_ftp_custom_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: ValidateCustomEndpoint,

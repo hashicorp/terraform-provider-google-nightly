@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
@@ -109,6 +110,94 @@ resource "google_cloud_run_v2_service" "default" {
   }
   
   template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+    }
+  }
+}
+`, context)
+}
+
+func TestAccCloudRunV2Service_cloudrunv2ServiceScalingControlsExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"cloud_run_service_name": "tf-test-cloudrun-service" + randomSuffix,
+		"concurrency_util":       "0.5",
+		"cpu_util":               "0.75",
+		"random_suffix":          randomSuffix,
+	}
+
+	context_1 := map[string]interface{}{
+		"cloud_run_service_name": "tf-test-cloudrun-service" + randomSuffix,
+		"concurrency_util":       "0.8",
+		"cpu_util":               "0.6",
+		"random_suffix":          randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		CheckDestroy:             testAccCheckCloudRunV2ServiceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudRunV2Service_cloudrunv2ServiceScalingControlsExample(context),
+			},
+			{
+				ResourceName:            "google_cloud_run_v2_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"annotations", "deletion_protection", "labels", "location", "name", "tags", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_cloud_run_v2_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+			{
+				Config: testAccCloudRunV2Service_cloudrunv2ServiceScalingControlsExample(context_1),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_cloud_run_v2_service.default", plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ResourceName:            "google_cloud_run_v2_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"annotations", "deletion_protection", "labels", "location", "name", "tags", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_cloud_run_v2_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccCloudRunV2Service_cloudrunv2ServiceScalingControlsExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_cloud_run_v2_service" "default" {
+  provider = google-beta
+  name     = "%{cloud_run_service_name}"
+  location = "us-central1"
+  deletion_protection = false
+  ingress = "INGRESS_TRAFFIC_ALL"
+  launch_stage = "BETA"
+
+  template {
+    scaling {
+      min_instance_count      = 1
+      max_instance_count      = 5
+      cpu_utilization         = %{cpu_util}
+      concurrency_utilization = %{concurrency_util}
+    }
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello"
     }
@@ -1274,6 +1363,208 @@ resource "google_cloud_run_v2_service" "default" {
     ignore_changes = [
       launch_stage,
     ]
+  }
+}
+`, context)
+}
+
+func TestAccCloudRunV2Service_cloudrunv2ServiceSandboxExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"cloud_run_service_name": "tf-test-cloudrun-service" + randomSuffix,
+		"random_suffix":          randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckCloudRunV2ServiceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudRunV2Service_cloudrunv2ServiceSandboxExample(context),
+			},
+			{
+				ResourceName:            "google_cloud_run_v2_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"annotations", "deletion_protection", "labels", "location", "name", "tags", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_cloud_run_v2_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccCloudRunV2Service_cloudrunv2ServiceSandboxExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_cloud_run_v2_service" "default" {
+  name     = "%{cloud_run_service_name}"
+  location = "us-central1"
+  deletion_protection = false
+  launch_stage = "BETA"
+  template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      sandbox_launcher = true
+    }
+  }
+}
+`, context)
+}
+
+func TestAccCloudRunV2Service_cloudrunv2ServiceSandboxTemplatesExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"cloud_run_service_name": "tf-test-cloudrun-service" + randomSuffix,
+		"random_suffix":          randomSuffix,
+	}
+
+	context_1 := map[string]interface{}{
+		"cloud_run_service_name": "tf-test-cloudrun-service" + randomSuffix,
+		"random_suffix":          randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckCloudRunV2ServiceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudRunV2Service_cloudrunv2ServiceSandboxTemplatesExample(context),
+			},
+			{
+				ResourceName:            "google_cloud_run_v2_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"annotations", "deletion_protection", "labels", "location", "name", "tags", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_cloud_run_v2_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+			{
+				Config: testAccCloudRunV2Service_cloudrunv2ServiceSandboxTemplatesUpdateExample(context_1),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_cloud_run_v2_service.default", plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ResourceName:            "google_cloud_run_v2_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"annotations", "deletion_protection", "labels", "location", "name", "tags", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_cloud_run_v2_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccCloudRunV2Service_cloudrunv2ServiceSandboxTemplatesExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_cloud_run_v2_service" "default" {
+  name     = "%{cloud_run_service_name}"
+  location = "us-central1"
+  deletion_protection = false
+  launch_stage = "ALPHA"
+  template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      sandbox_launcher = true
+      volume_mounts {
+        name = "empty-dir-volume"
+        mount_path = "/mnt"
+      }
+    }
+    sandboxes {
+      templates {
+        name  = "hello"
+        image = "us-docker.pkg.dev/cloudrun/container/hello"
+        command = ["/bin/sh"]
+        args = ["-c", "echo hello"]
+        env {
+          name = "PORT"
+          value = "9000"
+        }
+        volume_mounts {
+          name = "empty-dir-volume"
+          mount_path = "/mnt"
+          sub_path = "/home/user"
+        }
+        working_dir = "/mnt/app"
+      }
+    }
+    volumes {
+      name = "empty-dir-volume"
+      empty_dir {
+        medium = "MEMORY"
+        size_limit = "256Mi"
+      }
+    }
+  }
+}
+`, context)
+}
+
+func testAccCloudRunV2Service_cloudrunv2ServiceSandboxTemplatesUpdateExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_cloud_run_v2_service" "default" {
+  name     = "%{cloud_run_service_name}"
+  location = "us-central1"
+  deletion_protection = false
+  launch_stage = "ALPHA"
+  template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      sandbox_launcher = true
+      volume_mounts {
+        name = "empty-dir-volume"
+        mount_path = "/mnt"
+      }
+    }
+    sandboxes {
+      templates {
+        name  = "hello"
+        image = "us-docker.pkg.dev/cloudrun/container/hello"
+        command = ["/bin/sh"]
+        args = ["-c", "echo goodbye"]
+        env {
+          name = "PORT"
+          value = "9001"
+        }
+        volume_mounts {
+          name = "empty-dir-volume"
+          mount_path = "/mnt"
+          sub_path = "/home/user"
+        }
+        working_dir = "/mnt/app"
+      }
+    }
+    volumes {
+      name = "empty-dir-volume"
+      empty_dir {
+        medium = "MEMORY"
+        size_limit = "256Mi"
+      }
+    }
   }
 }
 `, context)

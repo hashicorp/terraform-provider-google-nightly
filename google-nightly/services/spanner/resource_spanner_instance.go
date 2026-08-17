@@ -905,6 +905,7 @@ func resourceSpannerInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 
 	log.Printf("[DEBUG] Updating Instance %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
 	if resourceSpannerInstanceVirtualUpdate(d, ResourceSpannerInstance().Schema) {
 		if d.Get("force_destroy") != nil {
 			if err := d.Set("force_destroy", d.Get("force_destroy")); err != nil {
@@ -1299,7 +1300,8 @@ func flattenSpannerInstanceAutoscalingConfigAsymmetricAutoscalingOptions(v inter
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

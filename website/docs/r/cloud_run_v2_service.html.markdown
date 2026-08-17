@@ -57,6 +57,36 @@ resource "google_cloud_run_v2_service" "default" {
 }
 ```
 <div class = "oics-button" style="float: right; margin: 0 0 -15px">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=cloudrunv2_service_scaling_controls&open_in_editor=main.tf" target="_blank">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
+## Example Usage - Cloudrunv2 Service Scaling Controls
+
+
+```hcl
+resource "google_cloud_run_v2_service" "default" {
+  provider = google-beta
+  name     = "cloudrun-service"
+  location = "us-central1"
+  deletion_protection = false
+  ingress = "INGRESS_TRAFFIC_ALL"
+  launch_stage = "BETA"
+
+  template {
+    scaling {
+      min_instance_count      = 1
+      max_instance_count      = 5
+      cpu_utilization         = 0.75
+      concurrency_utilization = 0.5
+    }
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+    }
+  }
+}
+```
+<div class = "oics-button" style="float: right; margin: 0 0 -15px">
   <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=cloudrunv2_service_limits&open_in_editor=main.tf" target="_blank">
     <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
   </a>
@@ -757,6 +787,79 @@ resource "google_cloud_run_v2_service" "default" {
   }
 }
 ```
+<div class = "oics-button" style="float: right; margin: 0 0 -15px">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=cloudrunv2_service_sandbox&open_in_editor=main.tf" target="_blank">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
+## Example Usage - Cloudrunv2 Service Sandbox
+
+
+```hcl
+resource "google_cloud_run_v2_service" "default" {
+  name     = "cloudrun-service"
+  location = "us-central1"
+  deletion_protection = false
+  launch_stage = "BETA"
+  template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      sandbox_launcher = true
+    }
+  }
+}
+```
+<div class = "oics-button" style="float: right; margin: 0 0 -15px">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=cloudrunv2_service_sandbox_templates&open_in_editor=main.tf" target="_blank">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
+## Example Usage - Cloudrunv2 Service Sandbox Templates
+
+
+```hcl
+resource "google_cloud_run_v2_service" "default" {
+  name     = "cloudrun-service"
+  location = "us-central1"
+  deletion_protection = false
+  launch_stage = "ALPHA"
+  template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      sandbox_launcher = true
+      volume_mounts {
+        name = "empty-dir-volume"
+        mount_path = "/mnt"
+      }
+    }
+    sandboxes {
+      templates {
+        name  = "hello"
+        image = "us-docker.pkg.dev/cloudrun/container/hello"
+        command = ["/bin/sh"]
+        args = ["-c", "echo hello"]
+        env {
+          name = "PORT"
+          value = "9000"
+        }
+        volume_mounts {
+          name = "empty-dir-volume"
+          mount_path = "/mnt"
+          sub_path = "/home/user"
+        }
+        working_dir = "/mnt/app"
+      }
+    }
+    volumes {
+      name = "empty-dir-volume"
+      empty_dir {
+        medium = "MEMORY"
+        size_limit = "256Mi"
+      }
+    }
+  }
+}
+```
 
 ## Argument Reference
 
@@ -970,6 +1073,11 @@ When the field is set to false, deleting the service is allowed.
   (Optional)
   Disables health checking containers during deployment.
 
+* `sandboxes` -
+  (Optional)
+  Configuration for sandboxes.
+  Structure is [documented below](#nested_template_sandboxes).
+
 
 <a name="nested_template_scaling"></a>The `scaling` block supports:
 
@@ -981,6 +1089,14 @@ When the field is set to false, deleting the service is allowed.
   (Optional)
   Maximum number of serving instances that this resource should have. Must not be less than minimum instance count. If absent, Cloud Run will calculate
   a default value based on the project's available container instances quota in the region and specified instance size.
+
+* `cpu_utilization` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  Determines a threshold for CPU utilization before scaling begins. Accepted values are between 0.1 and 0.95 (inclusive) or 0.0 to disable CPU utilization as threshold for scaling. CPU and concurrency scaling cannot both be disabled.
+
+* `concurrency_utilization` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  Determines a threshold for concurrency utilization before scaling begins. Accepted values are between 0.1 and 0.95 (inclusive) or 0.0 to disable concurrency utilization as threshold for scaling. CPU and concurrency scaling cannot both be disabled.
 
 <a name="nested_template_vpc_access"></a>The `vpc_access` block supports:
 
@@ -1050,6 +1166,10 @@ When the field is set to false, deleting the service is allowed.
   List of ports to expose from the container. Only a single port can be specified. The specified ports must be listening on all interfaces (0.0.0.0) within the container to be accessible.
   If omitted, a port number will be chosen and passed to the container through the PORT environment variable for the container to listen on
   Structure is [documented below](#nested_template_containers_ports).
+
+* `sandbox_launcher` -
+  (Optional)
+  Indicates that this container can act as a sandbox supervisor and launch sandboxes.
 
 * `volume_mounts` -
   (Optional)
@@ -1539,6 +1659,71 @@ When the field is set to false, deleting the service is allowed.
 * `accelerator` -
   (Required)
   The GPU to attach to an instance. See https://cloud.google.com/run/docs/configuring/services/gpu for configuring GPU.
+
+<a name="nested_template_sandboxes"></a>The `sandboxes` block supports:
+
+* `templates` -
+  (Optional)
+  Sandbox templates that can be launched through the `sandbox` CLI.
+  Structure is [documented below](#nested_template_sandboxes_templates).
+
+
+<a name="nested_template_sandboxes_templates"></a>The `templates` block supports:
+
+* `name` -
+  (Required)
+  Name of the sandbox specified as a DNS_LABEL (RFC 1123).
+
+* `image` -
+  (Required)
+  Name of the container image in Dockerhub or Artifact Registry. If the host is not provided, Dockerhub is assumed.
+
+* `command` -
+  (Optional)
+  Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided.
+
+* `args` -
+  (Optional)
+  Arguments to the entrypoint. The docker image's CMD is used if this is not provided.
+
+* `env` -
+  (Optional)
+  List of environment variables to set in the sandbox.
+  Structure is [documented below](#nested_template_sandboxes_templates_env).
+
+* `volume_mounts` -
+  (Optional)
+  Volume to mount into the container's filesystem.
+  Structure is [documented below](#nested_template_sandboxes_templates_volume_mounts).
+
+* `working_dir` -
+  (Optional)
+  Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image.
+
+
+<a name="nested_template_sandboxes_templates_env"></a>The `env` block supports:
+
+* `name` -
+  (Required)
+  Name of the environment variable. Must be a C_IDENTIFIER, and may not exceed 32768 characters.
+
+* `value` -
+  (Optional)
+  Literal value of the environment variable. Defaults to "" and the maximum allowed length is 32768 characters. Variable references are not supported in Cloud Run.
+
+<a name="nested_template_sandboxes_templates_volume_mounts"></a>The `volume_mounts` block supports:
+
+* `name` -
+  (Required)
+  This must match the Name of a Volume.
+
+* `mount_path` -
+  (Required)
+  Path within the container at which the volume should be mounted. Must not contain ':'. For Cloud SQL volumes, it can be left empty, or must otherwise be /cloudsql. All instances defined in the Volume will be available as /cloudsql/[instance]. For more information on Cloud SQL volumes, visit https://cloud.google.com/sql/docs/mysql/connect-run
+
+* `sub_path` -
+  (Optional)
+  Path within the volume from which the container's volume should be mounted.
 
 <a name="nested_binary_authorization"></a>The `binary_authorization` block supports:
 

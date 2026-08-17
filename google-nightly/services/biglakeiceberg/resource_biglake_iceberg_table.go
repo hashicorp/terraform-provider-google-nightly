@@ -59,6 +59,7 @@ var icebergTableIgnoredProperties = map[string]bool{
 	"gcp.biglake.bigquery-advanced.enabled": true,
 	"gcp.biglake.bigquery-dml.enabled":      true,
 	"gcp.biglake.table-management.enabled":  true,
+	"write.parquet.compression-codec":       true,
 }
 
 func icebergTablePropertiesDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
@@ -68,6 +69,18 @@ func icebergTablePropertiesDiffSuppress(k, old, new string, d *schema.ResourceDa
 		return true
 	}
 	return false
+}
+
+func icebergTableLocationDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
+	if new == "" {
+		return true
+	}
+	oldClean := strings.TrimSuffix(old, "/")
+	newClean := strings.TrimSuffix(new, "/")
+	if oldClean == newClean {
+		return true
+	}
+	return strings.HasPrefix(oldClean, newClean+"/")
 }
 
 // expandIcebergTableSortOrderForCommit converts the Terraform "sort_order" block
@@ -311,11 +324,12 @@ func ResourceBiglakeIcebergIcebergTable() *schema.Resource {
 				},
 			},
 			"location": {
-				Type:        schema.TypeString,
-				Computed:    true,
-				Optional:    true,
-				ForceNew:    true,
-				Description: `The location of the table.`,
+				Type:             schema.TypeString,
+				Computed:         true,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: icebergTableLocationDiffSuppress,
+				Description:      `The location of the table.`,
 			},
 			"partition_spec": {
 				Type:        schema.TypeList,
@@ -905,10 +919,10 @@ func resourceBiglakeIcebergIcebergTableUpdate(d *schema.ResourceData, meta inter
 
 	log.Printf("[DEBUG] Updating IcebergTable %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
 	if err := addIcebergTableAccessDelegationHeader(d, config, billingProject, userAgent, headers); err != nil {
 		return err
 	}
-
 	if parts := regexp.MustCompile(`projects\/([^\/]+)\/`).FindStringSubmatch(url); parts != nil {
 		billingProject = parts[1]
 	}
@@ -1076,7 +1090,8 @@ func flattenBiglakeIcebergIcebergTableSchemaFields(v interface{}, d *schema.Reso
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -1163,7 +1178,8 @@ func flattenBiglakeIcebergIcebergTablePartitionSpecFields(v interface{}, d *sche
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -1258,7 +1274,8 @@ func flattenBiglakeIcebergIcebergTableSortOrderFields(v interface{}, d *schema.R
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

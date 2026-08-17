@@ -372,17 +372,18 @@ The following arguments are supported:
 
 * `name` -
   (Required)
-  Name of the resource.
-  The name must be 1-63 characters long, and comply with RFC1035.
+  The name for the resource.
+  The name must be 1-63 characters long and comply with RFC1035.
 
 * `instance_name` -
   (Required)
-  Name of the instance that HaController is in charge of.
-  Must comply with RFC1035. Instance must exist in one of two provided zones.
+  The name of the instance that the HA Controller manages.
+  The name must comply with RFC1035.
+  The instance must exist in one of the two zones specified in the zone_configuration block.
 
 * `zone_configuration` -
   (Required)
-  Set of 2 distinct zones configurations.
+  A set of exactly two distinct zone configurations.
   Structure is [documented below](#nested_zone_configuration).
 
 * `region` -
@@ -397,11 +398,9 @@ The following arguments are supported:
 
 * `failover_initiation` -
   (Optional)
-  Indicates how failover should be initiated.
-  Possible values are:
-  - "AUTOMATIC": Automatically detect zonal outages and perform failover.
-  - "MANUAL_ONLY": Failover is not initiated automatically, a user has to perform it manually.
-  Possible values are: `AUTOMATIC`, `MANUAL_ONLY`.
+  Specifies how to initiate failover. Valid values are the following:
+  * `AUTOMATIC`: Automatically detects zonal outages and performs failover.
+  * `MANUAL_ONLY`: Requires you to manually initiate failover.
 
 * `networking_auto_configuration` -
   (Optional)
@@ -411,9 +410,9 @@ The following arguments are supported:
 
 * `backend_services` -
   (Optional)
-  Currently, only one backend service can be specified,
-  and it must be for an L4 Internal Load Balancer (ILB).
-  Provide the full URL of the backend service.
+  The full URL of the backend service.
+  Currently, you can specify only one backend service,
+  and it must be an L4 Internal Load Balancer (ILB).
 
 * `project` - (Optional) The ID of the project in which the resource belongs.
     If it is not provided, the provider project is used.
@@ -430,7 +429,7 @@ The following arguments are supported:
 
 * `zone` -
   (Required)
-  Required, should be unique for every set item.
+  The name of the zone. The zone must be unique for each block.
 
 * `reservation_affinity` -
   (Optional)
@@ -440,8 +439,8 @@ The following arguments are supported:
 * `node_affinities` -
   (Optional)
   Specifies node affinities or anti-affinities to determine
-  which sole-tenant nodes your instances and managed instance groups
-  will use as host systems
+  which sole-tenant nodes your instances and managed instance groups (MIGs) use
+  as host systems.
   Structure is [documented below](#nested_zone_configuration_node_affinities).
 
 
@@ -450,13 +449,12 @@ The following arguments are supported:
 * `type` -
   (Optional)
   Specifies the type of reservation from which this instance can consume resources. Possible values:
-  - "NO_RESERVATION": Do not consume from any allocated capacity.
-  - "ANY_RESERVATION": Consume any allocation available.
-  - "SPECIFIC_RESERVATION": Must consume from a specific reservation (key and values must be set).
-  - "SPECIFIC_THEN_ANY_RESERVATION": Prefer specific, fallback to any.
-  - "SPECIFIC_THEN_NO_RESERVATION": Prefer specific, fallback to on-demand.
-  - "ANY_RESERVATION_THEN_FAIL": Consume any, fail if none.
-  Possible values are: `NO_RESERVATION`, `ANY_RESERVATION`, `SPECIFIC_RESERVATION`, `SPECIFIC_THEN_ANY_RESERVATION`, `SPECIFIC_THEN_NO_RESERVATION`, `ANY_RESERVATION_THEN_FAIL`.
+  - `NO_RESERVATION`: The instance doesn't consume any reservations, even if existing, matching reservations have capacity available.
+  - `ANY_RESERVATION`: The instance automatically consumes any reservation with matching properties.
+  - `SPECIFIC_RESERVATION`: The instance consumes a specific, matching reservation. You must also provide key and values to consume the reservation. Otherwise, you encounter errors.
+  - `SPECIFIC_THEN_ANY_RESERVATION`: The instance consumes a specific, matching reservation if available. Otherwise, the instance consumes any reservation with matching properties.
+  - `SPECIFIC_THEN_NO_RESERVATION`: The instance consumes a specific, matching reservation if available. Otherwise, the instance doesn't consume any reservations.
+  - `ANY_RESERVATION_THEN_FAIL`: The instance automatically consumes any reservation with matching properties. Otherwise, creating the instance fails.
 
 * `specific_reservation` -
   (Optional)
@@ -488,9 +486,8 @@ The following arguments are supported:
   (Optional)
   Defines the operation of node selection.
   Possible values:
-  - "IN": Requires Compute Engine to seek for matched nodes.
-  - "NOT_IN": Requires Compute Engine to avoid certain nodes.
-  Possible values are: `IN`, `NOT_IN`.
+  - `IN`: Requires Compute Engine to seek for matched nodes.
+  - `NOT_IN`: Requires Compute Engine to avoid certain nodes.
 
 * `values` -
   (Optional)
@@ -510,20 +507,21 @@ The following arguments are supported:
   (Optional)
   Determine which IP addresses to automatically create.
   Possible values:
-  - "IPV4_ONLY": Assign IPv4 address only.
-  - "IPV4_IPV6": Assign both IPv4 and IPv6 addresses.
-  - "IPV6_ONLY": Assign IPv6 address only.
-  Possible values are: `IPV4_ONLY`, `IPV4_IPV6`, `IPV6_ONLY`.
+  - `IPV4_ONLY`: Assign IPv4 address only.
+  - `IPV4_IPV6`: Assign both IPv4 and IPv6 addresses.
+  - `IPV6_ONLY`: Assign IPv6 address only.
 
 * `ip_address` -
   (Optional)
-  IP addresses will be automatically allocated according to
-  StackType if not provided.
+  The IP address. If you don't provide this value,
+  then Terraform automatically allocates the IP address based on
+  the stack_type.
 
 * `ipv6_address` -
   (Optional)
-  IP addresses will be automatically allocated according to
-  StackType if not provided.
+  The IPv6 address. If you don't provide this value,
+  then Terraform automatically allocates the IPv6 address based on
+  the stack_type.
 
 ## Attributes Reference
 

@@ -748,6 +748,7 @@ func resourceModelArmorTemplateUpdate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return err
 	}
+
 	// Ensure templateMetadata is in the request body when it's in the update mask.
 	// When template_metadata is not in the user's config, the expand function
 	// returns nil so templateMetadata is absent from obj. But if the API previously
@@ -942,7 +943,8 @@ func flattenModelArmorTemplateFilterConfigRaiSettingsRaiFilters(v interface{}, d
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
