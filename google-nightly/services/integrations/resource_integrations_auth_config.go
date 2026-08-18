@@ -900,6 +900,7 @@ func resourceIntegrationsAuthConfigUpdate(d *schema.ResourceData, meta interface
 
 	log.Printf("[DEBUG] Updating AuthConfig %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
 	params := map[string]string{}
 
 	// Move client certificate to url param from request body
@@ -1240,7 +1241,8 @@ func flattenIntegrationsAuthConfigDecryptedCredentialOauth2ClientCredentialsToke
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

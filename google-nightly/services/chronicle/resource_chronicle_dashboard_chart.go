@@ -1761,6 +1761,7 @@ func resourceChronicleDashboardChartUpdate(d *schema.ResourceData, meta interfac
 
 	log.Printf("[DEBUG] Updating DashboardChart %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
 	// 1. Extraction of the query name
 	rawQuery := d.Get("dashboard_query").([]interface{})
 	if len(rawQuery) == 0 || rawQuery[0] == nil {
@@ -2032,7 +2033,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationXAxes(v interface{
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2095,7 +2097,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationYAxes(v interface{
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2158,7 +2161,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationSeries(v interface
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2444,7 +2448,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationSeriesItemColorsCo
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2579,7 +2584,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationSeriesGaugeConfigT
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2677,7 +2683,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationLegends(v interfac
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2827,7 +2834,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationColumnDefs(v inter
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2875,7 +2883,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationTableConfigColumnR
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -2902,7 +2911,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationTableConfigColumnT
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3152,7 +3162,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationVisualMaps(v inter
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3175,7 +3186,8 @@ func flattenChronicleDashboardChartDashboardChartVisualizationVisualMapsPieces(v
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3253,7 +3265,8 @@ func flattenChronicleDashboardChartDashboardChartDrillDownConfigLeftDrillDowns(v
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3358,7 +3371,8 @@ func flattenChronicleDashboardChartDashboardChartDrillDownConfigLeftDrillDownsCu
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3381,7 +3395,8 @@ func flattenChronicleDashboardChartDashboardChartDrillDownConfigLeftDrillDownsCu
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3431,7 +3446,8 @@ func flattenChronicleDashboardChartDashboardChartDrillDownConfigRightDrillDowns(
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3530,7 +3546,8 @@ func flattenChronicleDashboardChartDashboardChartDrillDownConfigRightDrillDownsC
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3553,7 +3570,8 @@ func flattenChronicleDashboardChartDashboardChartDrillDownConfigRightDrillDownsC
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

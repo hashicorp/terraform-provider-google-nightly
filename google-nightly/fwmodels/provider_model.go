@@ -60,6 +60,7 @@ type ProviderModel struct {
 	AccessApprovalCustomEndpoint           types.String `tfsdk:"access_approval_custom_endpoint"`
 	AccessContextManagerCustomEndpoint     types.String `tfsdk:"access_context_manager_custom_endpoint"`
 	ActiveDirectoryCustomEndpoint          types.String `tfsdk:"active_directory_custom_endpoint"`
+	AgenticApplicationsCustomEndpoint      types.String `tfsdk:"agentic_applications_custom_endpoint"`
 	AgentIdentityCustomEndpoint            types.String `tfsdk:"agent_identity_custom_endpoint"`
 	AgentRegistryCustomEndpoint            types.String `tfsdk:"agent_registry_custom_endpoint"`
 	AlloydbCustomEndpoint                  types.String `tfsdk:"alloydb_custom_endpoint"`
@@ -105,6 +106,7 @@ type ProviderModel struct {
 	CloudRunV2CustomEndpoint               types.String `tfsdk:"cloud_run_v2_custom_endpoint"`
 	CloudSchedulerCustomEndpoint           types.String `tfsdk:"cloud_scheduler_custom_endpoint"`
 	CloudSecurityComplianceCustomEndpoint  types.String `tfsdk:"cloud_security_compliance_custom_endpoint"`
+	CloudSupportCustomEndpoint             types.String `tfsdk:"cloud_support_custom_endpoint"`
 	CloudTasksCustomEndpoint               types.String `tfsdk:"cloud_tasks_custom_endpoint"`
 	ColabCustomEndpoint                    types.String `tfsdk:"colab_custom_endpoint"`
 	ComposerCustomEndpoint                 types.String `tfsdk:"composer_custom_endpoint"`
@@ -230,6 +232,7 @@ type ProviderModel struct {
 	StorageCustomEndpoint                  types.String `tfsdk:"storage_custom_endpoint"`
 	StorageBatchOperationsCustomEndpoint   types.String `tfsdk:"storage_batch_operations_custom_endpoint"`
 	StorageControlCustomEndpoint           types.String `tfsdk:"storage_control_custom_endpoint"`
+	StorageFtpCustomEndpoint               types.String `tfsdk:"storage_ftp_custom_endpoint"`
 	StorageInsightsCustomEndpoint          types.String `tfsdk:"storage_insights_custom_endpoint"`
 	StorageTransferCustomEndpoint          types.String `tfsdk:"storage_transfer_custom_endpoint"`
 	TagsCustomEndpoint                     types.String `tfsdk:"tags_custom_endpoint"`

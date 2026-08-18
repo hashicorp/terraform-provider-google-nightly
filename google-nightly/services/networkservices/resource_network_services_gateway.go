@@ -268,6 +268,7 @@ func ResourceNetworkServicesGateway() *schema.Resource {
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
+				ForceNew:    true,
 				Description: `Name of the Gateway resource.`,
 			},
 			"type": {
@@ -300,6 +301,14 @@ By enabling the wildcard ports feature on​ ​your Secure Web Proxy Gateway,
 it will accept traffic destined for any port (1-65535) on its​ assigned IP address.​
 This field is configurable only for gateways of type SECURE_WEB_GATEWAY.`,
 				ConflictsWith: []string{"ports"},
+			},
+			"allow_global_access": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Description: `Optional. If true, the gateway will allow traffic from clients outside
+of the region where the gateway is located.
+This field is configurable only for gateways of type SECURE_WEB_GATEWAY.`,
 			},
 			"certificate_urls": {
 				Type:     schema.TypeList,
@@ -349,6 +358,7 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 			"location": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				Description: `The location of the gateway.
 The default value is 'global'.`,
 				Default: "global",
@@ -552,6 +562,12 @@ func resourceNetworkServicesGatewayCreate(d *schema.ResourceData, meta interface
 		return err
 	} else if v, ok := d.GetOkExists("routing_mode"); !tpgresource.IsEmptyValue(reflect.ValueOf(routingModeProp)) && (ok || !reflect.DeepEqual(v, routingModeProp)) {
 		obj["routingMode"] = routingModeProp
+	}
+	allowGlobalAccessProp, err := expandNetworkServicesGatewayAllowGlobalAccess(d.Get("allow_global_access"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("allow_global_access"); ok || !reflect.DeepEqual(v, allowGlobalAccessProp) {
+		obj["allowGlobalAccess"] = allowGlobalAccessProp
 	}
 	effectiveLabelsProp, err := expandNetworkServicesGatewayEffectiveLabels(d.Get("effective_labels"), d, config)
 	if err != nil {
@@ -1113,6 +1129,10 @@ func flattenNetworkServicesGatewayRoutingMode(v interface{}, d *schema.ResourceD
 	return v
 }
 
+func flattenNetworkServicesGatewayAllowGlobalAccess(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenNetworkServicesGatewayTerraformLabels(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return v
@@ -1185,6 +1205,10 @@ func expandNetworkServicesGatewayEnvoyHeaders(v interface{}, d tpgresource.Terra
 }
 
 func expandNetworkServicesGatewayRoutingMode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandNetworkServicesGatewayAllowGlobalAccess(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1265,6 +1289,9 @@ func ResourceNetworkServicesGatewayFlatten(d *schema.ResourceData, meta interfac
 		return fmt.Errorf("Error reading Gateway: %s", err)
 	}
 	if err = d.Set("routing_mode", flattenNetworkServicesGatewayRoutingMode(res["routingMode"], d, config)); err != nil {
+		return fmt.Errorf("Error reading Gateway: %s", err)
+	}
+	if err = d.Set("allow_global_access", flattenNetworkServicesGatewayAllowGlobalAccess(res["allowGlobalAccess"], d, config)); err != nil {
 		return fmt.Errorf("Error reading Gateway: %s", err)
 	}
 	if err = d.Set("terraform_labels", flattenNetworkServicesGatewayTerraformLabels(res["labels"], d, config)); err != nil {

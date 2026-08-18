@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -1995,10 +1996,12 @@ func TestAccContainerCluster_regionalWithNodePool(t *testing.T) {
 				Config: testAccContainerCluster_regionalWithNodePool(clusterName, npName, networkName, subnetworkName),
 			},
 			{
-				ResourceName:            "google_container_cluster.regional",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"deletion_protection", "ignore_node_count_changes", "node_pool.0.ignore_node_count_changes"},
+				ResourceName:      "google_container_cluster.regional",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Virtual fields like ignore_node_count_changes are not loaded on import. When import runs with default
+				// false for ignore_node_count_changes, managed_instance_group_urls is populated from the API, causing an import diff.
+				ImportStateVerifyIgnore: []string{"deletion_protection", "ignore_node_count_changes", "node_pool.0.ignore_node_count_changes", "node_pool.0.managed_instance_group_urls"},
 			},
 		},
 	})
@@ -4494,6 +4497,34 @@ func TestAccContainerCluster_withIPAllocationPolicy_specificSizes(t *testing.T) 
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"deletion_protection"},
+			},
+		},
+	})
+}
+
+func TestAccContainerCluster_stackType_withIPV6Only(t *testing.T) {
+	t.Parallel()
+
+	clusterName := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	containerNetName := fmt.Sprintf("tf-test-cluster-%s", acctest.RandString(t, 10))
+	resourceName := "google_container_cluster.with_stack_type"
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_stackType_withIPV6OnlyConfig(containerNetName, clusterName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "ip_allocation_policy.0.stack_type", "IPV6"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection", "private_cluster_config"},
 			},
 		},
 	})
@@ -12394,6 +12425,71 @@ resource "google_container_cluster" "with_ip_allocation_policy" {
 `, containerNetName, clusterName)
 }
 
+func testAccContainerCluster_stackType_withIPV6OnlyConfig(containerNetName, clusterName string) string {
+	return fmt.Sprintf(`
+resource "google_compute_network" "container_network" {
+  name                    = "%s"
+  auto_create_subnetworks = false
+  enable_ula_internal_ipv6 = true
+}
+
+resource "google_compute_subnetwork" "nodes_subnetwork" {
+  name             = "%s-nodes"
+  network          = google_compute_network.container_network.name
+  region           = "us-central1"
+  stack_type       = "IPV6_ONLY"
+  ipv6_access_type = "EXTERNAL"
+}
+
+resource "google_compute_subnetwork" "psc_subnetwork" {
+  name             = "%s-psc"
+  network          = google_compute_network.container_network.name
+  region           = "us-central1"
+  stack_type       = "IPV6_ONLY"
+  ipv6_access_type = "INTERNAL"
+}
+
+resource "google_container_cluster" "with_stack_type" {
+  name       = "%s"
+  location   = "us-central1-c"
+  network    = google_compute_network.container_network.name
+  subnetwork = google_compute_subnetwork.nodes_subnetwork.name
+
+  release_channel {
+    channel = "RAPID"
+  }
+
+  initial_node_count       = 1
+  datapath_provider        = "ADVANCED_DATAPATH"
+  enable_l4_ilb_subsetting = true
+
+  dns_config {
+    cluster_dns        = "CLOUD_DNS"
+    cluster_dns_scope  = "VPC_SCOPE"
+    cluster_dns_domain = "example.com"
+  }
+
+  control_plane_endpoints_config {
+    dns_endpoint_config {
+      allow_external_traffic = true
+    }
+    ip_endpoints_config {
+      enabled = false
+    }
+  }
+
+  private_cluster_config {
+    private_endpoint_subnetwork = google_compute_subnetwork.psc_subnetwork.name
+  }
+
+  ip_allocation_policy {
+    stack_type = "IPV6"
+  }
+  deletion_protection = false
+}
+`, containerNetName, clusterName, clusterName, clusterName)
+}
+
 func testAccContainerCluster_stackType_withDualStack(containerNetName, clusterName, stack string) string {
 	return fmt.Sprintf(`
 resource "google_compute_network" "container_network" {
@@ -19830,6 +19926,68 @@ resource "google_container_cluster" "with_nrc_config" {
   addons_config {
     node_readiness_config {
       enabled = %t
+    }
+  }
+}
+`, clusterName, networkName, subnetworkName, enabled)
+}
+
+func TestAccContainerCluster_withHighScaleCheckpointingConfig(t *testing.T) {
+	t.Parallel()
+
+	clusterName := fmt.Sprintf("tf-test-hsc-%s", acctest.RandString(t, 10))
+	networkName := tpgcompute.BootstrapSharedTestNetwork(t, "gke-cluster")
+	subnetworkName := tpgcompute.BootstrapSubnet(t, "gke-cluster", networkName)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_switchHighScaleCheckpointingConfig(clusterName, networkName, subnetworkName, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.with_hsc_config", "addons_config.0.high_scale_checkpointing_config.0.enabled", "true"),
+				),
+			},
+			{
+				ResourceName:            "google_container_cluster.with_hsc_config",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
+			},
+			{
+				Config: testAccContainerCluster_switchHighScaleCheckpointingConfig(clusterName, networkName, subnetworkName, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("google_container_cluster.with_hsc_config", "addons_config.0.high_scale_checkpointing_config.0.enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
+func testAccContainerCluster_switchHighScaleCheckpointingConfig(clusterName, networkName, subnetworkName string, enabled bool) string {
+	return fmt.Sprintf(`
+data "google_project" "project" {}
+
+resource "google_container_cluster" "with_hsc_config" {
+  name                = "%s"
+  location            = "us-central1-a"
+  initial_node_count  = 1
+  network             = "%s"
+  subnetwork          = "%s"
+  deletion_protection = false
+
+  workload_identity_config {
+    workload_pool = "${data.google_project.project.project_id}.svc.id.goog"
+  }
+
+  addons_config {
+    high_scale_checkpointing_config {
+      enabled = %t
+    }
+    gcs_fuse_csi_driver_config {
+      enabled = true
     }
   }
 }

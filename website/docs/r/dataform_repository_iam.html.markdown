@@ -24,8 +24,8 @@ description: |-
 Three different resources help you manage your IAM policy for Dataform Repository. Each of these resources serves a different use case:
 
 * `google_dataform_repository_iam_policy`: Authoritative. Sets the IAM policy for the repository and replaces any existing policy already attached.
-* `google_dataform_repository_iam_binding`: Authoritative for a given role. Updates the IAM policy to grant a role to a list of members. Other roles within the IAM policy for the repository are preserved.
-* `google_dataform_repository_iam_member`: Non-authoritative. Updates the IAM policy to grant a role to a new member. Other members for the role for the repository are preserved.
+* `google_dataform_repository_iam_binding`: Authoritative for a given role. Updates the IAM policy to grant a role to a list of members. Other roles within the IAM policy for the repository are preserved. Members added outside of Terraform for the same role will be detected as drift and removed on the next `terraform apply`.
+* `google_dataform_repository_iam_member`: Non-authoritative. Updates the IAM policy to grant a role to a new member. Other members for the role for the repository are preserved. Members added outside of Terraform will **not** be detected as drift.
 
 A data source can be used to retrieve policy data in advent you do not need creation
 
@@ -36,14 +36,10 @@ A data source can be used to retrieve policy data in advent you do not need crea
 ~> **Note:** `google_dataform_repository_iam_binding` resources **can be** used in conjunction with `google_dataform_repository_iam_member` resources **only if** they do not grant privilege to the same role.
 
 
-~> **Warning:** This resource is in beta, and should be used with the terraform-provider-google-beta provider.
-See [Provider Versions](../guides/provider_versions.html.markdown) for more details on beta resources.
-
 ## google_dataform_repository_iam_policy
 
 ```hcl
 data "google_iam_policy" "admin" {
-  provider = google-beta
   binding {
     role = "roles/viewer"
     members = [
@@ -53,7 +49,6 @@ data "google_iam_policy" "admin" {
 }
 
 resource "google_dataform_repository_iam_policy" "policy" {
-  provider = google-beta
   project = google_dataform_repository.dataform_repository.project
   region = google_dataform_repository.dataform_repository.region
   repository = google_dataform_repository.dataform_repository.name
@@ -65,7 +60,6 @@ resource "google_dataform_repository_iam_policy" "policy" {
 
 ```hcl
 resource "google_dataform_repository_iam_binding" "binding" {
-  provider = google-beta
   project = google_dataform_repository.dataform_repository.project
   region = google_dataform_repository.dataform_repository.region
   repository = google_dataform_repository.dataform_repository.name
@@ -80,7 +74,6 @@ resource "google_dataform_repository_iam_binding" "binding" {
 
 ```hcl
 resource "google_dataform_repository_iam_member" "member" {
-  provider = google-beta
   project = google_dataform_repository.dataform_repository.project
   region = google_dataform_repository.dataform_repository.region
   repository = google_dataform_repository.dataform_repository.name

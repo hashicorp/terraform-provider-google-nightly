@@ -1275,6 +1275,11 @@ func resourceComputeRouterNatUpdate(d *schema.ResourceData, meta interface{}) er
 
 	log.Printf("[DEBUG] Updating RouterNat %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
+	obj, err = resourceComputeRouterNatPatchUpdateEncoder(d, meta, obj)
+	if err != nil {
+		return err
+	}
 	natType := d.Get("type").(string)
 	if natType == "PRIVATE" {
 		rules := d.Get("rules").(*schema.Set)
@@ -1300,11 +1305,6 @@ func resourceComputeRouterNatUpdate(d *schema.ResourceData, meta interface{}) er
 				return fmt.Errorf("The rule for PRIVATE nat type must contain an action with source_nat_active_ranges set")
 			}
 		}
-	}
-
-	obj, err = resourceComputeRouterNatPatchUpdateEncoder(d, meta, obj)
-	if err != nil {
-		return err
 	}
 
 	// err == nil indicates that the billing_project value was found
@@ -1467,7 +1467,8 @@ func flattenNestedComputeRouterNatSubnetwork(v interface{}, d *schema.ResourceDa
 	}
 	l := v.([]interface{})
 	transformed := schema.NewSet(computeRouterNatSubnetworkHash, []interface{}{})
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -1512,7 +1513,8 @@ func flattenNestedComputeRouterNatNat64Subnetwork(v interface{}, d *schema.Resou
 	}
 	l := v.([]interface{})
 	transformed := schema.NewSet(computeRouterNatSubnetworkHash, []interface{}{})
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -1672,7 +1674,8 @@ func flattenNestedComputeRouterNatRules(v interface{}, d *schema.ResourceData, c
 	}
 	l := v.([]interface{})
 	transformed := schema.NewSet(computeRouterNatRulesHash, []interface{}{})
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

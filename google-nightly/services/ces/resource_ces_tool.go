@@ -977,6 +977,22 @@ responses that are more creative.`,
 											},
 										},
 									},
+									"snippets_config": {
+										Type:             schema.TypeList,
+										Optional:         true,
+										DiffSuppressFunc: tpgresource.EmptyOrUnsetBlockDiffSuppress,
+										Description:      `Snippets configuration.`,
+										MaxItems:         1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"enable_snippets": {
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Description: `Whether snippets are enabled.`,
+												},
+											},
+										},
+									},
 									"summarization_config": {
 										Type:        schema.TypeList,
 										Optional:    true,
@@ -1168,6 +1184,22 @@ provided, the first function defined in the python code will be used.`,
 							Type:        schema.TypeString,
 							Optional:    true,
 							Description: `The Python code to execute for the tool.`,
+						},
+						"service_directory_config": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: `Service Directory configuration for the tool.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"service": {
+										Type:     schema.TypeString,
+										Required: true,
+										Description: `The name of Service Directory service.
+Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}`,
+									},
+								},
+							},
 						},
 						"description": {
 							Type:     schema.TypeString,
@@ -3389,7 +3421,8 @@ func flattenCESToolDataStoreToolBoostSpecs(v interface{}, d *schema.ResourceData
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3412,7 +3445,8 @@ func flattenCESToolDataStoreToolBoostSpecsSpec(v interface{}, d *schema.Resource
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3430,7 +3464,8 @@ func flattenCESToolDataStoreToolBoostSpecsSpecConditionBoostSpecs(v interface{},
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3477,7 +3512,8 @@ func flattenCESToolDataStoreToolBoostSpecsSpecConditionBoostSpecsBoostControlSpe
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3628,7 +3664,8 @@ func flattenCESToolDataStoreToolEngineSourceDataStoreSources(v interface{}, d *s
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3752,7 +3789,8 @@ func flattenCESToolDataStoreToolModalityConfigs(v interface{}, d *schema.Resourc
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -3762,6 +3800,7 @@ func flattenCESToolDataStoreToolModalityConfigs(v interface{}, d *schema.Resourc
 			"grounding_config":     flattenCESToolDataStoreToolModalityConfigsGroundingConfig(original["groundingConfig"], d, config),
 			"modality_type":        flattenCESToolDataStoreToolModalityConfigsModalityType(original["modalityType"], d, config),
 			"rewriter_config":      flattenCESToolDataStoreToolModalityConfigsRewriterConfig(original["rewriterConfig"], d, config),
+			"snippets_config":      flattenCESToolDataStoreToolModalityConfigsSnippetsConfig(original["snippetsConfig"], d, config),
 			"summarization_config": flattenCESToolDataStoreToolModalityConfigsSummarizationConfig(original["summarizationConfig"], d, config),
 		})
 	}
@@ -3839,6 +3878,23 @@ func flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsTemper
 }
 
 func flattenCESToolDataStoreToolModalityConfigsRewriterConfigPrompt(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESToolDataStoreToolModalityConfigsSnippetsConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["enable_snippets"] =
+		flattenCESToolDataStoreToolModalityConfigsSnippetsConfigEnableSnippets(original["enableSnippets"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESToolDataStoreToolModalityConfigsSnippetsConfigEnableSnippets(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4240,7 +4296,8 @@ func flattenCESToolMcpToolTlsConfigCaCerts(v interface{}, d *schema.ResourceData
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -4505,7 +4562,8 @@ func flattenCESToolOpenApiToolTlsConfigCaCerts(v interface{}, d *schema.Resource
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -4545,6 +4603,8 @@ func flattenCESToolPythonFunction(v interface{}, d *schema.ResourceData, config 
 		flattenCESToolPythonFunctionName(original["name"], d, config)
 	transformed["python_code"] =
 		flattenCESToolPythonFunctionPythonCode(original["pythonCode"], d, config)
+	transformed["service_directory_config"] =
+		flattenCESToolPythonFunctionServiceDirectoryConfig(original["serviceDirectoryConfig"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESToolPythonFunctionDescription(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4556,6 +4616,23 @@ func flattenCESToolPythonFunctionName(v interface{}, d *schema.ResourceData, con
 }
 
 func flattenCESToolPythonFunctionPythonCode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESToolPythonFunctionServiceDirectoryConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["service"] =
+		flattenCESToolPythonFunctionServiceDirectoryConfigService(original["service"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESToolPythonFunctionServiceDirectoryConfigService(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4627,7 +4704,8 @@ func flattenCESToolRemoteAgentToolAgentCardSupportedInterfaces(v interface{}, d 
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -4664,7 +4742,8 @@ func flattenCESToolRemoteAgentToolAgentCardSkills(v interface{}, d *schema.Resou
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -6444,6 +6523,13 @@ func expandCESToolDataStoreToolModalityConfigs(v interface{}, d tpgresource.Terr
 			transformed["rewriterConfig"] = transformedRewriterConfig
 		}
 
+		transformedSnippetsConfig, err := expandCESToolDataStoreToolModalityConfigsSnippetsConfig(original["snippets_config"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedSnippetsConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["snippetsConfig"] = transformedSnippetsConfig
+		}
+
 		transformedSummarizationConfig, err := expandCESToolDataStoreToolModalityConfigsSummarizationConfig(original["summarization_config"], d, config)
 		if err != nil {
 			return nil, err
@@ -6575,6 +6661,32 @@ func expandCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsTempera
 }
 
 func expandCESToolDataStoreToolModalityConfigsRewriterConfigPrompt(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESToolDataStoreToolModalityConfigsSnippetsConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedEnableSnippets, err := expandCESToolDataStoreToolModalityConfigsSnippetsConfigEnableSnippets(original["enable_snippets"], d, config)
+	if err != nil {
+		return nil, err
+	} else {
+		transformed["enableSnippets"] = transformedEnableSnippets
+	}
+
+	return transformed, nil
+}
+
+func expandCESToolDataStoreToolModalityConfigsSnippetsConfigEnableSnippets(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -6873,6 +6985,13 @@ func expandCESToolPythonFunction(v interface{}, d tpgresource.TerraformResourceD
 		transformed["pythonCode"] = transformedPythonCode
 	}
 
+	transformedServiceDirectoryConfig, err := expandCESToolPythonFunctionServiceDirectoryConfig(original["service_directory_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedServiceDirectoryConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["serviceDirectoryConfig"] = transformedServiceDirectoryConfig
+	}
+
 	return transformed, nil
 }
 
@@ -6885,6 +7004,32 @@ func expandCESToolPythonFunctionName(v interface{}, d tpgresource.TerraformResou
 }
 
 func expandCESToolPythonFunctionPythonCode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESToolPythonFunctionServiceDirectoryConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedService, err := expandCESToolPythonFunctionServiceDirectoryConfigService(original["service"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedService); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["service"] = transformedService
+	}
+
+	return transformed, nil
+}
+
+func expandCESToolPythonFunctionServiceDirectoryConfigService(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

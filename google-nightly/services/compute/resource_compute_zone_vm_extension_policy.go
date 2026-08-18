@@ -546,6 +546,7 @@ func resourceComputeZoneVmExtensionPolicyUpdate(d *schema.ResourceData, meta int
 
 	log.Printf("[DEBUG] Updating ZoneVmExtensionPolicy %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
 	obj["name"] = d.Get("name").(string)
 
 	// err == nil indicates that the billing_project value was found
@@ -702,7 +703,8 @@ func flattenComputeZoneVmExtensionPolicyInstanceSelectors(v interface{}, d *sche
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

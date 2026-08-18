@@ -573,6 +573,7 @@ func resourceDataCatalogTagTemplateUpdate(d *schema.ResourceData, meta interface
 
 	log.Printf("[DEBUG] Updating TagTemplate %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
+
 	updateMask := []string{}
 
 	if d.HasChange("display_name") {
@@ -904,7 +905,8 @@ func flattenDataCatalogTagTemplateFieldsTypeEnumTypeAllowedValues(v interface{},
 	}
 	l := v.([]interface{})
 	transformed := schema.NewSet(schema.HashResource(datacatalogTagTemplateFieldsTypeEnumTypeAllowedValuesSchema()), []interface{}{})
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

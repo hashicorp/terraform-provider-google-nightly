@@ -331,7 +331,6 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
 }
 
 func TestAccVertexAIReasoningEngine_vertexAiReasoningEngineByocExample(t *testing.T) {
-	acctest.SkipTestUntil(t, "2026-05-15")
 	acctest.SkipIfVcr(t)
 	t.Parallel()
 
@@ -376,6 +375,7 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
   spec {
     container_spec {
       image_uri = "us-central1-docker.pkg.dev/${data.google_project.project.project_id}/vertex-byoc/byoc-agent:latest" # image path
+      port      = 8080
     }
   }
 
@@ -699,6 +699,12 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
     memory_bank_config {
       generation_config {
         model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/gemini-2.5-flash"
+        generation_trigger_config {
+          generation_rule {
+            idle_duration       = "300s"
+            overlap_event_count = 1
+          }
+        }
       }
       similarity_search_config {
         embedding_model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/text-embedding-005"

@@ -772,6 +772,7 @@ func resourcePrivilegedAccessManagerEntitlementUpdate(d *schema.ResourceData, me
 	if err != nil {
 		return err
 	}
+
 	approvalWorkflowProp, err := expandPrivilegedAccessManagerEntitlementApprovalWorkflow(d.Get("approval_workflow"), d, config)
 	if err != nil {
 		return err
@@ -915,7 +916,8 @@ func flattenPrivilegedAccessManagerEntitlementEligibleUsers(v interface{}, d *sc
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -1114,7 +1116,8 @@ func flattenPrivilegedAccessManagerEntitlementPrivilegedAccessGcpIamAccessRoleBi
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

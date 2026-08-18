@@ -936,6 +936,7 @@ func resourceBigqueryAnalyticsHubListingUpdate(d *schema.ResourceData, meta inte
 	if err != nil {
 		return err
 	}
+
 	if d.HasChange("pubsub_topic.0.data_affinity_regions") {
 		// Split URL into base and query parts
 		parts := strings.SplitN(url, "?", 2)
@@ -1192,7 +1193,8 @@ func flattenBigqueryAnalyticsHubListingBigqueryDatasetSelectedResources(v interf
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api
@@ -1226,7 +1228,8 @@ func flattenBigqueryAnalyticsHubListingBigqueryDatasetEffectiveReplicas(v interf
 	}
 	l := v.([]interface{})
 	transformed := make([]interface{}, 0, len(l))
-	for _, raw := range l {
+	for i, raw := range l {
+		_ = i
 		original := raw.(map[string]interface{})
 		if len(original) < 1 {
 			// Do not include empty json objects coming back from the api

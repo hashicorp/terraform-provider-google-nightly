@@ -41,8 +41,8 @@ The following arguments are supported:
 
 * `name` -
   (Required)
-  Name of the resource.
-  The name must be 1-63 characters long, and comply with RFC1035.
+  The name for the resource.
+  The name must be 1-63 characters long and comply with RFC1035.
 
 
 * `region` -

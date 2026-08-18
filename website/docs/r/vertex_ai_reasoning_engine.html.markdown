@@ -138,6 +138,7 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
   spec {
     container_spec {
       image_uri = "us-central1-docker.pkg.dev/${data.google_project.project.project_id}/vertex-byoc/byoc-agent:latest" # image path
+      port      = 8080
     }
   }
 
@@ -492,6 +493,12 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
     memory_bank_config {
       generation_config {
         model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/gemini-2.5-flash"
+        generation_trigger_config {
+          generation_rule {
+            idle_duration       = "300s"
+            overlap_event_count = 1
+          }
+        }
       }
       similarity_search_config {
         embedding_model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/text-embedding-005"
@@ -1330,6 +1337,10 @@ When set to "DELETE", deleting the resource is permitted.
   `us-central1-docker.pkg.dev/my-project/my-repo/my-image:tag`) of the
   container image that is to be run on each worker replica.
 
+* `port` -
+  (Optional)
+  Optional. The port that the container listens on for incoming requests. If not specified, defaults to 8080.
+
 <a name="nested_spec_source_code_spec"></a>The `source_code_spec` block supports:
 
 * `inline_source` -
@@ -1502,6 +1513,42 @@ When set to "DELETE", deleting the resource is permitted.
 * `model` -
   (Required)
   The model used to generate memories. Format: projects/{project}/locations/{location}/publishers/google/models/{model}.
+
+* `generation_trigger_config` -
+  (Optional)
+  Optional. Configuration for triggering memory generation.
+  Structure is [documented below](#nested_context_spec_memory_bank_config_generation_config_generation_trigger_config).
+
+
+<a name="nested_context_spec_memory_bank_config_generation_config_generation_trigger_config"></a>The `generation_trigger_config` block supports:
+
+* `generation_rule` -
+  (Optional)
+  Optional. The active rule that determines when to flush the buffer. If not set,
+  then the stream will be force flushed immediately.
+  Structure is [documented below](#nested_context_spec_memory_bank_config_generation_config_generation_trigger_config_generation_rule).
+
+
+<a name="nested_context_spec_memory_bank_config_generation_config_generation_trigger_config_generation_rule"></a>The `generation_rule` block supports:
+
+* `idle_duration` -
+  (Optional)
+  Optional. Specifies to trigger generation if the stream is inactive for the
+  specified duration after the most recent event. The duration must have a
+  minute-level granularity.
+
+* `fixed_interval` -
+  (Optional)
+  Optional. Specifies to trigger generation at a fixed interval. The duration
+  must have a minute-level granularity.
+
+* `event_count` -
+  (Optional)
+  Optional. Specifies to trigger generation when the event count reaches this limit.
+
+* `overlap_event_count` -
+  (Optional)
+  Optional. Re-include the last N already-processed events in the next window.
 
 <a name="nested_context_spec_memory_bank_config_similarity_search_config"></a>The `similarity_search_config` block supports:
 

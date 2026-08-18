@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -126,6 +127,7 @@ var (
 		"addons_config.0.slurm_operator_config",
 		"addons_config.0.node_readiness_config",
 		"addons_config.0.agent_sandbox_config",
+		"addons_config.0.high_scale_checkpointing_config",
 		"addons_config.0.istio_config",
 		"addons_config.0.kalm_config",
 	}
@@ -449,6 +451,22 @@ func ResourceContainerCluster() *schema.Resource {
 							MaxItems:      1,
 							Description:   `The status of the NodeLocal DNSCache addon. It is disabled by default. Set enabled = true to enable.`,
 							ConflictsWith: []string{"enable_autopilot"},
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Required: true,
+									},
+								},
+							},
+						},
+						"high_scale_checkpointing_config": {
+							Type:         schema.TypeList,
+							Optional:     true,
+							Computed:     true,
+							AtLeastOneOf: addonsConfigKeys,
+							MaxItems:     1,
+							Description:  `The status of the High Scale Checkpointing addon. Defaults to disabled; set enabled = true to enable.`,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"enabled": {
@@ -2093,8 +2111,8 @@ func ResourceContainerCluster() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "IPV4",
-							ValidateFunc: validation.StringInSlice([]string{"IPV4", "IPV4_IPV6"}, false),
-							Description:  `The IP Stack type of the cluster. Choose between IPV4 and IPV4_IPV6. Default type is IPV4 Only if not set`,
+							ValidateFunc: validation.StringInSlice([]string{"IPV4", "IPV4_IPV6", "IPV6"}, false),
+							Description:  `The IP Stack type of the cluster. Choose between IPV4, IPV4_IPV6 and IPV6. Default type is IPV4 Only if not set`,
 						},
 						"pod_cidr_overprovision_config": {
 							Type:        schema.TypeList,
@@ -6035,6 +6053,14 @@ func expandClusterAddonsConfig(configured interface{}) *container.AddonsConfig {
 		}
 	}
 
+	if v, ok := config["high_scale_checkpointing_config"]; ok && len(v.([]interface{})) > 0 {
+		addon := v.([]interface{})[0].(map[string]interface{})
+		ac.HighScaleCheckpointingConfig = &container.HighScaleCheckpointingConfig{
+			Enabled:         addon["enabled"].(bool),
+			ForceSendFields: []string{"Enabled"},
+		}
+	}
+
 	if v, ok := config["gce_persistent_disk_csi_driver_config"]; ok && len(v.([]interface{})) > 0 {
 		addon := v.([]interface{})[0].(map[string]interface{})
 		ac.GcePersistentDiskCsiDriverConfig = &container.GcePersistentDiskCsiDriverConfig{
@@ -7085,6 +7111,10 @@ func expandControlPlaneEndpointsConfig(d *schema.ResourceData) *container.Contro
 		Enabled:         true,
 		ForceSendFields: []string{"Enabled"},
 	}
+	if v := d.Get("private_cluster_config.0.private_endpoint_subnetwork"); v != nil {
+		ip.PrivateEndpointSubnetwork = v.(string)
+		ip.ForceSendFields = append(ip.ForceSendFields, "PrivateEndpointSubnetwork")
+	}
 	if v := d.Get("control_plane_endpoints_config.0.ip_endpoints_config.#"); v != 0 {
 		ip.Enabled = d.Get("control_plane_endpoints_config.0.ip_endpoints_config.0.enabled").(bool)
 
@@ -7098,10 +7128,6 @@ func expandControlPlaneEndpointsConfig(d *schema.ResourceData) *container.Contro
 	if v := d.Get("private_cluster_config.0.enable_private_endpoint"); v != nil {
 		ip.EnablePublicEndpoint = !v.(bool)
 		ip.ForceSendFields = append(ip.ForceSendFields, "EnablePublicEndpoint")
-	}
-	if v := d.Get("private_cluster_config.0.private_endpoint_subnetwork"); v != nil {
-		ip.PrivateEndpointSubnetwork = v.(string)
-		ip.ForceSendFields = append(ip.ForceSendFields, "PrivateEndpointSubnetwork")
 	}
 	if v := d.Get("private_cluster_config.0.master_global_access_config.0.enabled"); v != nil {
 		ip.GlobalAccess = v.(bool)
@@ -7833,6 +7859,14 @@ func flattenClusterAddonsConfig(c *container.AddonsConfig) []map[string]interfac
 		}
 	}
 
+	if c.HighScaleCheckpointingConfig != nil {
+		result["high_scale_checkpointing_config"] = []map[string]interface{}{
+			{
+				"enabled": c.HighScaleCheckpointingConfig.Enabled,
+			},
+		}
+	}
+
 	if c.GcePersistentDiskCsiDriverConfig != nil {
 		result["gce_persistent_disk_csi_driver_config"] = []map[string]interface{}{
 			{
@@ -8192,8 +8226,8 @@ func flattenNetworkTierConfig(ntc *container.NetworkTierConfig) []map[string]int
 }
 
 func flattenIPAllocationPolicy(c *container.Cluster, d *schema.ResourceData, config *transport_tpg.Config) ([]map[string]interface{}, error) {
-	// If IP aliasing isn't enabled, none of the values in this block can be set.
-	if c == nil || c.IpAllocationPolicy == nil || !c.IpAllocationPolicy.UseIpAliases {
+	// If IP aliasing isn't enabled (and it's not an IPV6 cluster), none of the values in this block can be set.
+	if c == nil || c.IpAllocationPolicy == nil || (!c.IpAllocationPolicy.UseIpAliases && c.IpAllocationPolicy.StackType != "IPV6") {
 		if err := d.Set("networking_mode", "ROUTES"); err != nil {
 			return nil, fmt.Errorf("Error setting networking_mode: %s", err)
 		}
