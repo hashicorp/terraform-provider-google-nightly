@@ -1338,6 +1338,12 @@ func (p *FrameworkProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 					transport_tpg.CustomEndpointValidator(),
 				},
 			},
+			"vertex_ai_aad_custom_endpoint": &schema.StringAttribute{
+				Optional: true,
+				Validators: []validator.String{
+					transport_tpg.CustomEndpointValidator(),
+				},
+			},
 			"vmwareengine_custom_endpoint": &schema.StringAttribute{
 				Optional: true,
 				Validators: []validator.String{

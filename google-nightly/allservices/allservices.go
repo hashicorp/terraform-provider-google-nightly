@@ -205,6 +205,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/transcoder"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/vectorsearch"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/vertexai"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/vertexaiaad"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/vmwareengine"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/vpcaccess"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/workbench"
