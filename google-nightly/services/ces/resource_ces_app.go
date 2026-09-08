@@ -407,6 +407,49 @@ CHAT_AND_VOICE
 VOICE_ONLY
 CHAT_ONLY`,
 									},
+									"security_settings": {
+										Type:        schema.TypeList,
+										Optional:    true,
+										Description: `The security settings of the web widget.`,
+										MaxItems:    1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"allowed_origins": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Description: `The origins that are allowed to host the web widget. An origin is
+defined by RFC 6454. If empty, all origins are allowed.
+A maximum of 100 origins is allowed.
+Example: "https://example.com"`,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
+													},
+												},
+												"enable_origin_check": {
+													Type:     schema.TypeBool,
+													Optional: true,
+													Description: `Indicates whether origin check for the web widget is enabled.
+If 'true', the web widget will check the origin of the website that
+loads the web widget and only allow it to be loaded in the same origin
+or any of the allowed origins.`,
+												},
+												"enable_public_access": {
+													Type:     schema.TypeBool,
+													Optional: true,
+													Description: `Indicates whether public access to the web widget is enabled.
+If 'true', the web widget will be publicly accessible.
+If 'false', the web widget must be integrated with your own
+authentication and authorization system to return valid credentials for
+accessing the CES agent.`,
+												},
+												"enable_recaptcha": {
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Description: `Indicates whether reCAPTCHA verification for the web widget is enabled.`,
+												},
+											},
+										},
+									},
 									"theme": {
 										Type:     schema.TypeString,
 										Optional: true,
@@ -424,6 +467,46 @@ DARK`,
 								},
 							},
 						},
+						"whatsapp_config": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: `Configuration specific to WhatsApp deployments.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"phone_number_id": {
+										Type:        schema.TypeString,
+										Required:    true,
+										Description: `The Meta phone number ID.`,
+									},
+									"waba_id": {
+										Type:        schema.TypeString,
+										Required:    true,
+										Description: `The WhatsApp Business Account ID.`,
+									},
+									"phone_number": {
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The phone number in E.164 format.`,
+									},
+									"description": {
+										Type:        schema.TypeString,
+										Computed:    true,
+										Description: `The description of the Meta business page or profile.`,
+									},
+									"display_name": {
+										Type:        schema.TypeString,
+										Computed:    true,
+										Description: `The fetched Meta business page name.`,
+									},
+									"thumbnail_url": {
+										Type:        schema.TypeString,
+										Computed:    true,
+										Description: `The fetched Meta business profile thumbnail URL.`,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -431,6 +514,66 @@ DARK`,
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: `Human-readable description of the app.`,
+			},
+			"error_handling_settings": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: `Settings to describe how errors should be handled in the app.`,
+				MaxItems:    1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"end_session_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Description: `Configuration for ending the session in case of system errors (e.g. LLM
+errors).`,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"escalate_session": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Description: `Whether to escalate the session in EndSession. If session is escalated,
+metadata in EndSession will contain session_escalated = true.`,
+									},
+								},
+							},
+						},
+						"error_handling_strategy": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Description: `The strategy to use for error handling.
+Possible values:
+NONE
+FALLBACK_RESPONSE
+END_SESSION`,
+						},
+						"fallback_response_config": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: `Configuration for handling fallback responses.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"custom_fallback_messages": {
+										Type:     schema.TypeMap,
+										Optional: true,
+										Description: `The fallback messages in case of system errors (e.g. LLM errors),
+mapped by supported language code
+(https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).`,
+										Elem: &schema.Schema{Type: schema.TypeString},
+									},
+									"max_fallback_attempts": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										Description: `The maximum number of fallback attempts to make before the agent
+emitting EndSession Signal.`,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			"evaluation_metrics_thresholds": {
 				Type:        schema.TypeList,
@@ -486,6 +629,18 @@ between 0 and 4. Default is >= 3.`,
 									},
 								},
 							},
+						},
+						"golden_hallucination_metric_behavior": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: verify.ValidateEnum([]string{"DISABLED", "ENABLED", ""}),
+							Description:  `The hallucination metric behavior for golden evaluations. Possible values: ["DISABLED", "ENABLED"]`,
+						},
+						"scenario_hallucination_metric_behavior": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: verify.ValidateEnum([]string{"DISABLED", "ENABLED", ""}),
+							Description:  `The hallucination metric behavior for scenario evaluations. Possible values: ["DISABLED", "ENABLED"]`,
 						},
 					},
 				},
@@ -548,6 +703,12 @@ to terminate the conversation.`,
 						},
 					},
 				},
+			},
+			"locked": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Description: `Indicates whether the app is locked for changes. If the app is locked,
+modifications to the app resources will be rejected.`,
 			},
 			"logging_settings": {
 				Type:        schema.TypeList,
@@ -644,6 +805,31 @@ NUMBER>@gcp-sa-ces.iam.gserviceaccount.com.`,
 										Type:        schema.TypeBool,
 										Optional:    true,
 										Description: `Whether to disable conversation logging for the sessions.`,
+									},
+									"retention_window": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+										Description: `Controls the retention window for the conversation.
+If not set, the conversation will be retained for 365 days.`,
+									},
+								},
+							},
+						},
+						"metric_analysis_settings": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Description: `Settings to describe the conversation data collection behaviors for the LLM
+analysis pipeline for the app.`,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"llm_metrics_opted_out": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Description: `Whether to collect conversation data for llm analysis metrics. If true,
+conversation data will not be collected for llm analysis metrics;
+otherwise, conversation data will be collected.`,
 									},
 								},
 							},
@@ -905,6 +1091,28 @@ https://json-schema.org/understanding-json-schema/structuring.`,
 					},
 				},
 			},
+			"vpc_sc_settings": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: `VPC-SC settings for the app.`,
+				MaxItems:    1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"allowed_origins": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Description: `The allowed HTTP(s) origins that OpenAPI tools in the App are
+able to directly call when VPC Service Controls are enabled. These strings
+must match the origin exactly, including the port if specified. For
+example, "https://example.com" or "https://example.com:443". This list does
+not yet apply to Python tools that may make direct HTTP calls.`,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
 			"create_time": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -1030,6 +1238,12 @@ func resourceCESAppCreate(d *schema.ResourceData, meta interface{}) error {
 	} else if v, ok := d.GetOkExists("logging_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(loggingSettingsProp)) && (ok || !reflect.DeepEqual(v, loggingSettingsProp)) {
 		obj["loggingSettings"] = loggingSettingsProp
 	}
+	lockedProp, err := expandCESAppLocked(d.Get("locked"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("locked"); !tpgresource.IsEmptyValue(reflect.ValueOf(lockedProp)) && (ok || !reflect.DeepEqual(v, lockedProp)) {
+		obj["locked"] = lockedProp
+	}
 	metadataProp, err := expandCESAppMetadata(d.Get("metadata"), d, config)
 	if err != nil {
 		return err
@@ -1071,6 +1285,18 @@ func resourceCESAppCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	} else if v, ok := d.GetOkExists("client_certificate_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(clientCertificateSettingsProp)) && (ok || !reflect.DeepEqual(v, clientCertificateSettingsProp)) {
 		obj["clientCertificateSettings"] = clientCertificateSettingsProp
+	}
+	vpcScSettingsProp, err := expandCESAppVpcScSettings(d.Get("vpc_sc_settings"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("vpc_sc_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(vpcScSettingsProp)) && (ok || !reflect.DeepEqual(v, vpcScSettingsProp)) {
+		obj["vpcScSettings"] = vpcScSettingsProp
+	}
+	errorHandlingSettingsProp, err := expandCESAppErrorHandlingSettings(d.Get("error_handling_settings"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("error_handling_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(errorHandlingSettingsProp)) && (ok || !reflect.DeepEqual(v, errorHandlingSettingsProp)) {
+		obj["errorHandlingSettings"] = errorHandlingSettingsProp
 	}
 
 	lockName, err := tpgresource.ReplaceVars(d, config, "projects/{{project}}/locations/{{location}}/apps/{{app_id}}")
@@ -1375,6 +1601,12 @@ func resourceCESAppUpdate(d *schema.ResourceData, meta interface{}) error {
 	} else if v, ok := d.GetOkExists("logging_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, loggingSettingsProp)) {
 		obj["loggingSettings"] = loggingSettingsProp
 	}
+	lockedProp, err := expandCESAppLocked(d.Get("locked"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("locked"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, lockedProp)) {
+		obj["locked"] = lockedProp
+	}
 	metadataProp, err := expandCESAppMetadata(d.Get("metadata"), d, config)
 	if err != nil {
 		return err
@@ -1416,6 +1648,18 @@ func resourceCESAppUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	} else if v, ok := d.GetOkExists("client_certificate_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, clientCertificateSettingsProp)) {
 		obj["clientCertificateSettings"] = clientCertificateSettingsProp
+	}
+	vpcScSettingsProp, err := expandCESAppVpcScSettings(d.Get("vpc_sc_settings"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("vpc_sc_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, vpcScSettingsProp)) {
+		obj["vpcScSettings"] = vpcScSettingsProp
+	}
+	errorHandlingSettingsProp, err := expandCESAppErrorHandlingSettings(d.Get("error_handling_settings"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("error_handling_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, errorHandlingSettingsProp)) {
+		obj["errorHandlingSettings"] = errorHandlingSettingsProp
 	}
 
 	lockName, err := tpgresource.ReplaceVars(d, config, "projects/{{project}}/locations/{{location}}/apps/{{app_id}}")
@@ -1478,6 +1722,10 @@ func resourceCESAppUpdate(d *schema.ResourceData, meta interface{}) error {
 		updateMask = append(updateMask, "loggingSettings")
 	}
 
+	if d.HasChange("locked") {
+		updateMask = append(updateMask, "locked")
+	}
+
 	if d.HasChange("metadata") {
 		updateMask = append(updateMask, "metadata")
 	}
@@ -1504,6 +1752,14 @@ func resourceCESAppUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("client_certificate_settings") {
 		updateMask = append(updateMask, "clientCertificateSettings")
+	}
+
+	if d.HasChange("vpc_sc_settings") {
+		updateMask = append(updateMask, "vpcScSettings")
+	}
+
+	if d.HasChange("error_handling_settings") {
+		updateMask = append(updateMask, "errorHandlingSettings")
 	}
 	// updateMask is a URL parameter but not present in the schema, so ReplaceVars
 	// won't set it
@@ -1793,6 +2049,8 @@ func flattenCESAppDefaultChannelProfile(v interface{}, d *schema.ResourceData, c
 		flattenCESAppDefaultChannelProfileProfileId(original["profileId"], d, config)
 	transformed["web_widget_config"] =
 		flattenCESAppDefaultChannelProfileWebWidgetConfig(original["webWidgetConfig"], d, config)
+	transformed["whatsapp_config"] =
+		flattenCESAppDefaultChannelProfileWhatsappConfig(original["whatsappConfig"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppDefaultChannelProfileChannelType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -1843,6 +2101,8 @@ func flattenCESAppDefaultChannelProfileWebWidgetConfig(v interface{}, d *schema.
 		flattenCESAppDefaultChannelProfileWebWidgetConfigTheme(original["theme"], d, config)
 	transformed["web_widget_title"] =
 		flattenCESAppDefaultChannelProfileWebWidgetConfigWebWidgetTitle(original["webWidgetTitle"], d, config)
+	transformed["security_settings"] =
+		flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettings(original["securitySettings"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppDefaultChannelProfileWebWidgetConfigModality(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -1854,6 +2114,88 @@ func flattenCESAppDefaultChannelProfileWebWidgetConfigTheme(v interface{}, d *sc
 }
 
 func flattenCESAppDefaultChannelProfileWebWidgetConfigWebWidgetTitle(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["allowed_origins"] =
+		flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsAllowedOrigins(original["allowedOrigins"], d, config)
+	transformed["enable_origin_check"] =
+		flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableOriginCheck(original["enableOriginCheck"], d, config)
+	transformed["enable_public_access"] =
+		flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnablePublicAccess(original["enablePublicAccess"], d, config)
+	transformed["enable_recaptcha"] =
+		flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableRecaptcha(original["enableRecaptcha"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsAllowedOrigins(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableOriginCheck(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnablePublicAccess(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableRecaptcha(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWhatsappConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["waba_id"] =
+		flattenCESAppDefaultChannelProfileWhatsappConfigWabaId(original["wabaId"], d, config)
+	transformed["phone_number_id"] =
+		flattenCESAppDefaultChannelProfileWhatsappConfigPhoneNumberId(original["phoneNumberId"], d, config)
+	transformed["phone_number"] =
+		flattenCESAppDefaultChannelProfileWhatsappConfigPhoneNumber(original["phoneNumber"], d, config)
+	transformed["display_name"] =
+		flattenCESAppDefaultChannelProfileWhatsappConfigDisplayName(original["displayName"], d, config)
+	transformed["thumbnail_url"] =
+		flattenCESAppDefaultChannelProfileWhatsappConfigThumbnailUrl(original["thumbnailUrl"], d, config)
+	transformed["description"] =
+		flattenCESAppDefaultChannelProfileWhatsappConfigDescription(original["description"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppDefaultChannelProfileWhatsappConfigWabaId(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWhatsappConfigPhoneNumberId(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWhatsappConfigPhoneNumber(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWhatsappConfigDisplayName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWhatsappConfigThumbnailUrl(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppDefaultChannelProfileWhatsappConfigDescription(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1897,6 +2239,10 @@ func flattenCESAppEvaluationMetricsThresholds(v interface{}, d *schema.ResourceD
 	transformed := make(map[string]interface{})
 	transformed["golden_evaluation_metrics_thresholds"] =
 		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholds(original["goldenEvaluationMetricsThresholds"], d, config)
+	transformed["golden_hallucination_metric_behavior"] =
+		flattenCESAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(original["goldenHallucinationMetricBehavior"], d, config)
+	transformed["scenario_hallucination_metric_behavior"] =
+		flattenCESAppEvaluationMetricsThresholdsScenarioHallucinationMetricBehavior(original["scenarioHallucinationMetricBehavior"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholds(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -1967,6 +2313,14 @@ func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTu
 	return v // let terraform core handle it otherwise
 }
 
+func flattenCESAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppEvaluationMetricsThresholdsScenarioHallucinationMetricBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenCESAppGlobalInstruction(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
@@ -2027,6 +2381,8 @@ func flattenCESAppLoggingSettings(v interface{}, d *schema.ResourceData, config 
 		flattenCESAppLoggingSettingsCloudLoggingSettings(original["cloudLoggingSettings"], d, config)
 	transformed["conversation_logging_settings"] =
 		flattenCESAppLoggingSettingsConversationLoggingSettings(original["conversationLoggingSettings"], d, config)
+	transformed["metric_analysis_settings"] =
+		flattenCESAppLoggingSettingsMetricAnalysisSettings(original["metricAnalysisSettings"], d, config)
 	transformed["redaction_config"] =
 		flattenCESAppLoggingSettingsRedactionConfig(original["redactionConfig"], d, config)
 	return []interface{}{transformed}
@@ -2111,9 +2467,29 @@ func flattenCESAppLoggingSettingsConversationLoggingSettings(v interface{}, d *s
 	transformed := make(map[string]interface{})
 	transformed["disable_conversation_logging"] =
 		flattenCESAppLoggingSettingsConversationLoggingSettingsDisableConversationLogging(original["disableConversationLogging"], d, config)
+	transformed["retention_window"] =
+		flattenCESAppLoggingSettingsConversationLoggingSettingsRetentionWindow(original["retentionWindow"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppLoggingSettingsConversationLoggingSettingsDisableConversationLogging(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppLoggingSettingsConversationLoggingSettingsRetentionWindow(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppLoggingSettingsMetricAnalysisSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	transformed := make(map[string]interface{})
+	transformed["llm_metrics_opted_out"] =
+		flattenCESAppLoggingSettingsMetricAnalysisSettingsLlmMetricsOptedOut(original["llmMetricsOptedOut"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppLoggingSettingsMetricAnalysisSettingsLlmMetricsOptedOut(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2143,6 +2519,10 @@ func flattenCESAppLoggingSettingsRedactionConfigEnableRedaction(v interface{}, d
 }
 
 func flattenCESAppLoggingSettingsRedactionConfigInspectTemplate(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppLocked(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2421,6 +2801,94 @@ func flattenCESAppClientCertificateSettingsPrivateKey(v interface{}, d *schema.R
 }
 
 func flattenCESAppClientCertificateSettingsPassphrase(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVpcScSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["allowed_origins"] =
+		flattenCESAppVpcScSettingsAllowedOrigins(original["allowedOrigins"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVpcScSettingsAllowedOrigins(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppErrorHandlingSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["error_handling_strategy"] =
+		flattenCESAppErrorHandlingSettingsErrorHandlingStrategy(original["errorHandlingStrategy"], d, config)
+	transformed["fallback_response_config"] =
+		flattenCESAppErrorHandlingSettingsFallbackResponseConfig(original["fallbackResponseConfig"], d, config)
+	transformed["end_session_config"] =
+		flattenCESAppErrorHandlingSettingsEndSessionConfig(original["endSessionConfig"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppErrorHandlingSettingsErrorHandlingStrategy(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppErrorHandlingSettingsFallbackResponseConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["custom_fallback_messages"] =
+		flattenCESAppErrorHandlingSettingsFallbackResponseConfigCustomFallbackMessages(original["customFallbackMessages"], d, config)
+	transformed["max_fallback_attempts"] =
+		flattenCESAppErrorHandlingSettingsFallbackResponseConfigMaxFallbackAttempts(original["maxFallbackAttempts"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppErrorHandlingSettingsFallbackResponseConfigCustomFallbackMessages(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppErrorHandlingSettingsFallbackResponseConfigMaxFallbackAttempts(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	// Handles the string fixed64 format
+	if strVal, ok := v.(string); ok {
+		if intVal, err := tpgresource.StringToFixed64(strVal); err == nil {
+			return intVal
+		}
+	}
+
+	// number values are represented as float64
+	if floatVal, ok := v.(float64); ok {
+		intVal := int(floatVal)
+		return intVal
+	}
+
+	return v // let terraform core handle it otherwise
+}
+
+func flattenCESAppErrorHandlingSettingsEndSessionConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	transformed := make(map[string]interface{})
+	transformed["escalate_session"] =
+		flattenCESAppErrorHandlingSettingsEndSessionConfigEscalateSession(original["escalateSession"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppErrorHandlingSettingsEndSessionConfigEscalateSession(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2705,6 +3173,13 @@ func expandCESAppDefaultChannelProfile(v interface{}, d tpgresource.TerraformRes
 		transformed["webWidgetConfig"] = transformedWebWidgetConfig
 	}
 
+	transformedWhatsappConfig, err := expandCESAppDefaultChannelProfileWhatsappConfig(original["whatsapp_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedWhatsappConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["whatsappConfig"] = transformedWhatsappConfig
+	}
+
 	return transformed, nil
 }
 
@@ -2783,6 +3258,13 @@ func expandCESAppDefaultChannelProfileWebWidgetConfig(v interface{}, d tpgresour
 		transformed["webWidgetTitle"] = transformedWebWidgetTitle
 	}
 
+	transformedSecuritySettings, err := expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettings(original["security_settings"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedSecuritySettings); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["securitySettings"] = transformedSecuritySettings
+	}
+
 	return transformed, nil
 }
 
@@ -2795,6 +3277,146 @@ func expandCESAppDefaultChannelProfileWebWidgetConfigTheme(v interface{}, d tpgr
 }
 
 func expandCESAppDefaultChannelProfileWebWidgetConfigWebWidgetTitle(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettings(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedAllowedOrigins, err := expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsAllowedOrigins(original["allowed_origins"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedAllowedOrigins); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["allowedOrigins"] = transformedAllowedOrigins
+	}
+
+	transformedEnableOriginCheck, err := expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableOriginCheck(original["enable_origin_check"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnableOriginCheck); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enableOriginCheck"] = transformedEnableOriginCheck
+	}
+
+	transformedEnablePublicAccess, err := expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnablePublicAccess(original["enable_public_access"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnablePublicAccess); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enablePublicAccess"] = transformedEnablePublicAccess
+	}
+
+	transformedEnableRecaptcha, err := expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableRecaptcha(original["enable_recaptcha"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnableRecaptcha); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enableRecaptcha"] = transformedEnableRecaptcha
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsAllowedOrigins(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableOriginCheck(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnablePublicAccess(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWebWidgetConfigSecuritySettingsEnableRecaptcha(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWhatsappConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedWabaId, err := expandCESAppDefaultChannelProfileWhatsappConfigWabaId(original["waba_id"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedWabaId); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["wabaId"] = transformedWabaId
+	}
+
+	transformedPhoneNumberId, err := expandCESAppDefaultChannelProfileWhatsappConfigPhoneNumberId(original["phone_number_id"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedPhoneNumberId); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["phoneNumberId"] = transformedPhoneNumberId
+	}
+
+	transformedPhoneNumber, err := expandCESAppDefaultChannelProfileWhatsappConfigPhoneNumber(original["phone_number"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedPhoneNumber); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["phoneNumber"] = transformedPhoneNumber
+	}
+
+	transformedDisplayName, err := expandCESAppDefaultChannelProfileWhatsappConfigDisplayName(original["display_name"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedDisplayName); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["displayName"] = transformedDisplayName
+	}
+
+	transformedThumbnailUrl, err := expandCESAppDefaultChannelProfileWhatsappConfigThumbnailUrl(original["thumbnail_url"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedThumbnailUrl); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["thumbnailUrl"] = transformedThumbnailUrl
+	}
+
+	transformedDescription, err := expandCESAppDefaultChannelProfileWhatsappConfigDescription(original["description"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedDescription); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["description"] = transformedDescription
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppDefaultChannelProfileWhatsappConfigWabaId(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWhatsappConfigPhoneNumberId(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWhatsappConfigPhoneNumber(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWhatsappConfigDisplayName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWhatsappConfigThumbnailUrl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppDefaultChannelProfileWhatsappConfigDescription(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -2823,6 +3445,20 @@ func expandCESAppEvaluationMetricsThresholds(v interface{}, d tpgresource.Terraf
 		return nil, err
 	} else if val := reflect.ValueOf(transformedGoldenEvaluationMetricsThresholds); val.IsValid() && !tpgresource.IsEmptyValue(val) {
 		transformed["goldenEvaluationMetricsThresholds"] = transformedGoldenEvaluationMetricsThresholds
+	}
+
+	transformedGoldenHallucinationMetricBehavior, err := expandCESAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(original["golden_hallucination_metric_behavior"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedGoldenHallucinationMetricBehavior); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["goldenHallucinationMetricBehavior"] = transformedGoldenHallucinationMetricBehavior
+	}
+
+	transformedScenarioHallucinationMetricBehavior, err := expandCESAppEvaluationMetricsThresholdsScenarioHallucinationMetricBehavior(original["scenario_hallucination_metric_behavior"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedScenarioHallucinationMetricBehavior); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["scenarioHallucinationMetricBehavior"] = transformedScenarioHallucinationMetricBehavior
 	}
 
 	return transformed, nil
@@ -2917,6 +3553,14 @@ func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTur
 }
 
 func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilaritySuccessThreshold(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppEvaluationMetricsThresholdsScenarioHallucinationMetricBehavior(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -3025,6 +3669,13 @@ func expandCESAppLoggingSettings(v interface{}, d tpgresource.TerraformResourceD
 		return nil, err
 	} else if val := reflect.ValueOf(transformedConversationLoggingSettings); val.IsValid() && !tpgresource.IsEmptyValue(val) {
 		transformed["conversationLoggingSettings"] = transformedConversationLoggingSettings
+	}
+
+	transformedMetricAnalysisSettings, err := expandCESAppLoggingSettingsMetricAnalysisSettings(original["metric_analysis_settings"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedMetricAnalysisSettings); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["metricAnalysisSettings"] = transformedMetricAnalysisSettings
 	}
 
 	transformedRedactionConfig, err := expandCESAppLoggingSettingsRedactionConfig(original["redaction_config"], d, config)
@@ -3167,10 +3818,52 @@ func expandCESAppLoggingSettingsConversationLoggingSettings(v interface{}, d tpg
 		transformed["disableConversationLogging"] = transformedDisableConversationLogging
 	}
 
+	transformedRetentionWindow, err := expandCESAppLoggingSettingsConversationLoggingSettingsRetentionWindow(original["retention_window"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedRetentionWindow); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["retentionWindow"] = transformedRetentionWindow
+	}
+
 	return transformed, nil
 }
 
 func expandCESAppLoggingSettingsConversationLoggingSettingsDisableConversationLogging(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppLoggingSettingsConversationLoggingSettingsRetentionWindow(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppLoggingSettingsMetricAnalysisSettings(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 {
+		return nil, nil
+	}
+
+	if l[0] == nil {
+		transformed := make(map[string]interface{})
+		return transformed, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedLlmMetricsOptedOut, err := expandCESAppLoggingSettingsMetricAnalysisSettingsLlmMetricsOptedOut(original["llm_metrics_opted_out"], d, config)
+	if err != nil {
+		return nil, err
+	} else {
+		transformed["llmMetricsOptedOut"] = transformedLlmMetricsOptedOut
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppLoggingSettingsMetricAnalysisSettingsLlmMetricsOptedOut(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -3219,6 +3912,10 @@ func expandCESAppLoggingSettingsRedactionConfigEnableRedaction(v interface{}, d 
 }
 
 func expandCESAppLoggingSettingsRedactionConfigInspectTemplate(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppLocked(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -3635,6 +4332,147 @@ func expandCESAppClientCertificateSettingsPassphrase(v interface{}, d tpgresourc
 	return v, nil
 }
 
+func expandCESAppVpcScSettings(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedAllowedOrigins, err := expandCESAppVpcScSettingsAllowedOrigins(original["allowed_origins"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedAllowedOrigins); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["allowedOrigins"] = transformedAllowedOrigins
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppVpcScSettingsAllowedOrigins(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppErrorHandlingSettings(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedErrorHandlingStrategy, err := expandCESAppErrorHandlingSettingsErrorHandlingStrategy(original["error_handling_strategy"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedErrorHandlingStrategy); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["errorHandlingStrategy"] = transformedErrorHandlingStrategy
+	}
+
+	transformedFallbackResponseConfig, err := expandCESAppErrorHandlingSettingsFallbackResponseConfig(original["fallback_response_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedFallbackResponseConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["fallbackResponseConfig"] = transformedFallbackResponseConfig
+	}
+
+	transformedEndSessionConfig, err := expandCESAppErrorHandlingSettingsEndSessionConfig(original["end_session_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else {
+		transformed["endSessionConfig"] = transformedEndSessionConfig
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppErrorHandlingSettingsErrorHandlingStrategy(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppErrorHandlingSettingsFallbackResponseConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedCustomFallbackMessages, err := expandCESAppErrorHandlingSettingsFallbackResponseConfigCustomFallbackMessages(original["custom_fallback_messages"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedCustomFallbackMessages); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["customFallbackMessages"] = transformedCustomFallbackMessages
+	}
+
+	transformedMaxFallbackAttempts, err := expandCESAppErrorHandlingSettingsFallbackResponseConfigMaxFallbackAttempts(original["max_fallback_attempts"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedMaxFallbackAttempts); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["maxFallbackAttempts"] = transformedMaxFallbackAttempts
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppErrorHandlingSettingsFallbackResponseConfigCustomFallbackMessages(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (map[string]string, error) {
+	if v == nil {
+		return map[string]string{}, nil
+	}
+	m := make(map[string]string)
+	for k, val := range v.(map[string]interface{}) {
+		m[k] = val.(string)
+	}
+	return m, nil
+}
+
+func expandCESAppErrorHandlingSettingsFallbackResponseConfigMaxFallbackAttempts(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppErrorHandlingSettingsEndSessionConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 {
+		return nil, nil
+	}
+
+	if l[0] == nil {
+		transformed := make(map[string]interface{})
+		return transformed, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedEscalateSession, err := expandCESAppErrorHandlingSettingsEndSessionConfigEscalateSession(original["escalate_session"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEscalateSession); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["escalateSession"] = transformedEscalateSession
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppErrorHandlingSettingsEndSessionConfigEscalateSession(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func ResourceCESAppFlatten(d *schema.ResourceData, meta interface{}, res map[string]interface{}, config *transport_tpg.Config, project string, userAgent string, billingProject string, url string, headers http.Header) error {
 	var err error
 
@@ -3680,6 +4518,9 @@ func ResourceCESAppFlatten(d *schema.ResourceData, meta interface{}, res map[str
 	if err = d.Set("logging_settings", flattenCESAppLoggingSettings(res["loggingSettings"], d, config)); err != nil {
 		return fmt.Errorf("Error reading App: %s", err)
 	}
+	if err = d.Set("locked", flattenCESAppLocked(res["locked"], d, config)); err != nil {
+		return fmt.Errorf("Error reading App: %s", err)
+	}
 	if err = d.Set("metadata", flattenCESAppMetadata(res["metadata"], d, config)); err != nil {
 		return fmt.Errorf("Error reading App: %s", err)
 	}
@@ -3705,6 +4546,12 @@ func ResourceCESAppFlatten(d *schema.ResourceData, meta interface{}, res map[str
 		return fmt.Errorf("Error reading App: %s", err)
 	}
 	if err = d.Set("client_certificate_settings", flattenCESAppClientCertificateSettings(res["clientCertificateSettings"], d, config)); err != nil {
+		return fmt.Errorf("Error reading App: %s", err)
+	}
+	if err = d.Set("vpc_sc_settings", flattenCESAppVpcScSettings(res["vpcScSettings"], d, config)); err != nil {
+		return fmt.Errorf("Error reading App: %s", err)
+	}
+	if err = d.Set("error_handling_settings", flattenCESAppErrorHandlingSettings(res["errorHandlingSettings"], d, config)); err != nil {
 		return fmt.Errorf("Error reading App: %s", err)
 	}
 

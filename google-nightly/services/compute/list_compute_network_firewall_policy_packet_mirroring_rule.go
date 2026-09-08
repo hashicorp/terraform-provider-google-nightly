@@ -146,7 +146,6 @@ func ListComputeNetworkFirewallPolicyPacketMirroringRules(config *transport_tpg.
 	if err != nil {
 		return err
 	}
-
 	return transport_tpg.ListPages(transport_tpg.ListPagesOptions{
 		Config:         config,
 		TempData:       resourceData,
@@ -171,6 +170,9 @@ func ListComputeNetworkFirewallPolicyPacketMirroringRules(config *transport_tpg.
 				}
 			}
 			if v, ok := res["firewallPolicy"]; ok && v != nil {
+				if s, ok := v.(string); ok {
+					v = tpgresource.GetResourceNameFromSelfLink(s)
+				}
 				if err := d.Set("firewall_policy", v); err != nil {
 					return fmt.Errorf("error setting firewall_policy: %w", err)
 				}

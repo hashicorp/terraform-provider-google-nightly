@@ -238,7 +238,7 @@ resource "google_apigee_organization" "apigee_org" {
 
 resource "google_apigee_endpoint_attachment" "apigee_endpoint_attachment" {
   org_id                 = google_apigee_organization.apigee_org.id
-  endpoint_attachment_id = "tf-test%{random_suffix}
+  endpoint_attachment_id = "tf-test%{random_suffix}"
   location               = "%{location}"
   service_attachment     = google_compute_service_attachment.psc_ilb_service_attachment.id
 }
@@ -268,11 +268,12 @@ func testAccCheckApigeeEndpointAttachmentDestroyProducer(t *testing.T) func(s *t
 			}
 
 			_, err = transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-				Config:    config,
-				Method:    "GET",
-				Project:   billingProject,
-				RawURL:    url,
-				UserAgent: config.UserAgent,
+				Config:               config,
+				Method:               "GET",
+				Project:              billingProject,
+				RawURL:               url,
+				UserAgent:            config.UserAgent,
+				ErrorRetryPredicates: []transport_tpg.RetryErrorPredicateFunc{transport_tpg.IsApigeeRetryableError},
 			})
 			if err == nil {
 				return fmt.Errorf("ApigeeEndpointAttachment still exists at %s", url)

@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -72,7 +71,7 @@ func TestAccStorageFtpUser_storageFtpUserBasicExample(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckStorageFtpUserDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -82,7 +81,7 @@ func TestAccStorageFtpUser_storageFtpUserBasicExample(t *testing.T) {
 				ResourceName:            "google_storage_ftp_user.user_ftp",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"location", "server_id", "user_id"},
+				ImportStateVerifyIgnore: []string{"labels", "location", "server_id", "terraform_labels", "user_id"},
 			},
 			{
 				ResourceName:       "google_storage_ftp_user.user_ftp",

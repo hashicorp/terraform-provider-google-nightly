@@ -1658,7 +1658,7 @@ func testAccComputeBackendService_withBackend(
 	serviceName, igName, itName, checkName string, timeout int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -1715,7 +1715,7 @@ func testAccComputeBackendService_withBackendAndMaxUtilization(
 	serviceName, igName, itName, checkName string, timeout int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -1773,7 +1773,7 @@ func testAccComputeBackendService_withBackendAndIAP(
 	serviceName, igName, itName, checkName string, timeout int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -2103,7 +2103,7 @@ func testAccComputeBackendService_withMaxConnections(
 	serviceName, igName, itName, checkName string, maxConnections int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -2160,7 +2160,7 @@ func testAccComputeBackendService_withMaxConnectionsPerInstance(
 	serviceName, igName, itName, checkName string, maxConnectionsPerInstance int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -2232,7 +2232,7 @@ resource "google_compute_backend_service" "lipsum" {
 }
 
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -2390,7 +2390,7 @@ resource "google_compute_backend_service" "lipsum" {
 }
 
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -2538,7 +2538,7 @@ resource "google_compute_url_map" "default" {
 }
 
 data "google_compute_image" "debian_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -3042,7 +3042,7 @@ resource "google_compute_health_check" "health_check" {
 func testAccComputeBackendService_withBackendAndPreference(suffix, loadBalancingScheme, preference string, timeout int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -3111,7 +3111,7 @@ func TestAccComputeBackendService_updateCanaryMigration(t *testing.T) {
 		CheckDestroy: testAccCheckComputeBackendServiceDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccComputeBackendService_basic(serviceName, checkName),
+				Config: testAccComputeBackendService_withCanaryMigrationInitial(serviceName, checkName),
 			},
 			{
 				ResourceName:      "google_compute_backend_service.foobar",
@@ -3164,12 +3164,30 @@ func TestAccComputeBackendService_updateCanaryMigration(t *testing.T) {
 	})
 }
 
+func testAccComputeBackendService_withCanaryMigrationInitial(serviceName, checkName string) string {
+	return fmt.Sprintf(`
+resource "google_compute_backend_service" "foobar" {
+  name                  = "%s"
+  load_balancing_scheme = "EXTERNAL"
+  health_checks         = [google_compute_http_health_check.zero.self_link]
+}
+
+resource "google_compute_http_health_check" "zero" {
+  name               = "%s"
+  request_path       = "/"
+  check_interval_sec = 1
+  timeout_sec        = 1
+}
+`, serviceName, checkName)
+}
+
 func testAccComputeBackendService_withCanaryMigration(serviceName, checkName, description, migrationState string) string {
 	return fmt.Sprintf(`
 resource "google_compute_backend_service" "foobar" {
-  name             = "%s"
-  description      = "%s"
-  health_checks    = [google_compute_http_health_check.zero.self_link]
+  name                             = "%s"
+  description                      = "%s"
+  load_balancing_scheme            = "EXTERNAL"
+  health_checks                    = [google_compute_http_health_check.zero.self_link]
   external_managed_migration_state = "%s"
 }
 
@@ -3189,9 +3207,10 @@ resource "time_sleep" "six_minutes_delay" {
 }
 
 resource "google_compute_backend_service" "foobar" {
-  name             = "%s"
-  description      = "%s"
-  health_checks    = [google_compute_http_health_check.zero.self_link]
+  name                             = "%s"
+  description                      = "%s"
+  load_balancing_scheme            = "EXTERNAL"
+  health_checks                    = [google_compute_http_health_check.zero.self_link]
   external_managed_migration_state = "%s"
 	depends_on = [
 		time_sleep.six_minutes_delay
@@ -3214,9 +3233,10 @@ resource "time_sleep" "six_minutes_delay" {
 }
 
 resource "google_compute_backend_service" "foobar" {
-  name             = "%s"
-  description      = "%s"
-  health_checks    = [google_compute_http_health_check.zero.self_link]
+  name                             = "%s"
+  description                      = "%s"
+  load_balancing_scheme            = "EXTERNAL"
+  health_checks                    = [google_compute_http_health_check.zero.self_link]
   external_managed_migration_state = "TEST_BY_PERCENTAGE"
 	external_managed_migration_testing_percentage = %d
 	depends_on = [
@@ -3293,7 +3313,7 @@ func testAccComputeBackendService_withMaxInFlightRequests(
 	serviceName, igName, itName, checkName string, maxInFlightRequests int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -3353,7 +3373,7 @@ func testAccComputeBackendService_withMaxInFlightRequestsPerInstance(
 	serviceName, igName, itName, checkName string, maxInFlightRequestsPerInstance int64) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -3445,7 +3465,7 @@ resource "google_compute_backend_service" "lipsum" {
 }
 
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -3507,7 +3527,7 @@ resource "google_compute_health_check" "default" {
 func testAccComputeBackendService_withTrafficDuration(serviceName, igName, itName, checkName, duration string) string {
 	return fmt.Sprintf(`
 data "google_compute_image" "my_image" {
-  family  = "debian-11"
+  family  = "debian-13"
   project = "debian-cloud"
 }
 

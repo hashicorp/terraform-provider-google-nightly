@@ -145,7 +145,6 @@ func ListComputeRegionHealthSources(config *transport_tpg.Config,
 	if err != nil {
 		return err
 	}
-
 	return transport_tpg.ListPages(transport_tpg.ListPagesOptions{
 		Config:         config,
 		TempData:       resourceData,
@@ -158,6 +157,9 @@ func ListComputeRegionHealthSources(config *transport_tpg.Config,
 			headers := make(http.Header)
 			var err error
 			if v, ok := res["region"]; ok && v != nil {
+				if s, ok := v.(string); ok {
+					v = tpgresource.GetResourceNameFromSelfLink(s)
+				}
 				if err := d.Set("region", v); err != nil {
 					return fmt.Errorf("error setting region: %w", err)
 				}

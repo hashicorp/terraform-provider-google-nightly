@@ -510,6 +510,12 @@ execution. If not specified, the draft environment will be used.`,
 parameters names to be sent to the Dialogflow agent as input.`,
 													Elem: &schema.Schema{Type: schema.TypeString},
 												},
+												"language_code_variable": {
+													Type:     schema.TypeString,
+													Computed: true,
+													Description: `The name of the variable that contains the language code to be used for
+the Dialogflow session.`,
+												},
 												"output_variable_mapping": {
 													Type:     schema.TypeMap,
 													Computed: true,
@@ -832,6 +838,45 @@ DARK`,
 														},
 													},
 												},
+												"whatsapp_config": {
+													Type:        schema.TypeList,
+													Computed:    true,
+													Description: `Configuration specific to WhatsApp deployments.`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"description": {
+																Type:        schema.TypeString,
+																Computed:    true,
+																Description: `The description of the Meta business page or profile.`,
+															},
+															"display_name": {
+																Type:        schema.TypeString,
+																Computed:    true,
+																Description: `The fetched Meta business page name.`,
+															},
+															"phone_number": {
+																Type:        schema.TypeString,
+																Computed:    true,
+																Description: `The phone number in E.164 format.`,
+															},
+															"phone_number_id": {
+																Type:        schema.TypeString,
+																Computed:    true,
+																Description: `The Meta phone number ID.`,
+															},
+															"thumbnail_url": {
+																Type:        schema.TypeString,
+																Computed:    true,
+																Description: `The fetched Meta business profile thumbnail URL.`,
+															},
+															"waba_id": {
+																Type:        schema.TypeString,
+																Computed:    true,
+																Description: `The WhatsApp Business Account ID.`,
+															},
+														},
+													},
+												},
 											},
 										},
 									},
@@ -849,6 +894,63 @@ DARK`,
 										Type:        schema.TypeString,
 										Computed:    true,
 										Description: `Display name of the app.`,
+									},
+									"error_handling_settings": {
+										Type:        schema.TypeList,
+										Computed:    true,
+										Description: `Settings to describe how errors should be handled in the app.`,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"end_session_config": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Description: `Configuration for ending the session in case of system errors (e.g. LLM
+errors).`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"escalate_session": {
+																Type:     schema.TypeBool,
+																Computed: true,
+																Description: `Whether to escalate the session in EndSession. If session is escalated,
+metadata in EndSession will contain session_escalated = true.`,
+															},
+														},
+													},
+												},
+												"error_handling_strategy": {
+													Type:     schema.TypeString,
+													Computed: true,
+													Description: `The strategy to use for error handling.
+Possible values:
+NONE
+FALLBACK_RESPONSE
+END_SESSION`,
+												},
+												"fallback_response_config": {
+													Type:        schema.TypeList,
+													Computed:    true,
+													Description: `Configuration for handling fallback responses.`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"custom_fallback_messages": {
+																Type:     schema.TypeMap,
+																Computed: true,
+																Description: `The fallback messages in case of system errors (e.g. LLM errors),
+mapped by supported language code
+(https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).`,
+																Elem: &schema.Schema{Type: schema.TypeString},
+															},
+															"max_fallback_attempts": {
+																Type:     schema.TypeInt,
+																Computed: true,
+																Description: `The maximum number of fallback attempts to make before the agent
+emitting EndSession Signal.`,
+															},
+														},
+													},
+												},
+											},
+										},
 									},
 									"etag": {
 										Type:     schema.TypeString,
@@ -907,6 +1009,22 @@ between 0 and 4. Default is >= 3.`,
 															},
 														},
 													},
+												},
+												"golden_hallucination_metric_behavior": {
+													Type:     schema.TypeString,
+													Computed: true,
+													Description: `The hallucination metric behavior for golden evaluations.
+Possible values:
+DISABLED
+ENABLED`,
+												},
+												"scenario_hallucination_metric_behavior": {
+													Type:     schema.TypeString,
+													Computed: true,
+													Description: `The hallucination metric behavior for scenario evaluations.
+Possible values:
+DISABLED
+ENABLED`,
 												},
 											},
 										},
@@ -1058,6 +1176,29 @@ NUMBER>@gcp-sa-ces.iam.gserviceaccount.com.`,
 																Type:        schema.TypeBool,
 																Computed:    true,
 																Description: `Whether to disable conversation logging for the sessions.`,
+															},
+															"retention_window": {
+																Type:     schema.TypeString,
+																Computed: true,
+																Description: `Controls the retention window for the conversation.
+If not set, the conversation will be retained for 365 days.`,
+															},
+														},
+													},
+												},
+												"metric_analysis_settings": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Description: `Settings to describe the conversation data collection behaviors for the LLM
+analysis pipeline for the app.`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"llm_metrics_opted_out": {
+																Type:     schema.TypeBool,
+																Computed: true,
+																Description: `Whether to collect conversation data for llm analysis metrics. If true,
+conversation data will not be collected for llm analysis metrics;
+otherwise, conversation data will be collected.`,
 															},
 														},
 													},
@@ -1291,6 +1432,27 @@ ARRAY`,
 																Description: `Indicate the items in the array must be unique. Only applies to TYPE.ARRAY.`,
 															},
 														},
+													},
+												},
+											},
+										},
+									},
+									"vpc_sc_settings": {
+										Type:        schema.TypeList,
+										Computed:    true,
+										Description: `VPC-SC settings for the app.`,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"allowed_origins": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Description: `The allowed HTTP(s) origins that OpenAPI tools in the App are
+able to directly call when VPC Service Controls are enabled. These strings
+must match the origin exactly, including the port if specified. For
+example, "https://example.com" or "https://example.com:443". This list does
+not yet apply to Python tools that may make direct HTTP calls.`,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
 													},
 												},
 											},
@@ -3958,6 +4120,8 @@ func flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgent(v interface{}, d *s
 		flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgentFlowId(original["flowId"], d, config)
 	transformed["input_variable_mapping"] =
 		flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgentInputVariableMapping(original["inputVariableMapping"], d, config)
+	transformed["language_code_variable"] =
+		flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgentLanguageCodeVariable(original["languageCodeVariable"], d, config)
 	transformed["output_variable_mapping"] =
 		flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgentOutputVariableMapping(original["outputVariableMapping"], d, config)
 	return []interface{}{transformed}
@@ -3975,6 +4139,10 @@ func flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgentFlowId(v interface{}
 }
 
 func flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgentInputVariableMapping(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgentLanguageCodeVariable(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4069,6 +4237,10 @@ func flattenCESAppVersionSnapshotApp(v interface{}, d *schema.ResourceData, conf
 		flattenCESAppVersionSnapshotAppVariableDeclarations(original["variableDeclarations"], d, config)
 	transformed["client_certificate_settings"] =
 		flattenCESAppVersionSnapshotAppClientCertificateSettings(original["clientCertificateSettings"], d, config)
+	transformed["vpc_sc_settings"] =
+		flattenCESAppVersionSnapshotAppVpcScSettings(original["vpcScSettings"], d, config)
+	transformed["error_handling_settings"] =
+		flattenCESAppVersionSnapshotAppErrorHandlingSettings(original["errorHandlingSettings"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppVersionSnapshotAppAudioProcessingConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4230,6 +4402,8 @@ func flattenCESAppVersionSnapshotAppDefaultChannelProfile(v interface{}, d *sche
 		flattenCESAppVersionSnapshotAppDefaultChannelProfileProfileId(original["profileId"], d, config)
 	transformed["web_widget_config"] =
 		flattenCESAppVersionSnapshotAppDefaultChannelProfileWebWidgetConfig(original["webWidgetConfig"], d, config)
+	transformed["whatsapp_config"] =
+		flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfig(original["whatsappConfig"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppVersionSnapshotAppDefaultChannelProfileChannelType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4294,6 +4468,53 @@ func flattenCESAppVersionSnapshotAppDefaultChannelProfileWebWidgetConfigWebWidge
 	return v
 }
 
+func flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["waba_id"] =
+		flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigWabaId(original["wabaId"], d, config)
+	transformed["phone_number_id"] =
+		flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigPhoneNumberId(original["phoneNumberId"], d, config)
+	transformed["phone_number"] =
+		flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigPhoneNumber(original["phoneNumber"], d, config)
+	transformed["display_name"] =
+		flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigDisplayName(original["displayName"], d, config)
+	transformed["thumbnail_url"] =
+		flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigThumbnailUrl(original["thumbnailUrl"], d, config)
+	transformed["description"] =
+		flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigDescription(original["description"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigWabaId(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigPhoneNumberId(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigPhoneNumber(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigDisplayName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigThumbnailUrl(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppDefaultChannelProfileWhatsappConfigDescription(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenCESAppVersionSnapshotAppDeploymentCount(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	// Handles the string fixed64 format
 	if strVal, ok := v.(string); ok {
@@ -4334,6 +4555,10 @@ func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholds(v interface{}, d
 	transformed := make(map[string]interface{})
 	transformed["golden_evaluation_metrics_thresholds"] =
 		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholds(original["goldenEvaluationMetricsThresholds"], d, config)
+	transformed["golden_hallucination_metric_behavior"] =
+		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(original["goldenHallucinationMetricBehavior"], d, config)
+	transformed["scenario_hallucination_metric_behavior"] =
+		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsScenarioHallucinationMetricBehavior(original["scenarioHallucinationMetricBehavior"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholds(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4404,6 +4629,14 @@ func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationM
 	return v // let terraform core handle it otherwise
 }
 
+func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsScenarioHallucinationMetricBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenCESAppVersionSnapshotAppGlobalInstruction(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
@@ -4464,6 +4697,8 @@ func flattenCESAppVersionSnapshotAppLoggingSettings(v interface{}, d *schema.Res
 		flattenCESAppVersionSnapshotAppLoggingSettingsCloudLoggingSettings(original["cloudLoggingSettings"], d, config)
 	transformed["conversation_logging_settings"] =
 		flattenCESAppVersionSnapshotAppLoggingSettingsConversationLoggingSettings(original["conversationLoggingSettings"], d, config)
+	transformed["metric_analysis_settings"] =
+		flattenCESAppVersionSnapshotAppLoggingSettingsMetricAnalysisSettings(original["metricAnalysisSettings"], d, config)
 	transformed["redaction_config"] =
 		flattenCESAppVersionSnapshotAppLoggingSettingsRedactionConfig(original["redactionConfig"], d, config)
 	return []interface{}{transformed}
@@ -4548,9 +4783,29 @@ func flattenCESAppVersionSnapshotAppLoggingSettingsConversationLoggingSettings(v
 	transformed := make(map[string]interface{})
 	transformed["disable_conversation_logging"] =
 		flattenCESAppVersionSnapshotAppLoggingSettingsConversationLoggingSettingsDisableConversationLogging(original["disableConversationLogging"], d, config)
+	transformed["retention_window"] =
+		flattenCESAppVersionSnapshotAppLoggingSettingsConversationLoggingSettingsRetentionWindow(original["retentionWindow"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppVersionSnapshotAppLoggingSettingsConversationLoggingSettingsDisableConversationLogging(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppLoggingSettingsConversationLoggingSettingsRetentionWindow(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppLoggingSettingsMetricAnalysisSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	transformed := make(map[string]interface{})
+	transformed["llm_metrics_opted_out"] =
+		flattenCESAppVersionSnapshotAppLoggingSettingsMetricAnalysisSettingsLlmMetricsOptedOut(original["llmMetricsOptedOut"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAppLoggingSettingsMetricAnalysisSettingsLlmMetricsOptedOut(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4840,6 +5095,94 @@ func flattenCESAppVersionSnapshotAppClientCertificateSettingsPrivateKey(v interf
 }
 
 func flattenCESAppVersionSnapshotAppClientCertificateSettingsPassphrase(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppVpcScSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["allowed_origins"] =
+		flattenCESAppVersionSnapshotAppVpcScSettingsAllowedOrigins(original["allowedOrigins"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAppVpcScSettingsAllowedOrigins(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppErrorHandlingSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["error_handling_strategy"] =
+		flattenCESAppVersionSnapshotAppErrorHandlingSettingsErrorHandlingStrategy(original["errorHandlingStrategy"], d, config)
+	transformed["fallback_response_config"] =
+		flattenCESAppVersionSnapshotAppErrorHandlingSettingsFallbackResponseConfig(original["fallbackResponseConfig"], d, config)
+	transformed["end_session_config"] =
+		flattenCESAppVersionSnapshotAppErrorHandlingSettingsEndSessionConfig(original["endSessionConfig"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAppErrorHandlingSettingsErrorHandlingStrategy(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppErrorHandlingSettingsFallbackResponseConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["custom_fallback_messages"] =
+		flattenCESAppVersionSnapshotAppErrorHandlingSettingsFallbackResponseConfigCustomFallbackMessages(original["customFallbackMessages"], d, config)
+	transformed["max_fallback_attempts"] =
+		flattenCESAppVersionSnapshotAppErrorHandlingSettingsFallbackResponseConfigMaxFallbackAttempts(original["maxFallbackAttempts"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAppErrorHandlingSettingsFallbackResponseConfigCustomFallbackMessages(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppErrorHandlingSettingsFallbackResponseConfigMaxFallbackAttempts(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	// Handles the string fixed64 format
+	if strVal, ok := v.(string); ok {
+		if intVal, err := tpgresource.StringToFixed64(strVal); err == nil {
+			return intVal
+		}
+	}
+
+	// number values are represented as float64
+	if floatVal, ok := v.(float64); ok {
+		intVal := int(floatVal)
+		return intVal
+	}
+
+	return v // let terraform core handle it otherwise
+}
+
+func flattenCESAppVersionSnapshotAppErrorHandlingSettingsEndSessionConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	transformed := make(map[string]interface{})
+	transformed["escalate_session"] =
+		flattenCESAppVersionSnapshotAppErrorHandlingSettingsEndSessionConfigEscalateSession(original["escalateSession"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAppErrorHandlingSettingsEndSessionConfigEscalateSession(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 

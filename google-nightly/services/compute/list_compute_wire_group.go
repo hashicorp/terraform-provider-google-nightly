@@ -145,7 +145,6 @@ func ListComputeWireGroups(config *transport_tpg.Config,
 	if err != nil {
 		return err
 	}
-
 	return transport_tpg.ListPages(transport_tpg.ListPagesOptions{
 		Config:         config,
 		TempData:       resourceData,
@@ -163,6 +162,9 @@ func ListComputeWireGroups(config *transport_tpg.Config,
 				}
 			}
 			if v, ok := res["crossSiteNetwork"]; ok && v != nil {
+				if s, ok := v.(string); ok {
+					v = tpgresource.GetResourceNameFromSelfLink(s)
+				}
 				if err := d.Set("cross_site_network", v); err != nil {
 					return fmt.Errorf("error setting cross_site_network: %w", err)
 				}
