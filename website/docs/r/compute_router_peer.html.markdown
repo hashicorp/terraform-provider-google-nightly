@@ -498,6 +498,13 @@ The following arguments are supported:
   The VM instance must be located in zones contained in the same region as
   this Cloud Router. The VM instance is the peer side of the BGP session.
 
+* `linked_custom_hardware` -
+  (Optional)
+  The URI of the custom hardware link attachment
+  where you will establish the BGP session from the Cloud Router.
+  This link attachment must reside in the same subnetwork as the associated
+  router interface.
+
 * `enable_ipv6` -
   (Optional)
   Enable IPv6 traffic over BGP Peer. If not specified, it is disabled by default.

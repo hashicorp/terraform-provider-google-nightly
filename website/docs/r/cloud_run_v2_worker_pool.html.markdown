@@ -628,13 +628,6 @@ The following arguments are supported:
   Settings for the Binary Authorization feature.
   Structure is [documented below](#nested_binary_authorization).
 
-* `custom_audiences` -
-  (Optional, Deprecated)
-  One or more custom audiences that you want this worker pool to support. Specify each custom audience as the full URL in a string. The custom audiences are encoded in the token and used to authenticate requests.
-  For more information, see https://cloud.google.com/run/docs/configuring/custom-audiences.
-
-  ~> **Warning:** `custom_audiences` is deprecated since it is not applicable to WorkerPool resource and will be removed in a future major release.
-
 * `scaling` -
   (Optional)
   Scaling settings that apply to the worker pool.
@@ -801,6 +794,10 @@ When the field is set to false, deleting the WorkerPool is allowed.
   Compute Resource requirements by this container. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
   Structure is [documented below](#nested_template_containers_resources).
 
+* `sandbox_launcher` -
+  (Optional)
+  Indicates that this container can act as a sandbox supervisor and launch sandboxes.
+
 * `volume_mounts` -
   (Optional)
   Volume to mount into the container's filesystem.
@@ -927,14 +924,8 @@ When the field is set to false, deleting the WorkerPool is allowed.
 
 <a name="nested_template_containers_liveness_probe_http_get_http_headers"></a>The `http_headers` block supports:
 
-* `port` -
-  (Optional, Deprecated)
-  Required. The header field name
-
-  ~> **Warning:** `port` field is deprecated and will be removed in a future major release. It was never supported by the API.
-
 * `name` -
-  (Optional)
+  (Required)
   Required. The header field name
 
 * `value` -
@@ -1009,14 +1000,8 @@ When the field is set to false, deleting the WorkerPool is allowed.
 
 <a name="nested_template_containers_startup_probe_http_get_http_headers"></a>The `http_headers` block supports:
 
-* `port` -
-  (Optional, Deprecated)
-  Required. The header field name
-
-  ~> **Warning:** `port` field is deprecated and will be removed in a future major release. It was never supported by the API.
-
 * `name` -
-  (Optional)
+  (Required)
   Required. The header field name
 
 * `value` -

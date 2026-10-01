@@ -526,14 +526,17 @@ resource "google_compute_backend_service" "default" {
   protocol    = "HTTP"
   timeout_sec = 10
 
-  health_checks = [google_compute_http_health_check.default.id]
+  health_checks = [google_compute_health_check.default.id]
 }
 
-resource "google_compute_http_health_check" "default" {
+resource "google_compute_health_check" "default" {
   name               = "check-%{backend_service_name}"
-  request_path       = "/"
   check_interval_sec = 1
   timeout_sec        = 1
+  http_health_check {
+    port         = 80
+    request_path = "/"
+  }
 }
 `, context)
 }
@@ -642,7 +645,7 @@ resource "google_compute_backend_service" "default" {
 
 data "google_compute_image" "debian_image" {
   provider = google-beta
-  family   = "debian-11"
+  family   = "debian-13"
   project  = "debian-cloud"
 }
 

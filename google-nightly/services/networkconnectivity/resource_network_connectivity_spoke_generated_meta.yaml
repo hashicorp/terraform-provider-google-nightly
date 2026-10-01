@@ -1,4 +1,5 @@
 # Copyright IBM Corp. 2014, 2026
+# Copyright 2026 Google LLC
 # SPDX-License-Identifier: MPL-2.0
 resource: google_network_connectivity_spoke
 generation_type: mmv1
@@ -32,6 +33,7 @@ fields:
     - api_field: linkedRouterApplianceInstances.excludeImportRanges
     - api_field: linkedRouterApplianceInstances.includeExportRanges
     - api_field: linkedRouterApplianceInstances.includeImportRanges
+    - api_field: linkedRouterApplianceInstances.instances.customHardwareLinkAttachment
     - api_field: linkedRouterApplianceInstances.instances.ipAddress
     - api_field: linkedRouterApplianceInstances.instances.virtualMachine
     - api_field: linkedRouterApplianceInstances.siteToSiteDataTransfer

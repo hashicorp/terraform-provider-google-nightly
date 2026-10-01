@@ -33,11 +33,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/registry"
-	compute_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 
-	compute "google.golang.org/api/compute/v0.beta"
 	container "google.golang.org/api/container/v1beta1"
 )
 
@@ -107,7 +105,7 @@ func (nodePoolCache *nodePoolCache) remove(nodePool string) {
 }
 
 type instanceGroupManagerWithUpdateTime struct {
-	instanceGroupManager *compute.InstanceGroupManager
+	instanceGroupManager map[string]interface{}
 	updateTime           time.Time
 }
 
@@ -117,7 +115,7 @@ type instanceGroupManagerCache struct {
 	mutex                 sync.RWMutex
 }
 
-func (instanceGroupManagerCache *instanceGroupManagerCache) get(fullyQualifiedName string) (*compute.InstanceGroupManager, bool) {
+func (instanceGroupManagerCache *instanceGroupManagerCache) get(fullyQualifiedName string) (map[string]interface{}, bool) {
 	instanceGroupManagerCache.mutex.RLock()
 	defer instanceGroupManagerCache.mutex.RUnlock()
 	igm, ok := instanceGroupManagerCache.instanceGroupManagers[fullyQualifiedName]
@@ -141,17 +139,55 @@ func (instanceGroupManagerCache *instanceGroupManagerCache) refreshIfNeeded(d *s
 	}
 
 	updateTime := time.Now()
-	err := compute_tpg.NewClient(config, userAgent).InstanceGroupManagers.List(matches[1], matches[2]).Pages(context.Background(), instanceGroupManagerCache.processList(updateTime))
-	if err != nil {
-		return transport_tpg.HandleNotFoundError(err, d, fmt.Sprintf("InstanceGroupManagers for node pool %q", npName))
+	project := matches[1]
+	zone := matches[2]
+	computeBasePath := transport_tpg.BaseUrl(registry.GetProduct("compute"), config)
+	baseUrl := fmt.Sprintf("%sprojects/%s/zones/%s/instanceGroupManagers", computeBasePath, project, zone)
+	pageToken := ""
+	for {
+		url := baseUrl
+		if pageToken != "" {
+			var err error
+			url, err = transport_tpg.AddQueryParams(baseUrl, map[string]string{"pageToken": pageToken})
+			if err != nil {
+				return err
+			}
+		}
+		res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+			Config:    config,
+			Method:    "GET",
+			Project:   project,
+			RawURL:    url,
+			UserAgent: userAgent,
+		})
+		if err != nil {
+			return transport_tpg.HandleNotFoundError(err, d, fmt.Sprintf("InstanceGroupManagers for node pool %q", npName))
+		}
+		if err := instanceGroupManagerCache.processList(updateTime)(res); err != nil {
+			return err
+		}
+		token, ok := res["nextPageToken"].(string)
+		if !ok || token == "" {
+			break
+		}
+		pageToken = token
 	}
 	return nil
 }
 
-func (instanceGroupManagerCache *instanceGroupManagerCache) processList(updateTime time.Time) func(*compute.InstanceGroupManagerList) error {
-	return func(igmList *compute.InstanceGroupManagerList) error {
-		for _, instanceGroupManager := range igmList.Items {
-			fullyQualifiedName := instanceGroupManagerURL.FindString(instanceGroupManager.SelfLink)
+func (instanceGroupManagerCache *instanceGroupManagerCache) processList(updateTime time.Time) func(map[string]interface{}) error {
+	return func(igmList map[string]interface{}) error {
+		rawItems, ok := igmList["items"].([]interface{})
+		if !ok {
+			return nil
+		}
+		for _, raw := range rawItems {
+			instanceGroupManager, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			selfLink, _ := instanceGroupManager["selfLink"].(string)
+			fullyQualifiedName := instanceGroupManagerURL.FindString(selfLink)
 			instanceGroupManagerCache.instanceGroupManagers[fullyQualifiedName] = &instanceGroupManagerWithUpdateTime{
 				instanceGroupManager: instanceGroupManager,
 				updateTime:           updateTime,
@@ -537,7 +573,15 @@ var schemaNodePool = map[string]*schema.Schema{
 		Optional:    true,
 		Computed:    true,
 		ForceNew:    true,
-		Description: `Creates a unique name for the node pool beginning with the specified prefix. Conflicts with name.`,
+		Description: `Creates a unique name for the node pool beginning with the specified prefix. Conflicts with name. Max length is 31 characters. Prefixes with lengths longer than 14 characters will use a shortened UUID that will be more prone to collisions.`,
+		ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+			value := v.(string)
+			if len(value) > 31 {
+				errors = append(errors, fmt.Errorf(
+					"%q cannot be longer than 31 characters, name is limited to 40", k))
+			}
+			return
+		},
 	},
 
 	"node_config": schemaNodeConfig(),
@@ -786,11 +830,6 @@ func (nodePoolInformation *NodePoolInformation) parent() string {
 	)
 }
 
-func (nodePoolInformation *NodePoolInformation) clusterLockKey() string {
-	return containerClusterMutexKey(nodePoolInformation.project,
-		nodePoolInformation.location, nodePoolInformation.cluster)
-}
-
 func (nodePoolInformation *NodePoolInformation) nodePoolLockKey(nodePoolName string) string {
 	return fmt.Sprintf(
 		"projects/%s/locations/%s/clusters/%s/nodePools/%s",
@@ -847,11 +886,6 @@ func resourceContainerNodePoolCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return err
 	}
-
-	// Acquire read-lock on cluster.
-	clusterLockKey := nodePoolInfo.clusterLockKey()
-	transport_tpg.MutexStore.RLock(clusterLockKey)
-	defer transport_tpg.MutexStore.RUnlock(clusterLockKey)
 
 	// Acquire write-lock on nodepool.
 	npLockKey := nodePoolInfo.nodePoolLockKey(nodePool.Name)
@@ -1026,10 +1060,6 @@ func resourceContainerNodePoolUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	config := meta.(*transport_tpg.Config)
-	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
-	if err != nil {
-		return err
-	}
 
 	nodePoolInfo, err := extractNodePoolInformation(d, config)
 	if err != nil {
@@ -1037,26 +1067,11 @@ func resourceContainerNodePoolUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	name := getNodePoolName(d.Id())
 
-	_, err = containerNodePoolAwaitRestingState(config, nodePoolInfo.fullyQualifiedName(name), nodePoolInfo.project, userAgent, d.Timeout(schema.TimeoutUpdate))
-	if err != nil {
-		return err
-	}
-
 	d.Partial(true)
 	if err := nodePoolUpdate(d, meta, nodePoolInfo, "", d.Timeout(schema.TimeoutUpdate)); err != nil {
 		return err
 	}
 	d.Partial(false)
-
-	//Check cluster is in running state
-	_, err = containerClusterAwaitRestingState(config, nodePoolInfo.project, nodePoolInfo.location, nodePoolInfo.cluster, userAgent, d.Timeout(schema.TimeoutCreate))
-	if err != nil {
-		return err
-	}
-	_, err = containerNodePoolAwaitRestingState(config, nodePoolInfo.fullyQualifiedName(name), nodePoolInfo.project, userAgent, d.Timeout(schema.TimeoutUpdate))
-	if err != nil {
-		return err
-	}
 
 	npCache.remove(nodePoolInfo.fullyQualifiedName(name))
 
@@ -1095,11 +1110,6 @@ func resourceContainerNodePoolDelete(d *schema.ResourceData, meta interface{}) e
 			return err
 		}
 	}
-
-	// Acquire read-lock on cluster.
-	clusterLockKey := nodePoolInfo.clusterLockKey()
-	transport_tpg.MutexStore.RLock(clusterLockKey)
-	defer transport_tpg.MutexStore.RUnlock(clusterLockKey)
 
 	// Acquire write-lock on nodepool.
 	npLockKey := nodePoolInfo.nodePoolLockKey(name)
@@ -1180,11 +1190,6 @@ func resourceContainerNodePoolExists(d *schema.ResourceData, meta interface{}) (
 func resourceContainerNodePoolStateImporter(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	config := meta.(*transport_tpg.Config)
 
-	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
-	if err != nil {
-		return nil, err
-	}
-
 	if err := tpgresource.ParseImportId([]string{"projects/(?P<project>[^/]+)/locations/(?P<location>[^/]+)/clusters/(?P<cluster>[^/]+)/nodePools/(?P<name>[^/]+)", "(?P<project>[^/]+)/(?P<location>[^/]+)/(?P<cluster>[^/]+)/(?P<name>[^/]+)", "(?P<location>[^/]+)/(?P<cluster>[^/]+)/(?P<name>[^/]+)"}, d, config); err != nil {
 		return nil, err
 	}
@@ -1195,26 +1200,6 @@ func resourceContainerNodePoolStateImporter(d *schema.ResourceData, meta interfa
 	}
 
 	d.SetId(id)
-
-	project, err := tpgresource.GetProject(d, config)
-	if err != nil {
-		return nil, err
-	}
-
-	nodePoolInfo, err := extractNodePoolInformation(d, config)
-	if err != nil {
-		return nil, err
-	}
-
-	//Check cluster is in running state
-	_, err = containerClusterAwaitRestingState(config, nodePoolInfo.project, nodePoolInfo.location, nodePoolInfo.cluster, userAgent, d.Timeout(schema.TimeoutCreate))
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := containerNodePoolAwaitRestingState(config, d.Id(), project, userAgent, d.Timeout(schema.TimeoutCreate)); err != nil {
-		return nil, err
-	}
 
 	return []*schema.ResourceData{d}, nil
 }
@@ -1227,7 +1212,12 @@ func expandNodePool(d *schema.ResourceData, prefix string) (*container.NodePool,
 		}
 		name = v.(string)
 	} else if v, ok := d.GetOk(prefix + "name_prefix"); ok {
-		name = id.PrefixedUniqueId(v.(string))
+		p := v.(string)
+		if len(p) > 14 {
+			name = tpgresource.ReducedPrefixedUniqueId(p)
+		} else {
+			name = id.PrefixedUniqueId(p)
+		}
 	} else {
 		name = id.UniqueId()
 	}
@@ -1555,9 +1545,14 @@ func flattenNodePool(d *schema.ResourceData, config *transport_tpg.Config, np *c
 				// The IGM URL is stale; don't include it
 				continue
 			}
-			size += int(igm.TargetSize)
+			targetSize, ok := igm["targetSize"].(float64)
+			if !ok {
+				return nil, fmt.Errorf("targetSize field is missing or not a number in instance group manager %q", matches[0])
+			}
+			size += int(targetSize)
 			igmUrls = append(igmUrls, url)
-			managedIgmUrls = append(managedIgmUrls, igm.InstanceGroup)
+			instanceGroup, _ := igm["instanceGroup"].(string)
+			managedIgmUrls = append(managedIgmUrls, instanceGroup)
 		}
 		if len(igmUrls) > 0 {
 			nodeCount = size / len(igmUrls)
@@ -1790,11 +1785,6 @@ func nodePoolUpdate(d *schema.ResourceData, meta interface{}, nodePoolInfo *Node
 	if err != nil {
 		return err
 	}
-
-	// Acquire read-lock on cluster.
-	clusterLockKey := nodePoolInfo.clusterLockKey()
-	transport_tpg.MutexStore.RLock(clusterLockKey)
-	defer transport_tpg.MutexStore.RUnlock(clusterLockKey)
 
 	// Nodepool write-lock will be acquired when update function is called.
 	npLockKey := nodePoolInfo.nodePoolLockKey(name)

@@ -411,6 +411,11 @@ In addition to the arguments listed above, the following computed attributes are
   The mapping of the app variables names to the Dialogflow session
   parameters names to be sent to the Dialogflow agent as input.
 
+* `language_code_variable` -
+  (Output)
+  The name of the variable that contains the language code to be used for
+  the Dialogflow session.
+
 * `output_variable_mapping` -
   (Output)
   The mapping of the Dialogflow session parameters names to the app
@@ -535,6 +540,16 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   The default client certificate settings for the app.
   Structure is [documented below](#nested_snapshot_app_client_certificate_settings).
+
+* `vpc_sc_settings` -
+  (Output)
+  VPC-SC settings for the app.
+  Structure is [documented below](#nested_snapshot_app_vpc_sc_settings).
+
+* `error_handling_settings` -
+  (Output)
+  Settings to describe how errors should be handled in the app.
+  Structure is [documented below](#nested_snapshot_app_error_handling_settings).
 
 
 <a name="nested_snapshot_app_audio_processing_config"></a>The `audio_processing_config` block contains:
@@ -683,6 +698,11 @@ In addition to the arguments listed above, the following computed attributes are
   Message for configuration for the web widget.
   Structure is [documented below](#nested_snapshot_app_default_channel_profile_web_widget_config).
 
+* `whatsapp_config` -
+  (Output)
+  Configuration specific to WhatsApp deployments.
+  Structure is [documented below](#nested_snapshot_app_default_channel_profile_whatsapp_config).
+
 
 <a name="nested_snapshot_app_default_channel_profile_persona_property"></a>The `persona_property` block contains:
 
@@ -717,12 +737,52 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   The title of the web widget.
 
+<a name="nested_snapshot_app_default_channel_profile_whatsapp_config"></a>The `whatsapp_config` block contains:
+
+* `waba_id` -
+  (Output)
+  The WhatsApp Business Account ID.
+
+* `phone_number_id` -
+  (Output)
+  The Meta phone number ID.
+
+* `phone_number` -
+  (Output)
+  The phone number in E.164 format.
+
+* `display_name` -
+  (Output)
+  The fetched Meta business page name.
+
+* `thumbnail_url` -
+  (Output)
+  The fetched Meta business profile thumbnail URL.
+
+* `description` -
+  (Output)
+  The description of the Meta business page or profile.
+
 <a name="nested_snapshot_app_evaluation_metrics_thresholds"></a>The `evaluation_metrics_thresholds` block contains:
 
 * `golden_evaluation_metrics_thresholds` -
   (Output)
   Settings for golden evaluations.
   Structure is [documented below](#nested_snapshot_app_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds).
+
+* `golden_hallucination_metric_behavior` -
+  (Output)
+  The hallucination metric behavior for golden evaluations.
+  Possible values:
+  DISABLED
+  ENABLED
+
+* `scenario_hallucination_metric_behavior` -
+  (Output)
+  The hallucination metric behavior for scenario evaluations.
+  Possible values:
+  DISABLED
+  ENABLED
 
 
 <a name="nested_snapshot_app_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds"></a>The `golden_evaluation_metrics_thresholds` block contains:
@@ -806,6 +866,12 @@ In addition to the arguments listed above, the following computed attributes are
   Settings to describe the conversation logging behaviors for the app.
   Structure is [documented below](#nested_snapshot_app_logging_settings_conversation_logging_settings).
 
+* `metric_analysis_settings` -
+  (Output)
+  Settings to describe the conversation data collection behaviors for the LLM
+  analysis pipeline for the app.
+  Structure is [documented below](#nested_snapshot_app_logging_settings_metric_analysis_settings).
+
 * `redaction_config` -
   (Output)
   Configuration to instruct how sensitive data should be handled.
@@ -863,6 +929,19 @@ In addition to the arguments listed above, the following computed attributes are
 * `disable_conversation_logging` -
   (Output)
   Whether to disable conversation logging for the sessions.
+
+* `retention_window` -
+  (Output)
+  Controls the retention window for the conversation.
+  If not set, the conversation will be retained for 365 days.
+
+<a name="nested_snapshot_app_logging_settings_metric_analysis_settings"></a>The `metric_analysis_settings` block contains:
+
+* `llm_metrics_opted_out` -
+  (Output)
+  Whether to collect conversation data for llm analysis metrics. If true,
+  conversation data will not be collected for llm analysis metrics;
+  otherwise, conversation data will be collected.
 
 <a name="nested_snapshot_app_logging_settings_redaction_config"></a>The `redaction_config` block contains:
 
@@ -1031,6 +1110,58 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   The passphrase to decrypt the private key.
   Should be left unset if the private key is not encrypted.
+
+<a name="nested_snapshot_app_vpc_sc_settings"></a>The `vpc_sc_settings` block contains:
+
+* `allowed_origins` -
+  (Output)
+  The allowed HTTP(s) origins that OpenAPI tools in the App are
+  able to directly call when VPC Service Controls are enabled. These strings
+  must match the origin exactly, including the port if specified. For
+  example, "https://example.com" or "https://example.com:443". This list does
+  not yet apply to Python tools that may make direct HTTP calls.
+
+<a name="nested_snapshot_app_error_handling_settings"></a>The `error_handling_settings` block contains:
+
+* `error_handling_strategy` -
+  (Output)
+  The strategy to use for error handling.
+  Possible values:
+  NONE
+  FALLBACK_RESPONSE
+  END_SESSION
+
+* `fallback_response_config` -
+  (Output)
+  Configuration for handling fallback responses.
+  Structure is [documented below](#nested_snapshot_app_error_handling_settings_fallback_response_config).
+
+* `end_session_config` -
+  (Output)
+  Configuration for ending the session in case of system errors (e.g. LLM
+  errors).
+  Structure is [documented below](#nested_snapshot_app_error_handling_settings_end_session_config).
+
+
+<a name="nested_snapshot_app_error_handling_settings_fallback_response_config"></a>The `fallback_response_config` block contains:
+
+* `custom_fallback_messages` -
+  (Output)
+  The fallback messages in case of system errors (e.g. LLM errors),
+  mapped by supported language code
+  (https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).
+
+* `max_fallback_attempts` -
+  (Output)
+  The maximum number of fallback attempts to make before the agent
+  emitting EndSession Signal.
+
+<a name="nested_snapshot_app_error_handling_settings_end_session_config"></a>The `end_session_config` block contains:
+
+* `escalate_session` -
+  (Output)
+  Whether to escalate the session in EndSession. If session is escalated,
+  metadata in EndSession will contain session_escalated = true.
 
 <a name="nested_snapshot_examples"></a>The `examples` block contains:
 

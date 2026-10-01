@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -118,7 +117,7 @@ func listAndActionStorageFtpServer(action sweeper.ResourceAction) error {
 		}
 
 		// Prepare list URL
-		listTemplate := strings.Split("https://ftp.googleapis.com/v1alpha/projects/{{project}}/locations/{{location}}/servers", "?")[0]
+		listTemplate := strings.Split("https://ftp.googleapis.com/v1/projects/{{project}}/locations/{{location}}/servers", "?")[0]
 		listUrl, err := tpgresource.ReplaceVars(mockConfig, config, listTemplate)
 		if err != nil {
 			log.Printf("[INFO][SWEEPER_LOG] error preparing sweeper list url: %s", err)
@@ -199,7 +198,7 @@ func deleteResourceStorageFtpServer(config *transport_tpg.Config, d *tpgresource
 		return nil
 	}
 
-	deleteTemplate := "https://ftp.googleapis.com/v1alpha/projects/{{project}}/locations/{{location}}/servers/{{server_id}}"
+	deleteTemplate := "https://ftp.googleapis.com/v1/projects/{{project}}/locations/{{location}}/servers/{{server_id}}"
 
 	url, err := tpgresource.ReplaceVars(d, config, deleteTemplate)
 	if err != nil {

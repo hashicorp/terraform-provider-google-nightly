@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -346,6 +347,15 @@ such as Next Gen Firewalls, Virtual Routers, or Router Appliances.
 The VM instance must be located in zones contained in the same region as
 this Cloud Router. The VM instance is the peer side of the BGP session.`,
 			},
+			"linked_custom_hardware": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
+				Description: `The URI of the custom hardware link attachment
+where you will establish the BGP session from the Cloud Router.
+This link attachment must reside in the same subnetwork as the associated
+router interface.`,
+			},
 			"management_type": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -530,6 +540,12 @@ func resourceComputeRouterBgpPeerCreate(d *schema.ResourceData, meta interface{}
 		return err
 	} else if v, ok := d.GetOkExists("router_appliance_instance"); !tpgresource.IsEmptyValue(reflect.ValueOf(routerApplianceInstanceProp)) && (ok || !reflect.DeepEqual(v, routerApplianceInstanceProp)) {
 		obj["routerApplianceInstance"] = routerApplianceInstanceProp
+	}
+	linkedCustomHardwareProp, err := expandNestedComputeRouterBgpPeerLinkedCustomHardware(d.Get("linked_custom_hardware"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("linked_custom_hardware"); !tpgresource.IsEmptyValue(reflect.ValueOf(linkedCustomHardwareProp)) && (ok || !reflect.DeepEqual(v, linkedCustomHardwareProp)) {
+		obj["linkedCustomHardware"] = linkedCustomHardwareProp
 	}
 	enableIpv6Prop, err := expandNestedComputeRouterBgpPeerEnableIpv6(d.Get("enable_ipv6"), d, config)
 	if err != nil {
@@ -761,6 +777,9 @@ func resourceComputeRouterBgpPeerRead(d *schema.ResourceData, meta interface{}) 
 	if err := d.Set("router_appliance_instance", flattenNestedComputeRouterBgpPeerRouterApplianceInstance(res["routerApplianceInstance"], d, config)); err != nil {
 		return fmt.Errorf("Error reading RouterBgpPeer: %s", err)
 	}
+	if err := d.Set("linked_custom_hardware", flattenNestedComputeRouterBgpPeerLinkedCustomHardware(res["linkedCustomHardware"], d, config)); err != nil {
+		return fmt.Errorf("Error reading RouterBgpPeer: %s", err)
+	}
 	if err := d.Set("enable_ipv6", flattenNestedComputeRouterBgpPeerEnableIpv6(res["enableIpv6"], d, config)); err != nil {
 		return fmt.Errorf("Error reading RouterBgpPeer: %s", err)
 	}
@@ -912,6 +931,12 @@ func resourceComputeRouterBgpPeerUpdate(d *schema.ResourceData, meta interface{}
 		return err
 	} else if v, ok := d.GetOkExists("router_appliance_instance"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, routerApplianceInstanceProp)) {
 		obj["routerApplianceInstance"] = routerApplianceInstanceProp
+	}
+	linkedCustomHardwareProp, err := expandNestedComputeRouterBgpPeerLinkedCustomHardware(d.Get("linked_custom_hardware"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("linked_custom_hardware"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, linkedCustomHardwareProp)) {
+		obj["linkedCustomHardware"] = linkedCustomHardwareProp
 	}
 	enableIpv6Prop, err := expandNestedComputeRouterBgpPeerEnableIpv6(d.Get("enable_ipv6"), d, config)
 	if err != nil {
@@ -1362,6 +1387,10 @@ func flattenNestedComputeRouterBgpPeerRouterApplianceInstance(v interface{}, d *
 	return tpgresource.ConvertSelfLinkToV1(v.(string))
 }
 
+func flattenNestedComputeRouterBgpPeerLinkedCustomHardware(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenNestedComputeRouterBgpPeerEnableIpv6(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
@@ -1596,6 +1625,10 @@ func expandNestedComputeRouterBgpPeerRouterApplianceInstance(v interface{}, d tp
 		return nil, fmt.Errorf("Invalid value for router_appliance_instance: %s", err)
 	}
 	return f.RelativeLink(), nil
+}
+
+func expandNestedComputeRouterBgpPeerLinkedCustomHardware(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
 }
 
 func expandNestedComputeRouterBgpPeerEnableIpv6(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {

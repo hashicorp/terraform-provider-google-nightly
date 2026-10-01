@@ -55,6 +55,7 @@ fields:
     - api_field: snapshot.agents.remoteDialogflowAgent.environmentId
     - api_field: snapshot.agents.remoteDialogflowAgent.flowId
     - api_field: snapshot.agents.remoteDialogflowAgent.inputVariableMapping
+    - api_field: snapshot.agents.remoteDialogflowAgent.languageCodeVariable
     - api_field: snapshot.agents.remoteDialogflowAgent.outputVariableMapping
     - api_field: snapshot.agents.tools
     - api_field: snapshot.agents.toolsets.toolIds
@@ -85,13 +86,25 @@ fields:
     - api_field: snapshot.app.defaultChannelProfile.webWidgetConfig.modality
     - api_field: snapshot.app.defaultChannelProfile.webWidgetConfig.theme
     - api_field: snapshot.app.defaultChannelProfile.webWidgetConfig.webWidgetTitle
+    - api_field: snapshot.app.defaultChannelProfile.whatsappConfig.description
+    - api_field: snapshot.app.defaultChannelProfile.whatsappConfig.displayName
+    - api_field: snapshot.app.defaultChannelProfile.whatsappConfig.phoneNumber
+    - api_field: snapshot.app.defaultChannelProfile.whatsappConfig.phoneNumberId
+    - api_field: snapshot.app.defaultChannelProfile.whatsappConfig.thumbnailUrl
+    - api_field: snapshot.app.defaultChannelProfile.whatsappConfig.wabaId
     - api_field: snapshot.app.deploymentCount
     - api_field: snapshot.app.description
     - api_field: snapshot.app.displayName
+    - api_field: snapshot.app.errorHandlingSettings.endSessionConfig.escalateSession
+    - api_field: snapshot.app.errorHandlingSettings.errorHandlingStrategy
+    - api_field: snapshot.app.errorHandlingSettings.fallbackResponseConfig.customFallbackMessages
+    - api_field: snapshot.app.errorHandlingSettings.fallbackResponseConfig.maxFallbackAttempts
     - api_field: snapshot.app.etag
     - api_field: snapshot.app.evaluationMetricsThresholds.goldenEvaluationMetricsThresholds.expectationLevelMetricsThresholds.toolInvocationParameterCorrectnessThreshold
     - api_field: snapshot.app.evaluationMetricsThresholds.goldenEvaluationMetricsThresholds.turnLevelMetricsThresholds.overallToolInvocationCorrectnessThreshold
     - api_field: snapshot.app.evaluationMetricsThresholds.goldenEvaluationMetricsThresholds.turnLevelMetricsThresholds.semanticSimilaritySuccessThreshold
+    - api_field: snapshot.app.evaluationMetricsThresholds.goldenHallucinationMetricBehavior
+    - api_field: snapshot.app.evaluationMetricsThresholds.scenarioHallucinationMetricBehavior
     - api_field: snapshot.app.globalInstruction
     - api_field: snapshot.app.guardrails
     - api_field: snapshot.app.languageSettings.defaultLanguageCode
@@ -105,6 +118,8 @@ fields:
     - api_field: snapshot.app.loggingSettings.bigqueryExportSettings.project
     - api_field: snapshot.app.loggingSettings.cloudLoggingSettings.enableCloudLogging
     - api_field: snapshot.app.loggingSettings.conversationLoggingSettings.disableConversationLogging
+    - api_field: snapshot.app.loggingSettings.conversationLoggingSettings.retentionWindow
+    - api_field: snapshot.app.loggingSettings.metricAnalysisSettings.llmMetricsOptedOut
     - api_field: snapshot.app.loggingSettings.redactionConfig.deidentifyTemplate
     - api_field: snapshot.app.loggingSettings.redactionConfig.enableRedaction
     - api_field: snapshot.app.loggingSettings.redactionConfig.inspectTemplate
@@ -137,6 +152,7 @@ fields:
     - api_field: snapshot.app.variableDeclarations.schema.required
     - api_field: snapshot.app.variableDeclarations.schema.type
     - api_field: snapshot.app.variableDeclarations.schema.uniqueItems
+    - api_field: snapshot.app.vpcScSettings.allowedOrigins
     - api_field: snapshot.examples.createTime
     - api_field: snapshot.examples.description
     - api_field: snapshot.examples.displayName

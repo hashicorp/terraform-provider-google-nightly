@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -68,7 +67,7 @@ func TestAccStorageFtpServer_storageFtpServerInternalExample(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckStorageFtpServerDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -78,7 +77,7 @@ func TestAccStorageFtpServer_storageFtpServerInternalExample(t *testing.T) {
 				ResourceName:            "google_storage_ftp_server.internal_server",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"location", "server_id"},
+				ImportStateVerifyIgnore: []string{"labels", "location", "server_id", "terraform_labels"},
 			},
 			{
 				ResourceName:       "google_storage_ftp_server.internal_server",
@@ -129,7 +128,7 @@ func TestAccStorageFtpServer_storageFtpServerExternalExample(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckStorageFtpServerDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -139,7 +138,7 @@ func TestAccStorageFtpServer_storageFtpServerExternalExample(t *testing.T) {
 				ResourceName:            "google_storage_ftp_server.external_server",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"location", "server_id"},
+				ImportStateVerifyIgnore: []string{"labels", "location", "server_id", "terraform_labels"},
 			},
 			{
 				ResourceName:       "google_storage_ftp_server.external_server",

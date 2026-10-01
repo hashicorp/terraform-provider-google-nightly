@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -25,7 +24,7 @@ import (
 
 var Product = registry.Product{
 	Name:                 "storageftp",
-	BaseUrl:              "https://ftp.googleapis.com/v1alpha/",
+	BaseUrl:              "https://ftp.googleapis.com/v1/",
 	CustomEndpointField:  "storage_ftp_custom_endpoint",
 	CustomEndpointEnvVar: "GOOGLE_STORAGE_FTP_CUSTOM_ENDPOINT",
 }

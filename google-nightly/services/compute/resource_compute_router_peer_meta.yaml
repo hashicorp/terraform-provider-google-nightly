@@ -1,4 +1,5 @@
 # Copyright IBM Corp. 2014, 2026
+# Copyright 2026 Google LLC
 # SPDX-License-Identifier: MPL-2.0
 resource: 'google_compute_router_peer'
 generation_type: 'handwritten'
@@ -70,6 +71,8 @@ fields:
   - field: 'router'
   - api_field: 'bgpPeers.routerApplianceInstance'
     field: 'router_appliance_instance'
+  - api_field: 'bgpPeers.linkedCustomHardware'
+    field: 'linked_custom_hardware'
   - field: 'zero_advertised_route_priority'
     provider_only: true
   - field: 'zero_custom_learned_route_priority'

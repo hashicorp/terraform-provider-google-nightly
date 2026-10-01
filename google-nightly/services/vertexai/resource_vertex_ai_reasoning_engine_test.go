@@ -143,6 +143,10 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
     class_methods   = jsonencode(local.class_methods)
     service_account = google_service_account.service_account.email
 
+    build_spec {
+      service_account = google_service_account.service_account.email
+    }
+
     deployment_spec {
       min_instances         = 1
       max_instances         = 3
@@ -324,6 +328,10 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
     agent_framework = "langchain"
     class_methods   = jsonencode(local.class_methods_new)
     service_account = google_service_account.service_account_new.email
+
+    build_spec {
+      service_account = google_service_account.service_account_new.email
+    }
 
     deployment_spec {
       min_instances         = 2
@@ -827,7 +835,7 @@ func TestAccVertexAIReasoningEngine_memoryGenerationTriggerUpdate(t *testing.T) 
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckVertexAIReasoningEngineDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -852,12 +860,9 @@ func TestAccVertexAIReasoningEngine_memoryGenerationTriggerUpdate(t *testing.T) 
 
 func testAccVertexAIReasoningEngine_memoryGenerationTriggerFixedInterval(context map[string]interface{}) string {
 	return acctest.Nprintf(`
-data "google_project" "project" {
-  provider = google-beta
-}
+data "google_project" "project" {}
 
 resource "google_vertex_ai_reasoning_engine" "primary" {
-  provider     = google-beta
   display_name = "tf-test-reasoning-engine-%{random_suffix}"
   description  = "Reasoning engine testing memory generation triggers"
   region       = "us-central1"
@@ -883,12 +888,9 @@ resource "google_vertex_ai_reasoning_engine" "primary" {
 
 func testAccVertexAIReasoningEngine_memoryGenerationTriggerEventCount(context map[string]interface{}) string {
 	return acctest.Nprintf(`
-data "google_project" "project" {
-  provider = google-beta
-}
+data "google_project" "project" {}
 
 resource "google_vertex_ai_reasoning_engine" "primary" {
-  provider     = google-beta
   display_name = "tf-test-reasoning-engine-%{random_suffix}"
   description  = "Reasoning engine testing memory generation triggers"
   region       = "us-central1"
@@ -922,7 +924,7 @@ func TestAccVertexAIReasoningEngine_customizationConfigsUpdate(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckVertexAIReasoningEngineDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -947,12 +949,9 @@ func TestAccVertexAIReasoningEngine_customizationConfigsUpdate(t *testing.T) {
 
 func testAccVertexAIReasoningEngine_customizationConfigsBefore(context map[string]interface{}) string {
 	return acctest.Nprintf(`
-data "google_project" "project" {
-  provider = google-beta
-}
+data "google_project" "project" {}
 
 resource "google_vertex_ai_reasoning_engine" "primary" {
-  provider     = google-beta
   display_name = "tf-test-reasoning-engine-%{random_suffix}"
   description  = "Reasoning engine testing customization configs update"
   region       = "us-central1"
@@ -1040,6 +1039,17 @@ resource "google_vertex_ai_reasoning_engine" "primary" {
                     data      = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
                   }
                 }
+                parts {
+                  audio_transcription {
+                    speaker_label = "spk_1"
+                    text          = "I like pepperoni pizza"
+                    words {
+                      start_offset = "0.5s"
+                      end_offset   = "1.5s"
+                      word         = "pepperoni"
+                    }
+                  }
+                }
               }
             }
           }
@@ -1065,12 +1075,9 @@ resource "google_vertex_ai_reasoning_engine" "primary" {
 
 func testAccVertexAIReasoningEngine_customizationConfigsAfter(context map[string]interface{}) string {
 	return acctest.Nprintf(`
-data "google_project" "project" {
-  provider = google-beta
-}
+data "google_project" "project" {}
 
 resource "google_vertex_ai_reasoning_engine" "primary" {
-  provider     = google-beta
   display_name = "tf-test-reasoning-engine-%{random_suffix}"
   description  = "Reasoning engine testing customization configs update"
   region       = "us-central1"
@@ -1158,6 +1165,17 @@ resource "google_vertex_ai_reasoning_engine" "primary" {
                     data      = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
                   }
                 }
+                parts {
+                  audio_transcription {
+                    speaker_label = "spk_2"
+                    text          = "Remember that I prefer dark mode"
+                    words {
+                      start_offset = "1s"
+                      end_offset   = "2.5s"
+                      word         = "dark"
+                    }
+                  }
+                }
               }
             }
           }
@@ -1173,6 +1191,203 @@ resource "google_vertex_ai_reasoning_engine" "primary" {
               custom_memory_topic_label = "custom_updated_workflow"
             }
           }
+        }
+      }
+    }
+  }
+}
+`, context)
+}
+
+func TestAccVertexAIReasoningEngine_agentGatewayConfig(t *testing.T) {
+	t.Parallel()
+
+	context := map[string]interface{}{
+		"random_suffix": acctest.RandString(t, 10),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckVertexAIReasoningEngineDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVertexAIReasoningEngine_agentGatewayConfig(context),
+			},
+			{
+				ResourceName:            "google_vertex_ai_reasoning_engine.reasoning_engine",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"etag", "location", "region", "labels", "terraform_labels", "spec.0.effective_identity"},
+			},
+			{
+				Config: testAccVertexAIReasoningEngine_agentGatewayConfigUpdate(context),
+			},
+			{
+				ResourceName:            "google_vertex_ai_reasoning_engine.reasoning_engine",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"etag", "location", "region", "labels", "terraform_labels", "spec.0.effective_identity"},
+			},
+		},
+	})
+}
+
+func testAccVertexAIReasoningEngine_agentGatewayConfig(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_project" "project" {}
+
+resource "google_compute_network" "default" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "default" {
+  name          = "tf-test-subnet-%{random_suffix}"
+  region        = "us-central1"
+  network       = google_compute_network.default.id
+  ip_cidr_range = "10.0.0.0/16"
+}
+
+resource "google_compute_network_attachment" "default" {
+  name                  = "tf-test-na-%{random_suffix}"
+  region                = "us-central1"
+  connection_preference = "ACCEPT_AUTOMATIC"
+  subnetworks           = [google_compute_subnetwork.default.self_link]
+}
+
+resource "google_network_services_agent_gateway" "agent_to_anywhere" {
+  name     = "tf-test-ag-a2a-%{random_suffix}"
+  location = "us-central1"
+  protocols = ["MCP"]
+  google_managed {
+    governed_access_path = "AGENT_TO_ANYWHERE"
+  }
+  registries = [
+    "//agentregistry.googleapis.com/projects/${data.google_project.project.project_id}/locations/us-central1"
+  ]
+  network_config {
+    egress {
+      network_attachment = google_compute_network_attachment.default.id
+    }
+  }
+}
+
+resource "google_network_services_agent_gateway" "client_to_agent" {
+  name     = "tf-test-ag-c2a-%{random_suffix}"
+  location = "us-central1"
+  protocols = ["MCP"]
+  google_managed {
+    governed_access_path = "CLIENT_TO_AGENT"
+  }
+  registries = [
+    "//agentregistry.googleapis.com/projects/${data.google_project.project.project_id}/locations/us-central1"
+  ]
+  network_config {
+    egress {
+      network_attachment = google_compute_network_attachment.default.id
+    }
+  }
+}
+
+resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
+  display_name = "tf-test-agent-gw-%{random_suffix}"
+  description  = "Reasoning engine testing agent gateway config"
+  region       = "us-central1"
+
+  spec {
+    identity_type = "AGENT_IDENTITY"
+    container_spec {
+      image_uri = "us-docker.pkg.dev/cloudrun/container/hello"
+      port      = 8000
+    }
+    deployment_spec {
+      agent_gateway_config {
+        client_to_agent_config {
+          agent_gateway = google_network_services_agent_gateway.client_to_agent.id
+        }
+      }
+    }
+  }
+}
+`, context)
+}
+
+func testAccVertexAIReasoningEngine_agentGatewayConfigUpdate(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_project" "project" {}
+
+resource "google_compute_network" "default" {
+  name                    = "tf-test-net-%{random_suffix}"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "default" {
+  name          = "tf-test-subnet-%{random_suffix}"
+  region        = "us-central1"
+  network       = google_compute_network.default.id
+  ip_cidr_range = "10.0.0.0/16"
+}
+
+resource "google_compute_network_attachment" "default" {
+  name                  = "tf-test-na-%{random_suffix}"
+  region                = "us-central1"
+  connection_preference = "ACCEPT_AUTOMATIC"
+  subnetworks           = [google_compute_subnetwork.default.self_link]
+}
+
+resource "google_network_services_agent_gateway" "agent_to_anywhere" {
+  name     = "tf-test-ag-a2a-%{random_suffix}"
+  location = "us-central1"
+  protocols = ["MCP"]
+  google_managed {
+    governed_access_path = "AGENT_TO_ANYWHERE"
+  }
+  registries = [
+    "//agentregistry.googleapis.com/projects/${data.google_project.project.project_id}/locations/us-central1"
+  ]
+  network_config {
+    egress {
+      network_attachment = google_compute_network_attachment.default.id
+    }
+  }
+}
+
+resource "google_network_services_agent_gateway" "client_to_agent" {
+  name     = "tf-test-ag-c2a-%{random_suffix}"
+  location = "us-central1"
+  protocols = ["MCP"]
+  google_managed {
+    governed_access_path = "CLIENT_TO_AGENT"
+  }
+  registries = [
+    "//agentregistry.googleapis.com/projects/${data.google_project.project.project_id}/locations/us-central1"
+  ]
+  network_config {
+    egress {
+      network_attachment = google_compute_network_attachment.default.id
+    }
+  }
+}
+
+resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
+  display_name = "tf-test-agent-gw-updated-%{random_suffix}"
+  description  = "Updated reasoning engine testing agent gateway config"
+  region       = "us-central1"
+
+  spec {
+    identity_type = "AGENT_IDENTITY"
+    container_spec {
+      image_uri = "us-docker.pkg.dev/cloudrun/container/hello"
+      port      = 8000
+    }
+    deployment_spec {
+      agent_gateway_config {
+        client_to_agent_config {
+          agent_gateway = google_network_services_agent_gateway.client_to_agent.id
+        }
+        agent_to_anywhere_config {
+          agent_gateway = google_network_services_agent_gateway.agent_to_anywhere.id
         }
       }
     }
@@ -1469,6 +1684,104 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
       targets {
         runtime_revision_name = "PREVIOUS"
         percent               = 20
+      }
+    }
+  }
+}
+`, context)
+}
+
+func TestAccVertexAIReasoningEngine_agentConfigSourceUpdate(t *testing.T) {
+	t.Parallel()
+
+	context := map[string]interface{}{
+		"random_suffix": acctest.RandString(t, 10),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckVertexAIReasoningEngineDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVertexAIReasoningEngine_agentConfigSourceBasic(context),
+			},
+			{
+				ResourceName:            "google_vertex_ai_reasoning_engine.reasoning_engine",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"etag", "location", "region", "labels", "terraform_labels"},
+			},
+			{
+				Config: testAccVertexAIReasoningEngine_agentConfigSourceUpdate(context),
+			},
+			{
+				ResourceName:            "google_vertex_ai_reasoning_engine.reasoning_engine",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"etag", "location", "region", "labels", "terraform_labels"},
+			},
+		},
+	})
+}
+
+func testAccVertexAIReasoningEngine_agentConfigSourceBasic(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
+  display_name = "tf-test-reasoning-engine-%{random_suffix}"
+  description  = "A basic reasoning engine with agent config source"
+  labels       = {
+    "key" = "value"
+  }
+  region       = "us-central1"
+
+  spec {
+    source_code_spec {
+      agent_config_source {
+        adk_config {
+          json_config = jsonencode({
+            name        = "finance_analyst_agent"
+            model       = "gemini-2.5-flash"
+            description = "A financial analyst that can look up stock values and return them as tables."
+            instruction = "You are a financial analyst. Output data in tables."
+          })
+        }
+      }
+
+      python_spec {
+        version = "3.11"
+      }
+    }
+  }
+}
+`, context)
+}
+
+func testAccVertexAIReasoningEngine_agentConfigSourceUpdate(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
+  display_name = "tf-test-reasoning-engine-%{random_suffix}"
+  description  = "A basic reasoning engine with agent config source updated"
+  labels       = {
+    "key" = "updated"
+  }
+  region       = "us-central1"
+
+  spec {
+    source_code_spec {
+      agent_config_source {
+        adk_config {
+          json_config = jsonencode({
+            name        = "finance_analyst_agent_updated"
+            model       = "gemini-2.5-flash"
+            description = "An updated financial analyst agent."
+            instruction = "You are an updated financial analyst."
+          })
+        }
+      }
+
+      python_spec {
+        version = "3.11"
       }
     }
   }

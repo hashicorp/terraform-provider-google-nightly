@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -33,6 +34,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/networkconnectivity"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/servicenetworking"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
@@ -70,7 +72,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedVpcNetworkBas
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -144,7 +146,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedVpcNetworkGro
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -227,7 +229,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeRouterApplianceBasi
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -338,7 +340,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeVpnTunnelBasicExamp
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -512,7 +514,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeInterconnectAttachm
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -600,7 +602,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedProducerVpcNe
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -692,7 +694,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeCenterGroupExample(
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -768,7 +770,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedVpcNetworkIpv
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -838,7 +840,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeGatewayExample(t *t
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -898,6 +900,153 @@ resource "google_network_connectivity_spoke" "primary" {
     capacity = "CAPACITY_1_GBPS"
   }
   group = "gateways"
+}
+`, context)
+}
+
+func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeCustomHardwareExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"hub_name":      "tf-test-chn-test-hub" + randomSuffix,
+		"network_name":  "tf-test-chn-test-gray-network" + randomSuffix,
+		"resource_name": "tf-test-chn-test-gray" + randomSuffix,
+		"spoke_name":    "tf-test-chn-test-spoke" + randomSuffix,
+		"random_suffix": randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		CheckDestroy:             testAccCheckNetworkConnectivitySpokeDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNetworkConnectivitySpoke_networkConnectivitySpokeCustomHardwareExample(context),
+			},
+			{
+				ResourceName:            "google_network_connectivity_spoke.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"hub", "labels", "location", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_network_connectivity_spoke.primary",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccNetworkConnectivitySpoke_networkConnectivitySpokeCustomHardwareExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+provider "google-nightly" {}
+
+data "google_project" "project" {
+  provider = google-nightly
+}
+
+resource "google_compute_network" "network" {
+  provider = google-nightly
+  name = "%{network_name}"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnetwork" {
+  provider = google-nightly
+  name = "%{network_name}-sub"
+  network = google_compute_network.network.name
+  ip_cidr_range = "10.93.0.0/16"
+  region = "us-south1"
+}
+
+resource "google_compute_subnetwork" "ch_subnetwork" {
+  provider = google-nightly
+  name = "%{network_name}-chsub"
+  network = google_compute_network.network.name
+  ip_cidr_range = "192.168.176.0/20"
+  region = "us-south1"
+  purpose = "CUSTOM_HARDWARE_LINK"
+}
+
+resource "google_compute_address" "bgp_a" {
+  provider = google-nightly
+  name = "%{network_name}-bgp-a"
+  region = "us-south1"
+  address_type = "INTERNAL"
+  purpose = "SYSTEM_MANAGED"
+  subnetwork = google_compute_subnetwork.subnetwork.id
+}
+
+resource "google_compute_address" "bgp_peer_a" {
+  provider = google-nightly
+  name = "%{network_name}-peer-a"
+  region = "us-south1"
+  address_type = "INTERNAL"
+  purpose = "SYSTEM_MANAGED"
+  subnetwork = google_compute_subnetwork.subnetwork.id
+}
+
+resource "google_compute_address" "ch_range" {
+  provider = google-nightly
+  name = "%{network_name}-range"
+  region = "us-south1"
+  address_type = "INTERNAL"
+  purpose = "SYSTEM_MANAGED"
+  subnetwork = google_compute_subnetwork.ch_subnetwork.id
+  address = "192.168.177.0"
+}
+
+resource "google_network_connectivity_custom_hardware_instance" "instance" {
+  provider = google-nightly
+  name = "%{resource_name}-inst"
+  location = "us-south1"
+}
+
+resource "google_network_connectivity_custom_hardware_link_connect_pair" "pair" {
+  provider = google-nightly
+  name = "%{resource_name}-lcp"
+  location = "us-south1-d"
+  custom_hardware_instance = google_network_connectivity_custom_hardware_instance.instance.id
+  link_type = "LINK_TYPE_REGULAR"
+  link_speed = "LINK_SPEED100_G"
+}
+
+resource "google_network_connectivity_custom_hardware_link_attachment" "attachment" {
+  provider = google-nightly
+  name = "%{resource_name}"
+  location = "us-south1-d"
+  custom_hardware_link_connect_pair = google_network_connectivity_custom_hardware_link_connect_pair.pair.id
+  subnetwork = google_compute_subnetwork.subnetwork.id
+  link_type = "LINK_TYPE_REGULAR"
+  bgp_ip = "projects/${data.google_project.project.project_id}/regions/us-south1/addresses/${google_compute_address.bgp_a.name}"
+  asn = "64512"
+  peer_bgp_ip = "projects/${data.google_project.project.project_id}/regions/us-south1/addresses/${google_compute_address.bgp_peer_a.name}"
+  peer_asn = "64513"
+  link_address_range = "projects/${data.google_project.project.project_id}/regions/us-south1/addresses/${google_compute_address.ch_range.name}"
+}
+
+resource "google_network_connectivity_hub" "basic_hub" {
+  provider = google-nightly
+  name        = "%{hub_name}"
+}
+
+resource "google_network_connectivity_spoke" "primary" {
+  provider = google-nightly
+  name = "%{spoke_name}"
+  location = "us-south1"
+  hub =  google_network_connectivity_hub.basic_hub.id
+  linked_router_appliance_instances {
+    instances {
+        custom_hardware_link_attachment = google_network_connectivity_custom_hardware_link_attachment.attachment.id
+        ip_address = google_compute_address.bgp_a.address
+    }
+    site_to_site_data_transfer = true
+    include_import_ranges = ["ALL_IPV4_RANGES"]
+  }
 }
 `, context)
 }
