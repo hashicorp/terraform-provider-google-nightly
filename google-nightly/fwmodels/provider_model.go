@@ -182,7 +182,6 @@ type ProviderModel struct {
 	MemcacheCustomEndpoint                 types.String `tfsdk:"memcache_custom_endpoint"`
 	MemorystoreCustomEndpoint              types.String `tfsdk:"memorystore_custom_endpoint"`
 	MigrationCenterCustomEndpoint          types.String `tfsdk:"migration_center_custom_endpoint"`
-	MLEngineCustomEndpoint                 types.String `tfsdk:"ml_engine_custom_endpoint"`
 	ModelArmorCustomEndpoint               types.String `tfsdk:"model_armor_custom_endpoint"`
 	ModelArmorGlobalCustomEndpoint         types.String `tfsdk:"model_armor_global_custom_endpoint"`
 	MonitoringCustomEndpoint               types.String `tfsdk:"monitoring_custom_endpoint"`
@@ -190,9 +189,9 @@ type ProviderModel struct {
 	NetworkConnectivityCustomEndpoint      types.String `tfsdk:"network_connectivity_custom_endpoint"`
 	NetworkConnectivityv1CustomEndpoint    types.String `tfsdk:"network_connectivityv1_custom_endpoint"`
 	NetworkManagementCustomEndpoint        types.String `tfsdk:"network_management_custom_endpoint"`
+	NetworkManagementv1CustomEndpoint      types.String `tfsdk:"network_managementv1_custom_endpoint"`
 	NetworkSecurityCustomEndpoint          types.String `tfsdk:"network_security_custom_endpoint"`
 	NetworkServicesCustomEndpoint          types.String `tfsdk:"network_services_custom_endpoint"`
-	NotebooksCustomEndpoint                types.String `tfsdk:"notebooks_custom_endpoint"`
 	ObservabilityCustomEndpoint            types.String `tfsdk:"observability_custom_endpoint"`
 	OracleDatabaseCustomEndpoint           types.String `tfsdk:"oracle_database_custom_endpoint"`
 	OrgPolicyCustomEndpoint                types.String `tfsdk:"org_policy_custom_endpoint"`
@@ -225,6 +224,7 @@ type ProviderModel struct {
 	ServiceManagementCustomEndpoint        types.String `tfsdk:"service_management_custom_endpoint"`
 	ServiceNetworkingCustomEndpoint        types.String `tfsdk:"service_networking_custom_endpoint"`
 	ServiceUsageCustomEndpoint             types.String `tfsdk:"service_usage_custom_endpoint"`
+	ServiceUsageV2CustomEndpoint           types.String `tfsdk:"service_usage_v2_custom_endpoint"`
 	SiteVerificationCustomEndpoint         types.String `tfsdk:"site_verification_custom_endpoint"`
 	SourceRepoCustomEndpoint               types.String `tfsdk:"source_repo_custom_endpoint"`
 	SpannerCustomEndpoint                  types.String `tfsdk:"spanner_custom_endpoint"`

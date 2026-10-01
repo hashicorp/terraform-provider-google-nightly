@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -349,9 +350,15 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 										Required:    true,
 										Description: `The IP address on the VM to use for peering.`,
 									},
+									"custom_hardware_link_attachment": {
+										Type:             schema.TypeString,
+										Optional:         true,
+										DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
+										Description:      `The URI of the custom hardware link attachment.`,
+									},
 									"virtual_machine": {
 										Type:             schema.TypeString,
-										Required:         true,
+										Optional:         true,
 										DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
 										Description:      `The URI of the virtual machine resource`,
 									},
@@ -1244,8 +1251,9 @@ func flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstances(v in
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"virtual_machine": flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesVirtualMachine(original["virtualMachine"], d, config),
-			"ip_address":      flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesIpAddress(original["ipAddress"], d, config),
+			"virtual_machine":                 flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesVirtualMachine(original["virtualMachine"], d, config),
+			"ip_address":                      flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesIpAddress(original["ipAddress"], d, config),
+			"custom_hardware_link_attachment": flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesCustomHardwareLinkAttachment(original["customHardwareLinkAttachment"], d, config),
 		})
 	}
 	return transformed
@@ -1255,6 +1263,10 @@ func flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesVirtu
 }
 
 func flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesIpAddress(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesCustomHardwareLinkAttachment(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1718,6 +1730,13 @@ func expandNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstances(v int
 			transformed["ipAddress"] = transformedIpAddress
 		}
 
+		transformedCustomHardwareLinkAttachment, err := expandNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesCustomHardwareLinkAttachment(original["custom_hardware_link_attachment"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedCustomHardwareLinkAttachment); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["customHardwareLinkAttachment"] = transformedCustomHardwareLinkAttachment
+		}
+
 		req = append(req, transformed)
 	}
 	return req, nil
@@ -1728,6 +1747,10 @@ func expandNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesVirtua
 }
 
 func expandNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesIpAddress(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandNetworkConnectivitySpokeLinkedRouterApplianceInstancesInstancesCustomHardwareLinkAttachment(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

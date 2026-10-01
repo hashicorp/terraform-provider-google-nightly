@@ -145,7 +145,6 @@ func ListMigrationCenterDiscoveryClients(config *transport_tpg.Config,
 	if err != nil {
 		return err
 	}
-
 	return transport_tpg.ListPages(transport_tpg.ListPagesOptions{
 		Config:         config,
 		TempData:       resourceData,
@@ -158,11 +157,17 @@ func ListMigrationCenterDiscoveryClients(config *transport_tpg.Config,
 			headers := make(http.Header)
 			var err error
 			if v, ok := res["location"]; ok && v != nil {
+				if s, ok := v.(string); ok {
+					v = tpgresource.GetResourceNameFromSelfLink(s)
+				}
 				if err := d.Set("location", v); err != nil {
 					return fmt.Errorf("error setting location: %w", err)
 				}
 			}
 			if v, ok := res["discoveryClientId"]; ok && v != nil {
+				if s, ok := v.(string); ok {
+					v = tpgresource.GetResourceNameFromSelfLink(s)
+				}
 				if err := d.Set("discovery_client_id", v); err != nil {
 					return fmt.Errorf("error setting discovery_client_id: %w", err)
 				}

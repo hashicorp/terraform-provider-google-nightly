@@ -145,7 +145,6 @@ func ListNetworkServicesAuthzExtensions(config *transport_tpg.Config,
 	if err != nil {
 		return err
 	}
-
 	return transport_tpg.ListPages(transport_tpg.ListPagesOptions{
 		Config:         config,
 		TempData:       resourceData,
@@ -163,6 +162,9 @@ func ListNetworkServicesAuthzExtensions(config *transport_tpg.Config,
 				}
 			}
 			if v, ok := res["location"]; ok && v != nil {
+				if s, ok := v.(string); ok {
+					v = tpgresource.GetResourceNameFromSelfLink(s)
+				}
 				if err := d.Set("location", v); err != nil {
 					return fmt.Errorf("error setting location: %w", err)
 				}

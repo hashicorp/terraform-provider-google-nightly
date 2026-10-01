@@ -578,6 +578,121 @@ resource "google_network_connectivity_spoke" "primary" {
   group = "gateways"
 }
 ```
+<div class = "oics-button" style="float: right; margin: 0 0 -15px">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=network_connectivity_spoke_custom_hardware&open_in_editor=main.tf" target="_blank">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
+## Example Usage - Network Connectivity Spoke Custom Hardware
+
+
+```hcl
+provider "google-nightly" {}
+
+data "google_project" "project" {
+  provider = google-nightly
+}
+
+resource "google_compute_network" "network" {
+  provider = google-nightly
+  name = "chn-test-gray-network"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnetwork" {
+  provider = google-nightly
+  name = "chn-test-gray-network-sub"
+  network = google_compute_network.network.name
+  ip_cidr_range = "10.93.0.0/16"
+  region = "us-south1"
+}
+
+resource "google_compute_subnetwork" "ch_subnetwork" {
+  provider = google-nightly
+  name = "chn-test-gray-network-chsub"
+  network = google_compute_network.network.name
+  ip_cidr_range = "192.168.176.0/20"
+  region = "us-south1"
+  purpose = "CUSTOM_HARDWARE_LINK"
+}
+
+resource "google_compute_address" "bgp_a" {
+  provider = google-nightly
+  name = "chn-test-gray-network-bgp-a"
+  region = "us-south1"
+  address_type = "INTERNAL"
+  purpose = "SYSTEM_MANAGED"
+  subnetwork = google_compute_subnetwork.subnetwork.id
+}
+
+resource "google_compute_address" "bgp_peer_a" {
+  provider = google-nightly
+  name = "chn-test-gray-network-peer-a"
+  region = "us-south1"
+  address_type = "INTERNAL"
+  purpose = "SYSTEM_MANAGED"
+  subnetwork = google_compute_subnetwork.subnetwork.id
+}
+
+resource "google_compute_address" "ch_range" {
+  provider = google-nightly
+  name = "chn-test-gray-network-range"
+  region = "us-south1"
+  address_type = "INTERNAL"
+  purpose = "SYSTEM_MANAGED"
+  subnetwork = google_compute_subnetwork.ch_subnetwork.id
+  address = "192.168.177.0"
+}
+
+resource "google_network_connectivity_custom_hardware_instance" "instance" {
+  provider = google-nightly
+  name = "chn-test-gray-inst"
+  location = "us-south1"
+}
+
+resource "google_network_connectivity_custom_hardware_link_connect_pair" "pair" {
+  provider = google-nightly
+  name = "chn-test-gray-lcp"
+  location = "us-south1-d"
+  custom_hardware_instance = google_network_connectivity_custom_hardware_instance.instance.id
+  link_type = "LINK_TYPE_REGULAR"
+  link_speed = "LINK_SPEED100_G"
+}
+
+resource "google_network_connectivity_custom_hardware_link_attachment" "attachment" {
+  provider = google-nightly
+  name = "chn-test-gray"
+  location = "us-south1-d"
+  custom_hardware_link_connect_pair = google_network_connectivity_custom_hardware_link_connect_pair.pair.id
+  subnetwork = google_compute_subnetwork.subnetwork.id
+  link_type = "LINK_TYPE_REGULAR"
+  bgp_ip = "projects/${data.google_project.project.project_id}/regions/us-south1/addresses/${google_compute_address.bgp_a.name}"
+  asn = "64512"
+  peer_bgp_ip = "projects/${data.google_project.project.project_id}/regions/us-south1/addresses/${google_compute_address.bgp_peer_a.name}"
+  peer_asn = "64513"
+  link_address_range = "projects/${data.google_project.project.project_id}/regions/us-south1/addresses/${google_compute_address.ch_range.name}"
+}
+
+resource "google_network_connectivity_hub" "basic_hub" {
+  provider = google-nightly
+  name        = "chn-test-hub"
+}
+
+resource "google_network_connectivity_spoke" "primary" {
+  provider = google-nightly
+  name = "chn-test-spoke"
+  location = "us-south1"
+  hub =  google_network_connectivity_hub.basic_hub.id
+  linked_router_appliance_instances {
+    instances {
+        custom_hardware_link_attachment = google_network_connectivity_custom_hardware_link_attachment.attachment.id
+        ip_address = google_compute_address.bgp_a.address
+    }
+    site_to_site_data_transfer = true
+    include_import_ranges = ["ALL_IPV4_RANGES"]
+  }
+}
+```
 
 ## Argument Reference
 
@@ -738,12 +853,16 @@ The following arguments are supported:
 <a name="nested_linked_router_appliance_instances_instances"></a>The `instances` block supports:
 
 * `virtual_machine` -
-  (Required)
+  (Optional)
   The URI of the virtual machine resource
 
 * `ip_address` -
   (Required)
   The IP address on the VM to use for peering.
+
+* `custom_hardware_link_attachment` -
+  (Optional)
+  The URI of the custom hardware link attachment.
 
 <a name="nested_linked_vpc_network"></a>The `linked_vpc_network` block supports:
 

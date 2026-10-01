@@ -20,7 +20,9 @@
 package migrationcenter_test
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/querycheck"
@@ -29,13 +31,17 @@ import (
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/migrationcenter"
 )
 
 var (
+	_ = strings.Trim
 	_ = envvar.TestEnvVar
+	_ = time.Now
 )
 
 func TestAccMigrationCenterImportJobListQuery_generated(t *testing.T) {
+
 	t.Parallel()
 
 	randomSuffix := acctest.RandString(t, 10)

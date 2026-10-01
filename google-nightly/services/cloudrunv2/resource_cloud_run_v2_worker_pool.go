@@ -275,13 +275,7 @@ This field follows Kubernetes annotations' namespacing, limits, and rules.`,
 																	Schema: map[string]*schema.Schema{
 																		"name": {
 																			Type:        schema.TypeString,
-																			Optional:    true,
-																			Description: `Required. The header field name`,
-																		},
-																		"port": {
-																			Type:        schema.TypeInt,
-																			Optional:    true,
-																			Deprecated:  "`port` field is deprecated and will be removed in a future major release. It was never supported by the API.",
+																			Required:    true,
 																			Description: `Required. The header field name`,
 																		},
 																		"value": {
@@ -364,6 +358,11 @@ This field follows Kubernetes annotations' namespacing, limits, and rules.`,
 											},
 										},
 									},
+									"sandbox_launcher": {
+										Type:        schema.TypeBool,
+										Optional:    true,
+										Description: `Indicates that this container can act as a sandbox supervisor and launch sandboxes.`,
+									},
 									"startup_probe": {
 										Type:        schema.TypeList,
 										Optional:    true,
@@ -412,13 +411,7 @@ This field follows Kubernetes annotations' namespacing, limits, and rules.`,
 																	Schema: map[string]*schema.Schema{
 																		"name": {
 																			Type:        schema.TypeString,
-																			Optional:    true,
-																			Description: `Required. The header field name`,
-																		},
-																		"port": {
-																			Type:        schema.TypeInt,
-																			Optional:    true,
-																			Deprecated:  "`port` field is deprecated and will be removed in a future major release. It was never supported by the API.",
+																			Required:    true,
 																			Description: `Required. The header field name`,
 																		},
 																		"value": {
@@ -830,16 +823,6 @@ Please refer to the field 'effective_annotations' for all of the annotations pre
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: `Arbitrary version identifier for the API client.`,
-			},
-			"custom_audiences": {
-				Type:       schema.TypeList,
-				Optional:   true,
-				Deprecated: "`custom_audiences` is deprecated since it is not applicable to WorkerPool resource and will be removed in a future major release.",
-				Description: `One or more custom audiences that you want this worker pool to support. Specify each custom audience as the full URL in a string. The custom audiences are encoded in the token and used to authenticate requests.
-For more information, see https://cloud.google.com/run/docs/configuring/custom-audiences.`,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
 			},
 			"description": {
 				Type:        schema.TypeString,
@@ -1268,12 +1251,6 @@ func resourceCloudRunV2WorkerPoolCreate(d *schema.ResourceData, meta interface{}
 	} else if v, ok := d.GetOkExists("binary_authorization"); !tpgresource.IsEmptyValue(reflect.ValueOf(binaryAuthorizationProp)) && (ok || !reflect.DeepEqual(v, binaryAuthorizationProp)) {
 		obj["binaryAuthorization"] = binaryAuthorizationProp
 	}
-	customAudiencesProp, err := expandCloudRunV2WorkerPoolCustomAudiences(d.Get("custom_audiences"), d, config)
-	if err != nil {
-		return err
-	} else if v, ok := d.GetOkExists("custom_audiences"); !tpgresource.IsEmptyValue(reflect.ValueOf(customAudiencesProp)) && (ok || !reflect.DeepEqual(v, customAudiencesProp)) {
-		obj["customAudiences"] = customAudiencesProp
-	}
 	scalingProp, err := expandCloudRunV2WorkerPoolScaling(d.Get("scaling"), d, config)
 	if err != nil {
 		return err
@@ -1559,12 +1536,6 @@ func resourceCloudRunV2WorkerPoolUpdate(d *schema.ResourceData, meta interface{}
 	} else if v, ok := d.GetOkExists("binary_authorization"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, binaryAuthorizationProp)) {
 		obj["binaryAuthorization"] = binaryAuthorizationProp
 	}
-	customAudiencesProp, err := expandCloudRunV2WorkerPoolCustomAudiences(d.Get("custom_audiences"), d, config)
-	if err != nil {
-		return err
-	} else if v, ok := d.GetOkExists("custom_audiences"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, customAudiencesProp)) {
-		obj["customAudiences"] = customAudiencesProp
-	}
 	scalingProp, err := expandCloudRunV2WorkerPoolScaling(d.Get("scaling"), d, config)
 	if err != nil {
 		return err
@@ -1839,10 +1810,6 @@ func flattenCloudRunV2WorkerPoolBinaryAuthorizationPolicy(v interface{}, d *sche
 	return v
 }
 
-func flattenCloudRunV2WorkerPoolCustomAudiences(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
-	return v
-}
-
 func flattenCloudRunV2WorkerPoolScaling(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return nil
@@ -2052,17 +2019,18 @@ func flattenCloudRunV2WorkerPoolTemplateContainers(v interface{}, d *schema.Reso
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"name":           flattenCloudRunV2WorkerPoolTemplateContainersName(original["name"], d, config),
-			"image":          flattenCloudRunV2WorkerPoolTemplateContainersImage(original["image"], d, config),
-			"command":        flattenCloudRunV2WorkerPoolTemplateContainersCommand(original["command"], d, config),
-			"args":           flattenCloudRunV2WorkerPoolTemplateContainersArgs(original["args"], d, config),
-			"depends_on":     flattenCloudRunV2WorkerPoolTemplateContainersDependsOn(original["dependsOn"], d, config),
-			"env":            flattenCloudRunV2WorkerPoolTemplateContainersEnv(original["env"], d, config),
-			"resources":      flattenCloudRunV2WorkerPoolTemplateContainersResources(original["resources"], d, config),
-			"volume_mounts":  flattenCloudRunV2WorkerPoolTemplateContainersVolumeMounts(original["volumeMounts"], d, config),
-			"working_dir":    flattenCloudRunV2WorkerPoolTemplateContainersWorkingDir(original["workingDir"], d, config),
-			"liveness_probe": flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbe(original["livenessProbe"], d, config),
-			"startup_probe":  flattenCloudRunV2WorkerPoolTemplateContainersStartupProbe(original["startupProbe"], d, config),
+			"name":             flattenCloudRunV2WorkerPoolTemplateContainersName(original["name"], d, config),
+			"image":            flattenCloudRunV2WorkerPoolTemplateContainersImage(original["image"], d, config),
+			"command":          flattenCloudRunV2WorkerPoolTemplateContainersCommand(original["command"], d, config),
+			"args":             flattenCloudRunV2WorkerPoolTemplateContainersArgs(original["args"], d, config),
+			"depends_on":       flattenCloudRunV2WorkerPoolTemplateContainersDependsOn(original["dependsOn"], d, config),
+			"env":              flattenCloudRunV2WorkerPoolTemplateContainersEnv(original["env"], d, config),
+			"resources":        flattenCloudRunV2WorkerPoolTemplateContainersResources(original["resources"], d, config),
+			"sandbox_launcher": flattenCloudRunV2WorkerPoolTemplateContainersSandboxLauncher(original["sandboxLauncher"], d, config),
+			"volume_mounts":    flattenCloudRunV2WorkerPoolTemplateContainersVolumeMounts(original["volumeMounts"], d, config),
+			"working_dir":      flattenCloudRunV2WorkerPoolTemplateContainersWorkingDir(original["workingDir"], d, config),
+			"liveness_probe":   flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbe(original["livenessProbe"], d, config),
+			"startup_probe":    flattenCloudRunV2WorkerPoolTemplateContainersStartupProbe(original["startupProbe"], d, config),
 		})
 	}
 	return transformed
@@ -2166,6 +2134,10 @@ func flattenCloudRunV2WorkerPoolTemplateContainersResources(v interface{}, d *sc
 	return []interface{}{transformed}
 }
 func flattenCloudRunV2WorkerPoolTemplateContainersResourcesLimits(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCloudRunV2WorkerPoolTemplateContainersSandboxLauncher(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2351,30 +2323,12 @@ func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeader
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"port":  flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(original["port"], d, config),
 			"name":  flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(original["name"], d, config),
 			"value": flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersValue(original["value"], d, config),
 		})
 	}
 	return transformed
 }
-func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
-	// Handles the string fixed64 format
-	if strVal, ok := v.(string); ok {
-		if intVal, err := tpgresource.StringToFixed64(strVal); err == nil {
-			return intVal
-		}
-	}
-
-	// number values are represented as float64
-	if floatVal, ok := v.(float64); ok {
-		intVal := int(floatVal)
-		return intVal
-	}
-
-	return v // let terraform core handle it otherwise
-}
-
 func flattenCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
@@ -2594,30 +2548,12 @@ func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeaders
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"port":  flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(original["port"], d, config),
 			"name":  flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(original["name"], d, config),
 			"value": flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersValue(original["value"], d, config),
 		})
 	}
 	return transformed
 }
-func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
-	// Handles the string fixed64 format
-	if strVal, ok := v.(string); ok {
-		if intVal, err := tpgresource.StringToFixed64(strVal); err == nil {
-			return intVal
-		}
-	}
-
-	// number values are represented as float64
-	if floatVal, ok := v.(float64); ok {
-		intVal := int(floatVal)
-		return intVal
-	}
-
-	return v // let terraform core handle it otherwise
-}
-
 func flattenCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
@@ -3258,10 +3194,6 @@ func expandCloudRunV2WorkerPoolBinaryAuthorizationPolicy(v interface{}, d tpgres
 	return v, nil
 }
 
-func expandCloudRunV2WorkerPoolCustomAudiences(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
-}
-
 func expandCloudRunV2WorkerPoolScaling(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -3629,6 +3561,13 @@ func expandCloudRunV2WorkerPoolTemplateContainers(v interface{}, d tpgresource.T
 			transformed["resources"] = transformedResources
 		}
 
+		transformedSandboxLauncher, err := expandCloudRunV2WorkerPoolTemplateContainersSandboxLauncher(original["sandbox_launcher"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedSandboxLauncher); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["sandboxLauncher"] = transformedSandboxLauncher
+		}
+
 		transformedVolumeMounts, err := expandCloudRunV2WorkerPoolTemplateContainersVolumeMounts(original["volume_mounts"], d, config)
 		if err != nil {
 			return nil, err
@@ -3820,6 +3759,10 @@ func expandCloudRunV2WorkerPoolTemplateContainersResourcesLimits(v interface{}, 
 		m[k] = val.(string)
 	}
 	return m, nil
+}
+
+func expandCloudRunV2WorkerPoolTemplateContainersSandboxLauncher(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
 }
 
 func expandCloudRunV2WorkerPoolTemplateContainersVolumeMounts(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -4014,13 +3957,6 @@ func expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeaders
 		original := raw.(map[string]interface{})
 		transformed := make(map[string]interface{})
 
-		transformedPort, err := expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(original["port"], d, config)
-		if err != nil {
-			return nil, err
-		} else if val := reflect.ValueOf(transformedPort); val.IsValid() && !tpgresource.IsEmptyValue(val) {
-			transformed["port"] = transformedPort
-		}
-
 		transformedName, err := expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(original["name"], d, config)
 		if err != nil {
 			return nil, err
@@ -4038,10 +3974,6 @@ func expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeaders
 		req = append(req, transformed)
 	}
 	return req, nil
-}
-
-func expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersPort(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
 }
 
 func expandCloudRunV2WorkerPoolTemplateContainersLivenessProbeHttpGetHttpHeadersName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -4252,13 +4184,6 @@ func expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeaders(
 		original := raw.(map[string]interface{})
 		transformed := make(map[string]interface{})
 
-		transformedPort, err := expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(original["port"], d, config)
-		if err != nil {
-			return nil, err
-		} else if val := reflect.ValueOf(transformedPort); val.IsValid() && !tpgresource.IsEmptyValue(val) {
-			transformed["port"] = transformedPort
-		}
-
 		transformedName, err := expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(original["name"], d, config)
 		if err != nil {
 			return nil, err
@@ -4276,10 +4201,6 @@ func expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeaders(
 		req = append(req, transformed)
 	}
 	return req, nil
-}
-
-func expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersPort(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
 }
 
 func expandCloudRunV2WorkerPoolTemplateContainersStartupProbeHttpGetHttpHeadersName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -4843,9 +4764,6 @@ func ResourceCloudRunV2WorkerPoolFlatten(d *schema.ResourceData, meta interface{
 		return fmt.Errorf("Error reading WorkerPool: %s", err)
 	}
 	if err = d.Set("binary_authorization", flattenCloudRunV2WorkerPoolBinaryAuthorization(res["binaryAuthorization"], d, config)); err != nil {
-		return fmt.Errorf("Error reading WorkerPool: %s", err)
-	}
-	if err = d.Set("custom_audiences", flattenCloudRunV2WorkerPoolCustomAudiences(res["customAudiences"], d, config)); err != nil {
 		return fmt.Errorf("Error reading WorkerPool: %s", err)
 	}
 	if err = d.Set("scaling", flattenCloudRunV2WorkerPoolScaling(res["scaling"], d, config)); err != nil {

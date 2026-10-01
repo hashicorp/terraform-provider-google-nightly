@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 // ----------------------------------------------------------------------------
 //
@@ -99,7 +100,7 @@ resource "google_compute_instance" "instance" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11"
+      image = "debian-cloud/debian-13"
     }
   }
 
@@ -205,4 +206,119 @@ func testAccCheckComputeRouterBgpPeerDestroyProducer(t *testing.T) func(s *terra
 
 		return nil
 	}
+}
+func TestAccComputeRouterBgpPeer_routerPeerLinkedCustomHardware(t *testing.T) {
+	t.Parallel()
+	context := map[string]interface{}{
+		"random_suffix": acctest.RandString(t, 10),
+	}
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeRouterBgpPeerDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeRouterBgpPeer_routerPeerLinkedCustomHardware(context),
+			},
+			{
+				ResourceName:            "google_compute_router_peer.peer",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"router", "region", "zero_custom_learned_route_priority"},
+			},
+		},
+	})
+}
+func testAccComputeRouterBgpPeer_routerPeerLinkedCustomHardware(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "network" {
+  name                    = "tf-test-my-router%{random_suffix}-net"
+  auto_create_subnetworks = false
+}
+resource "google_compute_subnetwork" "subnetwork" {
+  name          = "tf-test-my-router%{random_suffix}-sub"
+  network       = google_compute_network.network.self_link
+  ip_cidr_range = "10.0.0.0/16"
+  region        = "us-south1"
+}
+resource "google_compute_subnetwork" "ch_subnetwork" {
+  name          = "tf-test-my-router%{random_suffix}-chsub"
+  network       = google_compute_network.network.name
+  ip_cidr_range = "192.168.176.0/20"
+  region        = "us-south1"
+  purpose       = "CUSTOM_HARDWARE_LINK"
+}
+resource "google_compute_address" "bgp_a" {
+  name         = "tf-test-my-router%{random_suffix}-bgp-a"
+  region       = "us-south1"
+  address_type = "INTERNAL"
+  purpose      = "SYSTEM_MANAGED"
+  subnetwork   = google_compute_subnetwork.subnetwork.id
+}
+resource "google_compute_address" "bgp_peer_a" {
+  name         = "tf-test-my-router%{random_suffix}-peer-a"
+  region       = "us-south1"
+  address_type = "INTERNAL"
+  purpose      = "SYSTEM_MANAGED"
+  subnetwork   = google_compute_subnetwork.subnetwork.id
+}
+resource "google_compute_address" "ch_range" {
+  name         = "tf-test-my-router%{random_suffix}-range"
+  region       = "us-south1"
+  address_type = "INTERNAL"
+  purpose      = "SYSTEM_MANAGED"
+  subnetwork   = google_compute_subnetwork.ch_subnetwork.id
+  address      = "192.168.177.0"
+}
+resource "google_network_connectivity_custom_hardware_instance" "instance" {
+  name     = "tf-test-ch-inst%{random_suffix}"
+  location = "us-south1"
+}
+resource "google_network_connectivity_custom_hardware_link_connect_pair" "pair" {
+  name                     = "tf-test-ch-lcp%{random_suffix}"
+  location                 = "us-south1-d"
+  custom_hardware_instance = google_network_connectivity_custom_hardware_instance.instance.id
+  link_type                = "LINK_TYPE_REGULAR"
+  link_speed               = "LINK_SPEED100_G"
+}
+resource "google_network_connectivity_custom_hardware_link_attachment" "attachment" {
+  name                              = "tf-test-ch-la%{random_suffix}"
+  location                          = "us-south1-d"
+  custom_hardware_link_connect_pair = google_network_connectivity_custom_hardware_link_connect_pair.pair.id
+  subnetwork                        = google_compute_subnetwork.subnetwork.id
+  link_type                         = "LINK_TYPE_REGULAR"
+  bgp_ip                            = google_compute_address.bgp_a.id
+  asn                               = "64512"
+  peer_bgp_ip                       = google_compute_address.bgp_peer_a.id
+  peer_asn                          = "64513"
+  link_address_range                = google_compute_address.ch_range.id
+}
+resource "google_compute_router" "router" {
+  name    = "tf-test-my-router%{random_suffix}"
+  region  = google_compute_subnetwork.subnetwork.region
+  network = google_compute_network.network.self_link
+  bgp {
+    asn = 64514
+  }
+}
+resource "google_compute_router_interface" "interface" {
+  name                = "tf-test-my-router%{random_suffix}-intf"
+  region              = google_compute_router.router.region
+  router              = google_compute_router.router.name
+  subnetwork          = google_compute_subnetwork.subnetwork.self_link
+  lifecycle {
+    # The backend assigns private_ip_address when the peer uses linked_custom_hardware.
+    ignore_changes = [private_ip_address]
+  }
+}
+resource "google_compute_router_peer" "peer" {
+  name                   = "tf-test-my-router-peer%{random_suffix}"
+  router                 = google_compute_router.router.name
+  region                 = google_compute_router.router.region
+  interface              = google_compute_router_interface.interface.name
+  linked_custom_hardware = google_network_connectivity_custom_hardware_link_attachment.attachment.id
+  peer_asn               = 64513
+  peer_ip_address        = google_compute_address.bgp_peer_a.address
+}
+`, context)
 }
