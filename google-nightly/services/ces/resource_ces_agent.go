@@ -187,6 +187,16 @@ execution stops and any remaining callbacks are skipped.`,
 							Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 						},
+						"proactive_execution_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+						},
 					},
 				},
 			},
@@ -216,6 +226,16 @@ execution stops and any remaining callbacks are skipped.`,
 							Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 						},
+						"proactive_execution_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+						},
 					},
 				},
 			},
@@ -244,6 +264,16 @@ execution stops and any remaining callbacks are skipped.`,
 							Optional: true,
 							Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
+						},
+						"proactive_execution_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
 						},
 					},
 				},
@@ -281,6 +311,16 @@ execution stops and any remaining callbacks are skipped.`,
 							Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 						},
+						"proactive_execution_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+						},
 					},
 				},
 			},
@@ -310,6 +350,16 @@ execution stops and any remaining callbacks are skipped.`,
 							Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 						},
+						"proactive_execution_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+						},
 					},
 				},
 			},
@@ -338,6 +388,16 @@ execution stops and any remaining callbacks are skipped.`,
 							Optional: true,
 							Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
+						},
+						"proactive_execution_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
 						},
 					},
 				},
@@ -401,6 +461,311 @@ If not set, the agent will inherit the model from its parent agent.`,
 controls the randomness of the model's responses. Lower temperatures
 produce responses that are more predictable. Higher temperatures produce
 responses that are more creative.`,
+						},
+					},
+				},
+			},
+			"remote_a2a_agent": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Description: `The agent which will transfer execution to a remote
+[A2A](https://github.com/a2aproject/A2A) agent.`,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"a2a_config": {
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: `The A2A connection configuration.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"agent_card": {
+										Type:        schema.TypeList,
+										Optional:    true,
+										Description: `The full agent card defined inline.`,
+										MaxItems:    1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"description": {
+													Type:        schema.TypeString,
+													Required:    true,
+													Description: `A description of the agent's domain of action/solution space.`,
+												},
+												"name": {
+													Type:        schema.TypeString,
+													Required:    true,
+													Description: `A human-readable name for the agent.`,
+												},
+												"skills": {
+													Type:     schema.TypeList,
+													Required: true,
+													Description: `Skills represent a unit of ability an agent can perform. This may
+somewhat abstract but represents a more focused set of actions that the
+agent is highly likely to succeed at.`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"description": {
+																Type:        schema.TypeString,
+																Required:    true,
+																Description: `A detailed description of the skill.`,
+															},
+															"id": {
+																Type:        schema.TypeString,
+																Required:    true,
+																Description: `A unique identifier for the agent's skill.`,
+															},
+															"name": {
+																Type:        schema.TypeString,
+																Required:    true,
+																Description: `A human-readable name for the skill.`,
+															},
+															"tags": {
+																Type:        schema.TypeList,
+																Required:    true,
+																Description: `A set of keywords describing the skill's capabilities.`,
+																Elem: &schema.Schema{
+																	Type: schema.TypeString,
+																},
+															},
+															"examples": {
+																Type:        schema.TypeList,
+																Optional:    true,
+																Description: `Example prompts or scenarios that this skill can handle.`,
+																Elem: &schema.Schema{
+																	Type: schema.TypeString,
+																},
+															},
+															"input_modes": {
+																Type:     schema.TypeList,
+																Optional: true,
+																Description: `The set of supported input media types for this skill, overriding the
+agent's defaults.`,
+																Elem: &schema.Schema{
+																	Type: schema.TypeString,
+																},
+															},
+															"output_modes": {
+																Type:     schema.TypeList,
+																Optional: true,
+																Description: `The set of supported output media types for this skill, overriding the
+agent's defaults.`,
+																Elem: &schema.Schema{
+																	Type: schema.TypeString,
+																},
+															},
+														},
+													},
+												},
+												"supported_interfaces": {
+													Type:        schema.TypeList,
+													Required:    true,
+													Description: `Ordered list of supported interfaces. The first entry is preferred.`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"protocol_binding": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The protocol binding supported at this URL. The core ones officially
+supported are JSONRPC, GRPC and HTTP+JSON.`,
+															},
+															"protocol_version": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The version of the A2A protocol this interface exposes.
+Examples: "0.3", "1.0"`,
+															},
+															"url": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The URL where this interface is available. Must be a valid absolute HTTPS
+URL in production.`,
+															},
+															"tenant": {
+																Type:        schema.TypeString,
+																Optional:    true,
+																Description: `Tenant ID to be used in the request when calling the agent.`,
+															},
+														},
+													},
+												},
+												"version": {
+													Type:        schema.TypeString,
+													Required:    true,
+													Description: `The version of the agent.`,
+												},
+											},
+										},
+									},
+									"agent_registry": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Description: `Reference to the agent in the Agent Registry.
+Format: 'projects/{project}/locations/{location}/agents/{agent}'`,
+									},
+									"api_authentication": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Description: `Authentication configuration for calling the remote agent.
+Optional if the registry reference already handles authentication.`,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"api_key_config": {
+													Type:        schema.TypeList,
+													Optional:    true,
+													Description: `Configurations for authentication with API key.`,
+													MaxItems:    1,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"api_key_secret_version": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The name of the SecretManager secret version resource storing the API key.
+Format: 'projects/{project}/secrets/{secret}/versions/{version}'
+Note: You should grant 'roles/secretmanager.secretAccessor' role to the CES
+service agent
+'service-@gcp-sa-ces.iam.gserviceaccount.com'.`,
+															},
+															"key_name": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The parameter name or the header name of the API key.
+E.g., If the API request is "https://example.com/act?X-Api-Key=", "X-Api-Key" would be the parameter name.`,
+															},
+															"request_location": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `Key location in the request.
+Possible values:
+HEADER
+QUERY_STRING`,
+															},
+														},
+													},
+												},
+												"bearer_token_config": {
+													Type:        schema.TypeList,
+													Optional:    true,
+													Description: `Configurations for authentication with a bearer token.`,
+													MaxItems:    1,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"token": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The bearer token.
+Must be in the format '$context.variables.<name_of_variable>'.`,
+															},
+														},
+													},
+												},
+												"oauth_config": {
+													Type:        schema.TypeList,
+													Optional:    true,
+													Description: `Configurations for authentication with OAuth.`,
+													MaxItems:    1,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"client_id": {
+																Type:        schema.TypeString,
+																Required:    true,
+																Description: `The client ID from the OAuth provider.`,
+															},
+															"client_secret_version": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The name of the SecretManager secret version resource storing the
+client secret.
+Format: 'projects/{project}/secrets/{secret}/versions/{version}'
+
+Note: You should grant 'roles/secretmanager.secretAccessor' role to the CES
+service agent
+'service-@gcp-sa-ces.iam.gserviceaccount.com'.`,
+															},
+															"oauth_grant_type": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `OAuth grant types.
+Possible values:
+CLIENT_CREDENTIAL`,
+															},
+															"token_endpoint": {
+																Type:        schema.TypeString,
+																Required:    true,
+																Description: `The token endpoint in the OAuth provider to exchange for an access token.`,
+															},
+															"scopes": {
+																Type:        schema.TypeList,
+																Optional:    true,
+																Description: `The OAuth scopes to grant.`,
+																Elem: &schema.Schema{
+																	Type: schema.TypeString,
+																},
+															},
+														},
+													},
+												},
+												"service_account_auth_config": {
+													Type:        schema.TypeList,
+													Optional:    true,
+													Description: `Configurations for authentication using a custom service account.`,
+													MaxItems:    1,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"service_account": {
+																Type:     schema.TypeString,
+																Required: true,
+																Description: `The email address of the service account used for authenticatation. CES
+uses this service account to exchange an access token and the access token
+is then sent in the 'Authorization' header of the request.
+
+The service account must have the
+'roles/iam.serviceAccountTokenCreator' role granted to the
+CES service agent
+'service-@gcp-sa-ces.iam.gserviceaccount.com'.`,
+															},
+															"scopes": {
+																Type:     schema.TypeList,
+																Optional: true,
+																Description: `The OAuth scopes to grant. If not specified, the default scope
+'https://www.googleapis.com/auth/cloud-platform' is used.`,
+																Elem: &schema.Schema{
+																	Type: schema.TypeString,
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									"context_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Description: `If not empty, interactions with the remote A2A agent will use this context
+ID. This context_id field can refer to a session variable like
+'$context.variables.order_agent_session_id'.`,
+									},
+									"input_variable_mapping": {
+										Type:        schema.TypeMap,
+										Optional:    true,
+										Description: `Mapping of input variable names of remote agent to GECX variable names.`,
+										Elem:        &schema.Schema{Type: schema.TypeString},
+									},
+									"output_variable_mapping": {
+										Type:        schema.TypeMap,
+										Optional:    true,
+										Description: `Mapping of output variable names of remote agent to GECX variable names.`,
+										Elem:        &schema.Schema{Type: schema.TypeString},
+									},
+									"streaming_enabled": {
+										Type:        schema.TypeBool,
+										Optional:    true,
+										Description: `Whether streaming is enabled for the remote agent.`,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -493,6 +858,98 @@ Format:
 							Description: `The tools IDs to filter the toolset.`,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
+			"transfer_rules": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Description: `List of transfer rules for the agent.
+If multiple rules match, the first one in the list will be used.`,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"child_agent": {
+							Type:     schema.TypeString,
+							Required: true,
+							Description: `The resource name of the child agent the rule applies to.
+Format: 'projects/{project}/locations/{location}/apps/{app}/agents/{agent}'`,
+						},
+						"direction": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: verify.ValidateEnum([]string{"PARENT_TO_CHILD", "CHILD_TO_PARENT"}),
+							Description:  `The direction of the transfer. Possible values: ["PARENT_TO_CHILD", "CHILD_TO_PARENT"]`,
+						},
+						"deterministic_transfer": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Description: `Deterministic transfer rule. When the condition evaluates to true, the
+transfer occurs.`,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"expression_condition": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Description: `A rule that evaluates a session state condition. If the condition
+evaluates to true, the transfer occurs.`,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"expression": {
+													Type:        schema.TypeString,
+													Required:    true,
+													Description: `The string representation of cloud.api.Expression condition.`,
+												},
+											},
+										},
+									},
+									"python_code_condition": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Description: `A rule that uses Python code block to evaluate the conditions. If the
+condition evaluates to true, the transfer occurs.`,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"python_code": {
+													Type:     schema.TypeString,
+													Required: true,
+													Description: `The python code to execute. The function must be named
+'should_trigger_transfer_callback'.`,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"disable_planner_transfer": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: `A rule that prevents the planner from transferring to the target agent.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"expression_condition": {
+										Type:     schema.TypeList,
+										Required: true,
+										Description: `If the condition evaluates to true, planner will not be allowed to
+transfer to the target agent.`,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"expression": {
+													Type:        schema.TypeString,
+													Required:    true,
+													Description: `The string representation of cloud.api.Expression condition.`,
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -636,6 +1093,12 @@ func resourceCESAgentCreate(d *schema.ResourceData, meta interface{}) error {
 	} else if v, ok := d.GetOkExists("llm_agent"); ok || !reflect.DeepEqual(v, llmAgentProp) {
 		obj["llmAgent"] = llmAgentProp
 	}
+	remoteA2aAgentProp, err := expandCESAgentRemoteA2aAgent(d.Get("remote_a2a_agent"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("remote_a2a_agent"); !tpgresource.IsEmptyValue(reflect.ValueOf(remoteA2aAgentProp)) && (ok || !reflect.DeepEqual(v, remoteA2aAgentProp)) {
+		obj["remoteA2aAgent"] = remoteA2aAgentProp
+	}
 	remoteDialogflowAgentProp, err := expandCESAgentRemoteDialogflowAgent(d.Get("remote_dialogflow_agent"), d, config)
 	if err != nil {
 		return err
@@ -653,6 +1116,12 @@ func resourceCESAgentCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	} else if v, ok := d.GetOkExists("toolsets"); !tpgresource.IsEmptyValue(reflect.ValueOf(toolsetsProp)) && (ok || !reflect.DeepEqual(v, toolsetsProp)) {
 		obj["toolsets"] = toolsetsProp
+	}
+	transferRulesProp, err := expandCESAgentTransferRules(d.Get("transfer_rules"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("transfer_rules"); !tpgresource.IsEmptyValue(reflect.ValueOf(transferRulesProp)) && (ok || !reflect.DeepEqual(v, transferRulesProp)) {
+		obj["transferRules"] = transferRulesProp
 	}
 
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/apps/{{app}}/agents?agentId={{agent_id}}")
@@ -960,6 +1429,12 @@ func resourceCESAgentUpdate(d *schema.ResourceData, meta interface{}) error {
 	} else if v, ok := d.GetOkExists("llm_agent"); ok || !reflect.DeepEqual(v, llmAgentProp) {
 		obj["llmAgent"] = llmAgentProp
 	}
+	remoteA2aAgentProp, err := expandCESAgentRemoteA2aAgent(d.Get("remote_a2a_agent"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("remote_a2a_agent"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, remoteA2aAgentProp)) {
+		obj["remoteA2aAgent"] = remoteA2aAgentProp
+	}
 	remoteDialogflowAgentProp, err := expandCESAgentRemoteDialogflowAgent(d.Get("remote_dialogflow_agent"), d, config)
 	if err != nil {
 		return err
@@ -977,6 +1452,12 @@ func resourceCESAgentUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	} else if v, ok := d.GetOkExists("toolsets"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, toolsetsProp)) {
 		obj["toolsets"] = toolsetsProp
+	}
+	transferRulesProp, err := expandCESAgentTransferRules(d.Get("transfer_rules"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("transfer_rules"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, transferRulesProp)) {
+		obj["transferRules"] = transferRulesProp
 	}
 
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/apps/{{app}}/agents/{{name}}")
@@ -1040,6 +1521,10 @@ func resourceCESAgentUpdate(d *schema.ResourceData, meta interface{}) error {
 		updateMask = append(updateMask, "llmAgent")
 	}
 
+	if d.HasChange("remote_a2a_agent") {
+		updateMask = append(updateMask, "remoteA2aAgent")
+	}
+
 	if d.HasChange("remote_dialogflow_agent") {
 		updateMask = append(updateMask, "remoteDialogflowAgent")
 	}
@@ -1050,6 +1535,10 @@ func resourceCESAgentUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("toolsets") {
 		updateMask = append(updateMask, "toolsets")
+	}
+
+	if d.HasChange("transfer_rules") {
+		updateMask = append(updateMask, "transferRules")
 	}
 	// updateMask is a URL parameter but not present in the schema, so ReplaceVars
 	// won't set it
@@ -1175,9 +1664,10 @@ func flattenCESAgentAfterAgentCallbacks(v interface{}, d *schema.ResourceData, c
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAgentAfterAgentCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAgentAfterAgentCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAgentAfterAgentCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAgentAfterAgentCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAgentAfterAgentCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAgentAfterAgentCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAgentAfterAgentCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -1187,6 +1677,10 @@ func flattenCESAgentAfterAgentCallbacksDescription(v interface{}, d *schema.Reso
 }
 
 func flattenCESAgentAfterAgentCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentAfterAgentCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1208,9 +1702,10 @@ func flattenCESAgentAfterModelCallbacks(v interface{}, d *schema.ResourceData, c
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAgentAfterModelCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAgentAfterModelCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAgentAfterModelCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAgentAfterModelCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAgentAfterModelCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAgentAfterModelCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAgentAfterModelCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -1220,6 +1715,10 @@ func flattenCESAgentAfterModelCallbacksDescription(v interface{}, d *schema.Reso
 }
 
 func flattenCESAgentAfterModelCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentAfterModelCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1241,9 +1740,10 @@ func flattenCESAgentAfterToolCallbacks(v interface{}, d *schema.ResourceData, co
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAgentAfterToolCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAgentAfterToolCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAgentAfterToolCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAgentAfterToolCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAgentAfterToolCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAgentAfterToolCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAgentAfterToolCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -1253,6 +1753,10 @@ func flattenCESAgentAfterToolCallbacksDescription(v interface{}, d *schema.Resou
 }
 
 func flattenCESAgentAfterToolCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentAfterToolCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1274,9 +1778,10 @@ func flattenCESAgentBeforeAgentCallbacks(v interface{}, d *schema.ResourceData, 
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAgentBeforeAgentCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAgentBeforeAgentCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAgentBeforeAgentCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAgentBeforeAgentCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAgentBeforeAgentCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAgentBeforeAgentCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAgentBeforeAgentCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -1286,6 +1791,10 @@ func flattenCESAgentBeforeAgentCallbacksDescription(v interface{}, d *schema.Res
 }
 
 func flattenCESAgentBeforeAgentCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentBeforeAgentCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1307,9 +1816,10 @@ func flattenCESAgentBeforeModelCallbacks(v interface{}, d *schema.ResourceData, 
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAgentBeforeModelCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAgentBeforeModelCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAgentBeforeModelCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAgentBeforeModelCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAgentBeforeModelCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAgentBeforeModelCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAgentBeforeModelCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -1319,6 +1829,10 @@ func flattenCESAgentBeforeModelCallbacksDescription(v interface{}, d *schema.Res
 }
 
 func flattenCESAgentBeforeModelCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentBeforeModelCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1340,9 +1854,10 @@ func flattenCESAgentBeforeToolCallbacks(v interface{}, d *schema.ResourceData, c
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAgentBeforeToolCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAgentBeforeToolCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAgentBeforeToolCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAgentBeforeToolCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAgentBeforeToolCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAgentBeforeToolCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAgentBeforeToolCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -1352,6 +1867,10 @@ func flattenCESAgentBeforeToolCallbacksDescription(v interface{}, d *schema.Reso
 }
 
 func flattenCESAgentBeforeToolCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentBeforeToolCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1427,6 +1946,317 @@ func flattenCESAgentLlmAgent(v interface{}, d *schema.ResourceData, config *tran
 	}
 	transformed := make(map[string]interface{})
 	return []interface{}{transformed}
+}
+
+func flattenCESAgentRemoteA2aAgent(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["a2a_config"] =
+		flattenCESAgentRemoteA2aAgentA2aConfig(original["a2aConfig"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["agent_card"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigAgentCard(original["agentCard"], d, config)
+	transformed["agent_registry"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigAgentRegistry(original["agentRegistry"], d, config)
+	transformed["api_authentication"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthentication(original["apiAuthentication"], d, config)
+	transformed["context_id"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigContextId(original["contextId"], d, config)
+	transformed["input_variable_mapping"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigInputVariableMapping(original["inputVariableMapping"], d, config)
+	transformed["output_variable_mapping"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigOutputVariableMapping(original["outputVariableMapping"], d, config)
+	transformed["streaming_enabled"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigStreamingEnabled(original["streamingEnabled"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCard(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["description"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigAgentCardDescription(original["description"], d, config)
+	transformed["name"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigAgentCardName(original["name"], d, config)
+	transformed["skills"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkills(original["skills"], d, config)
+	transformed["supported_interfaces"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfaces(original["supportedInterfaces"], d, config)
+	transformed["version"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigAgentCardVersion(original["version"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardDescription(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkills(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return v
+	}
+	l := v.([]interface{})
+	transformed := make([]interface{}, 0, len(l))
+	for i, raw := range l {
+		_ = i
+		original := raw.(map[string]interface{})
+		if len(original) < 1 {
+			// Do not include empty json objects coming back from the api
+			continue
+		}
+		transformed = append(transformed, map[string]interface{}{
+			"description":  flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsDescription(original["description"], d, config),
+			"examples":     flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsExamples(original["examples"], d, config),
+			"id":           flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsId(original["id"], d, config),
+			"input_modes":  flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsInputModes(original["inputModes"], d, config),
+			"name":         flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsName(original["name"], d, config),
+			"output_modes": flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsOutputModes(original["outputModes"], d, config),
+			"tags":         flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsTags(original["tags"], d, config),
+		})
+	}
+	return transformed
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsDescription(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsExamples(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsId(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsInputModes(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsOutputModes(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsTags(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfaces(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return v
+	}
+	l := v.([]interface{})
+	transformed := make([]interface{}, 0, len(l))
+	for i, raw := range l {
+		_ = i
+		original := raw.(map[string]interface{})
+		if len(original) < 1 {
+			// Do not include empty json objects coming back from the api
+			continue
+		}
+		transformed = append(transformed, map[string]interface{}{
+			"protocol_binding": flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolBinding(original["protocolBinding"], d, config),
+			"protocol_version": flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolVersion(original["protocolVersion"], d, config),
+			"tenant":           flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesTenant(original["tenant"], d, config),
+			"url":              flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesUrl(original["url"], d, config),
+		})
+	}
+	return transformed
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolBinding(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolVersion(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesTenant(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesUrl(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentCardVersion(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigAgentRegistry(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthentication(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["api_key_config"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfig(original["apiKeyConfig"], d, config)
+	transformed["bearer_token_config"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfig(original["bearerTokenConfig"], d, config)
+	transformed["oauth_config"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfig(original["oauthConfig"], d, config)
+	transformed["service_account_auth_config"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfig(original["serviceAccountAuthConfig"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["api_key_secret_version"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigApiKeySecretVersion(original["apiKeySecretVersion"], d, config)
+	transformed["key_name"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigKeyName(original["keyName"], d, config)
+	transformed["request_location"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigRequestLocation(original["requestLocation"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigApiKeySecretVersion(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigKeyName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigRequestLocation(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["token"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfigToken(original["token"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfigToken(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["client_id"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientId(original["clientId"], d, config)
+	transformed["client_secret_version"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientSecretVersion(original["clientSecretVersion"], d, config)
+	transformed["oauth_grant_type"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigOauthGrantType(original["oauthGrantType"], d, config)
+	transformed["scopes"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigScopes(original["scopes"], d, config)
+	transformed["token_endpoint"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigTokenEndpoint(original["tokenEndpoint"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientId(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientSecretVersion(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigOauthGrantType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigScopes(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigTokenEndpoint(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["scopes"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigScopes(original["scopes"], d, config)
+	transformed["service_account"] =
+		flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigServiceAccount(original["serviceAccount"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigScopes(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigServiceAccount(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigContextId(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigInputVariableMapping(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigOutputVariableMapping(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentRemoteA2aAgentA2aConfigStreamingEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
 }
 
 func flattenCESAgentRemoteDialogflowAgent(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -1514,6 +2344,115 @@ func flattenCESAgentToolsetsToolIds(v interface{}, d *schema.ResourceData, confi
 	return v
 }
 
+func flattenCESAgentTransferRules(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return v
+	}
+	l := v.([]interface{})
+	transformed := make([]interface{}, 0, len(l))
+	for i, raw := range l {
+		_ = i
+		original := raw.(map[string]interface{})
+		if len(original) < 1 {
+			// Do not include empty json objects coming back from the api
+			continue
+		}
+		transformed = append(transformed, map[string]interface{}{
+			"child_agent":              flattenCESAgentTransferRulesChildAgent(original["childAgent"], d, config),
+			"deterministic_transfer":   flattenCESAgentTransferRulesDeterministicTransfer(original["deterministicTransfer"], d, config),
+			"direction":                flattenCESAgentTransferRulesDirection(original["direction"], d, config),
+			"disable_planner_transfer": flattenCESAgentTransferRulesDisablePlannerTransfer(original["disablePlannerTransfer"], d, config),
+		})
+	}
+	return transformed
+}
+func flattenCESAgentTransferRulesChildAgent(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentTransferRulesDeterministicTransfer(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression_condition"] =
+		flattenCESAgentTransferRulesDeterministicTransferExpressionCondition(original["expressionCondition"], d, config)
+	transformed["python_code_condition"] =
+		flattenCESAgentTransferRulesDeterministicTransferPythonCodeCondition(original["pythonCodeCondition"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentTransferRulesDeterministicTransferExpressionCondition(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression"] =
+		flattenCESAgentTransferRulesDeterministicTransferExpressionConditionExpression(original["expression"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentTransferRulesDeterministicTransferExpressionConditionExpression(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentTransferRulesDeterministicTransferPythonCodeCondition(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["python_code"] =
+		flattenCESAgentTransferRulesDeterministicTransferPythonCodeConditionPythonCode(original["pythonCode"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentTransferRulesDeterministicTransferPythonCodeConditionPythonCode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentTransferRulesDirection(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAgentTransferRulesDisablePlannerTransfer(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression_condition"] =
+		flattenCESAgentTransferRulesDisablePlannerTransferExpressionCondition(original["expressionCondition"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentTransferRulesDisablePlannerTransferExpressionCondition(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression"] =
+		flattenCESAgentTransferRulesDisablePlannerTransferExpressionConditionExpression(original["expression"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAgentTransferRulesDisablePlannerTransferExpressionConditionExpression(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenCESAgentUpdateTime(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
@@ -1545,6 +2484,13 @@ func expandCESAgentAfterAgentCallbacks(v interface{}, d tpgresource.TerraformRes
 			transformed["disabled"] = transformedDisabled
 		}
 
+		transformedProactiveExecutionEnabled, err := expandCESAgentAfterAgentCallbacksProactiveExecutionEnabled(original["proactive_execution_enabled"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProactiveExecutionEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["proactiveExecutionEnabled"] = transformedProactiveExecutionEnabled
+		}
+
 		transformedPythonCode, err := expandCESAgentAfterAgentCallbacksPythonCode(original["python_code"], d, config)
 		if err != nil {
 			return nil, err
@@ -1562,6 +2508,10 @@ func expandCESAgentAfterAgentCallbacksDescription(v interface{}, d tpgresource.T
 }
 
 func expandCESAgentAfterAgentCallbacksDisabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentAfterAgentCallbacksProactiveExecutionEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1596,6 +2546,13 @@ func expandCESAgentAfterModelCallbacks(v interface{}, d tpgresource.TerraformRes
 			transformed["disabled"] = transformedDisabled
 		}
 
+		transformedProactiveExecutionEnabled, err := expandCESAgentAfterModelCallbacksProactiveExecutionEnabled(original["proactive_execution_enabled"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProactiveExecutionEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["proactiveExecutionEnabled"] = transformedProactiveExecutionEnabled
+		}
+
 		transformedPythonCode, err := expandCESAgentAfterModelCallbacksPythonCode(original["python_code"], d, config)
 		if err != nil {
 			return nil, err
@@ -1613,6 +2570,10 @@ func expandCESAgentAfterModelCallbacksDescription(v interface{}, d tpgresource.T
 }
 
 func expandCESAgentAfterModelCallbacksDisabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentAfterModelCallbacksProactiveExecutionEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1647,6 +2608,13 @@ func expandCESAgentAfterToolCallbacks(v interface{}, d tpgresource.TerraformReso
 			transformed["disabled"] = transformedDisabled
 		}
 
+		transformedProactiveExecutionEnabled, err := expandCESAgentAfterToolCallbacksProactiveExecutionEnabled(original["proactive_execution_enabled"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProactiveExecutionEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["proactiveExecutionEnabled"] = transformedProactiveExecutionEnabled
+		}
+
 		transformedPythonCode, err := expandCESAgentAfterToolCallbacksPythonCode(original["python_code"], d, config)
 		if err != nil {
 			return nil, err
@@ -1664,6 +2632,10 @@ func expandCESAgentAfterToolCallbacksDescription(v interface{}, d tpgresource.Te
 }
 
 func expandCESAgentAfterToolCallbacksDisabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentAfterToolCallbacksProactiveExecutionEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1698,6 +2670,13 @@ func expandCESAgentBeforeAgentCallbacks(v interface{}, d tpgresource.TerraformRe
 			transformed["disabled"] = transformedDisabled
 		}
 
+		transformedProactiveExecutionEnabled, err := expandCESAgentBeforeAgentCallbacksProactiveExecutionEnabled(original["proactive_execution_enabled"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProactiveExecutionEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["proactiveExecutionEnabled"] = transformedProactiveExecutionEnabled
+		}
+
 		transformedPythonCode, err := expandCESAgentBeforeAgentCallbacksPythonCode(original["python_code"], d, config)
 		if err != nil {
 			return nil, err
@@ -1715,6 +2694,10 @@ func expandCESAgentBeforeAgentCallbacksDescription(v interface{}, d tpgresource.
 }
 
 func expandCESAgentBeforeAgentCallbacksDisabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentBeforeAgentCallbacksProactiveExecutionEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1749,6 +2732,13 @@ func expandCESAgentBeforeModelCallbacks(v interface{}, d tpgresource.TerraformRe
 			transformed["disabled"] = transformedDisabled
 		}
 
+		transformedProactiveExecutionEnabled, err := expandCESAgentBeforeModelCallbacksProactiveExecutionEnabled(original["proactive_execution_enabled"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProactiveExecutionEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["proactiveExecutionEnabled"] = transformedProactiveExecutionEnabled
+		}
+
 		transformedPythonCode, err := expandCESAgentBeforeModelCallbacksPythonCode(original["python_code"], d, config)
 		if err != nil {
 			return nil, err
@@ -1766,6 +2756,10 @@ func expandCESAgentBeforeModelCallbacksDescription(v interface{}, d tpgresource.
 }
 
 func expandCESAgentBeforeModelCallbacksDisabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentBeforeModelCallbacksProactiveExecutionEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1800,6 +2794,13 @@ func expandCESAgentBeforeToolCallbacks(v interface{}, d tpgresource.TerraformRes
 			transformed["disabled"] = transformedDisabled
 		}
 
+		transformedProactiveExecutionEnabled, err := expandCESAgentBeforeToolCallbacksProactiveExecutionEnabled(original["proactive_execution_enabled"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProactiveExecutionEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["proactiveExecutionEnabled"] = transformedProactiveExecutionEnabled
+		}
+
 		transformedPythonCode, err := expandCESAgentBeforeToolCallbacksPythonCode(original["python_code"], d, config)
 		if err != nil {
 			return nil, err
@@ -1817,6 +2818,10 @@ func expandCESAgentBeforeToolCallbacksDescription(v interface{}, d tpgresource.T
 }
 
 func expandCESAgentBeforeToolCallbacksDisabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentBeforeToolCallbacksProactiveExecutionEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -1897,6 +2902,569 @@ func expandCESAgentLlmAgent(v interface{}, d tpgresource.TerraformResourceData, 
 	transformed := make(map[string]interface{})
 
 	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgent(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedA2aConfig, err := expandCESAgentRemoteA2aAgentA2aConfig(original["a2a_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedA2aConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["a2aConfig"] = transformedA2aConfig
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedAgentCard, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCard(original["agent_card"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedAgentCard); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["agentCard"] = transformedAgentCard
+	}
+
+	transformedAgentRegistry, err := expandCESAgentRemoteA2aAgentA2aConfigAgentRegistry(original["agent_registry"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedAgentRegistry); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["agentRegistry"] = transformedAgentRegistry
+	}
+
+	transformedApiAuthentication, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthentication(original["api_authentication"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedApiAuthentication); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["apiAuthentication"] = transformedApiAuthentication
+	}
+
+	transformedContextId, err := expandCESAgentRemoteA2aAgentA2aConfigContextId(original["context_id"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedContextId); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["contextId"] = transformedContextId
+	}
+
+	transformedInputVariableMapping, err := expandCESAgentRemoteA2aAgentA2aConfigInputVariableMapping(original["input_variable_mapping"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedInputVariableMapping); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["inputVariableMapping"] = transformedInputVariableMapping
+	}
+
+	transformedOutputVariableMapping, err := expandCESAgentRemoteA2aAgentA2aConfigOutputVariableMapping(original["output_variable_mapping"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedOutputVariableMapping); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["outputVariableMapping"] = transformedOutputVariableMapping
+	}
+
+	transformedStreamingEnabled, err := expandCESAgentRemoteA2aAgentA2aConfigStreamingEnabled(original["streaming_enabled"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedStreamingEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["streamingEnabled"] = transformedStreamingEnabled
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCard(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedDescription, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardDescription(original["description"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedDescription); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["description"] = transformedDescription
+	}
+
+	transformedName, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardName(original["name"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedName); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["name"] = transformedName
+	}
+
+	transformedSkills, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkills(original["skills"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedSkills); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["skills"] = transformedSkills
+	}
+
+	transformedSupportedInterfaces, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfaces(original["supported_interfaces"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedSupportedInterfaces); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["supportedInterfaces"] = transformedSupportedInterfaces
+	}
+
+	transformedVersion, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardVersion(original["version"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedVersion); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["version"] = transformedVersion
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardDescription(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkills(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	req := make([]interface{}, 0, len(l))
+	for _, raw := range l {
+		if raw == nil {
+			continue
+		}
+		original := raw.(map[string]interface{})
+		transformed := make(map[string]interface{})
+
+		transformedDescription, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsDescription(original["description"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedDescription); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["description"] = transformedDescription
+		}
+
+		transformedExamples, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsExamples(original["examples"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedExamples); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["examples"] = transformedExamples
+		}
+
+		transformedId, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsId(original["id"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedId); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["id"] = transformedId
+		}
+
+		transformedInputModes, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsInputModes(original["input_modes"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedInputModes); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["inputModes"] = transformedInputModes
+		}
+
+		transformedName, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsName(original["name"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedName); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["name"] = transformedName
+		}
+
+		transformedOutputModes, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsOutputModes(original["output_modes"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedOutputModes); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["outputModes"] = transformedOutputModes
+		}
+
+		transformedTags, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsTags(original["tags"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedTags); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["tags"] = transformedTags
+		}
+
+		req = append(req, transformed)
+	}
+	return req, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsDescription(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsExamples(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsId(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsInputModes(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsOutputModes(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSkillsTags(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfaces(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	req := make([]interface{}, 0, len(l))
+	for _, raw := range l {
+		if raw == nil {
+			continue
+		}
+		original := raw.(map[string]interface{})
+		transformed := make(map[string]interface{})
+
+		transformedProtocolBinding, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolBinding(original["protocol_binding"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProtocolBinding); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["protocolBinding"] = transformedProtocolBinding
+		}
+
+		transformedProtocolVersion, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolVersion(original["protocol_version"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedProtocolVersion); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["protocolVersion"] = transformedProtocolVersion
+		}
+
+		transformedTenant, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesTenant(original["tenant"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedTenant); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["tenant"] = transformedTenant
+		}
+
+		transformedUrl, err := expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesUrl(original["url"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedUrl); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["url"] = transformedUrl
+		}
+
+		req = append(req, transformed)
+	}
+	return req, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolBinding(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesProtocolVersion(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesTenant(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardSupportedInterfacesUrl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentCardVersion(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigAgentRegistry(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthentication(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedApiKeyConfig, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfig(original["api_key_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedApiKeyConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["apiKeyConfig"] = transformedApiKeyConfig
+	}
+
+	transformedBearerTokenConfig, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfig(original["bearer_token_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedBearerTokenConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["bearerTokenConfig"] = transformedBearerTokenConfig
+	}
+
+	transformedOauthConfig, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfig(original["oauth_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedOauthConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["oauthConfig"] = transformedOauthConfig
+	}
+
+	transformedServiceAccountAuthConfig, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfig(original["service_account_auth_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedServiceAccountAuthConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["serviceAccountAuthConfig"] = transformedServiceAccountAuthConfig
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedApiKeySecretVersion, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigApiKeySecretVersion(original["api_key_secret_version"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedApiKeySecretVersion); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["apiKeySecretVersion"] = transformedApiKeySecretVersion
+	}
+
+	transformedKeyName, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigKeyName(original["key_name"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedKeyName); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["keyName"] = transformedKeyName
+	}
+
+	transformedRequestLocation, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigRequestLocation(original["request_location"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedRequestLocation); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["requestLocation"] = transformedRequestLocation
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigApiKeySecretVersion(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigKeyName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationApiKeyConfigRequestLocation(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedToken, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfigToken(original["token"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedToken); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["token"] = transformedToken
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationBearerTokenConfigToken(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedClientId, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientId(original["client_id"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedClientId); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["clientId"] = transformedClientId
+	}
+
+	transformedClientSecretVersion, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientSecretVersion(original["client_secret_version"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedClientSecretVersion); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["clientSecretVersion"] = transformedClientSecretVersion
+	}
+
+	transformedOauthGrantType, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigOauthGrantType(original["oauth_grant_type"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedOauthGrantType); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["oauthGrantType"] = transformedOauthGrantType
+	}
+
+	transformedScopes, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigScopes(original["scopes"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedScopes); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["scopes"] = transformedScopes
+	}
+
+	transformedTokenEndpoint, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigTokenEndpoint(original["token_endpoint"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedTokenEndpoint); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["tokenEndpoint"] = transformedTokenEndpoint
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientId(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigClientSecretVersion(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigOauthGrantType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigScopes(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationOauthConfigTokenEndpoint(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedScopes, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigScopes(original["scopes"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedScopes); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["scopes"] = transformedScopes
+	}
+
+	transformedServiceAccount, err := expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigServiceAccount(original["service_account"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedServiceAccount); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["serviceAccount"] = transformedServiceAccount
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigScopes(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigApiAuthenticationServiceAccountAuthConfigServiceAccount(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigContextId(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigInputVariableMapping(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (map[string]string, error) {
+	if v == nil {
+		return map[string]string{}, nil
+	}
+	m := make(map[string]string)
+	for k, val := range v.(map[string]interface{}) {
+		m[k] = val.(string)
+	}
+	return m, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigOutputVariableMapping(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (map[string]string, error) {
+	if v == nil {
+		return map[string]string{}, nil
+	}
+	m := make(map[string]string)
+	for k, val := range v.(map[string]interface{}) {
+		m[k] = val.(string)
+	}
+	return m, nil
+}
+
+func expandCESAgentRemoteA2aAgentA2aConfigStreamingEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
 }
 
 func expandCESAgentRemoteDialogflowAgent(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -2049,6 +3617,189 @@ func expandCESAgentToolsetsToolIds(v interface{}, d tpgresource.TerraformResourc
 	return v, nil
 }
 
+func expandCESAgentTransferRules(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	req := make([]interface{}, 0, len(l))
+	for _, raw := range l {
+		if raw == nil {
+			continue
+		}
+		original := raw.(map[string]interface{})
+		transformed := make(map[string]interface{})
+
+		transformedChildAgent, err := expandCESAgentTransferRulesChildAgent(original["child_agent"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedChildAgent); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["childAgent"] = transformedChildAgent
+		}
+
+		transformedDeterministicTransfer, err := expandCESAgentTransferRulesDeterministicTransfer(original["deterministic_transfer"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedDeterministicTransfer); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["deterministicTransfer"] = transformedDeterministicTransfer
+		}
+
+		transformedDirection, err := expandCESAgentTransferRulesDirection(original["direction"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedDirection); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["direction"] = transformedDirection
+		}
+
+		transformedDisablePlannerTransfer, err := expandCESAgentTransferRulesDisablePlannerTransfer(original["disable_planner_transfer"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedDisablePlannerTransfer); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["disablePlannerTransfer"] = transformedDisablePlannerTransfer
+		}
+
+		req = append(req, transformed)
+	}
+	return req, nil
+}
+
+func expandCESAgentTransferRulesChildAgent(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentTransferRulesDeterministicTransfer(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedExpressionCondition, err := expandCESAgentTransferRulesDeterministicTransferExpressionCondition(original["expression_condition"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedExpressionCondition); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["expressionCondition"] = transformedExpressionCondition
+	}
+
+	transformedPythonCodeCondition, err := expandCESAgentTransferRulesDeterministicTransferPythonCodeCondition(original["python_code_condition"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedPythonCodeCondition); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["pythonCodeCondition"] = transformedPythonCodeCondition
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentTransferRulesDeterministicTransferExpressionCondition(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedExpression, err := expandCESAgentTransferRulesDeterministicTransferExpressionConditionExpression(original["expression"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedExpression); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["expression"] = transformedExpression
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentTransferRulesDeterministicTransferExpressionConditionExpression(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentTransferRulesDeterministicTransferPythonCodeCondition(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedPythonCode, err := expandCESAgentTransferRulesDeterministicTransferPythonCodeConditionPythonCode(original["python_code"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedPythonCode); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["pythonCode"] = transformedPythonCode
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentTransferRulesDeterministicTransferPythonCodeConditionPythonCode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentTransferRulesDirection(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAgentTransferRulesDisablePlannerTransfer(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedExpressionCondition, err := expandCESAgentTransferRulesDisablePlannerTransferExpressionCondition(original["expression_condition"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedExpressionCondition); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["expressionCondition"] = transformedExpressionCondition
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentTransferRulesDisablePlannerTransferExpressionCondition(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedExpression, err := expandCESAgentTransferRulesDisablePlannerTransferExpressionConditionExpression(original["expression"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedExpression); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["expression"] = transformedExpression
+	}
+
+	return transformed, nil
+}
+
+func expandCESAgentTransferRulesDisablePlannerTransferExpressionConditionExpression(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func resourceCESAgentPostCreateSetComputedFields(d *schema.ResourceData, meta interface{}, res map[string]interface{}) error {
 	config := meta.(*transport_tpg.Config)
 	if err := d.Set("name", flattenCESAgentName(res["name"], d, config)); err != nil {
@@ -2111,6 +3862,9 @@ func ResourceCESAgentFlatten(d *schema.ResourceData, meta interface{}, res map[s
 	if err = d.Set("llm_agent", flattenCESAgentLlmAgent(res["llmAgent"], d, config)); err != nil {
 		return fmt.Errorf("Error reading Agent: %s", err)
 	}
+	if err = d.Set("remote_a2a_agent", flattenCESAgentRemoteA2aAgent(res["remoteA2aAgent"], d, config)); err != nil {
+		return fmt.Errorf("Error reading Agent: %s", err)
+	}
 	if err = d.Set("remote_dialogflow_agent", flattenCESAgentRemoteDialogflowAgent(res["remoteDialogflowAgent"], d, config)); err != nil {
 		return fmt.Errorf("Error reading Agent: %s", err)
 	}
@@ -2118,6 +3872,9 @@ func ResourceCESAgentFlatten(d *schema.ResourceData, meta interface{}, res map[s
 		return fmt.Errorf("Error reading Agent: %s", err)
 	}
 	if err = d.Set("toolsets", flattenCESAgentToolsets(res["toolsets"], d, config)); err != nil {
+		return fmt.Errorf("Error reading Agent: %s", err)
+	}
+	if err = d.Set("transfer_rules", flattenCESAgentTransferRules(res["transferRules"], d, config)); err != nil {
 		return fmt.Errorf("Error reading Agent: %s", err)
 	}
 	if err = d.Set("update_time", flattenCESAgentUpdateTime(res["updateTime"], d, config)); err != nil {

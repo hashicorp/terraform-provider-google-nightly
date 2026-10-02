@@ -232,6 +232,16 @@ execution stops and any remaining callbacks are skipped.`,
 													Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 												},
+												"proactive_execution_enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+													Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+												},
 												"python_code": {
 													Type:        schema.TypeString,
 													Computed:    true,
@@ -260,6 +270,16 @@ execution stops and any remaining callbacks are skipped.`,
 													Computed: true,
 													Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
+												},
+												"proactive_execution_enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+													Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
 												},
 												"python_code": {
 													Type:        schema.TypeString,
@@ -290,6 +310,16 @@ execution stops and any remaining callbacks are skipped.`,
 													Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 												},
+												"proactive_execution_enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+													Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+												},
 												"python_code": {
 													Type:        schema.TypeString,
 													Computed:    true,
@@ -317,6 +347,16 @@ execution stops and any remaining callbacks are skipped.`,
 													Computed: true,
 													Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
+												},
+												"proactive_execution_enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+													Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
 												},
 												"python_code": {
 													Type:        schema.TypeString,
@@ -347,6 +387,16 @@ execution stops and any remaining callbacks are skipped.`,
 													Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 												},
+												"proactive_execution_enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+													Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+												},
 												"python_code": {
 													Type:        schema.TypeString,
 													Computed:    true,
@@ -375,6 +425,16 @@ execution stops and any remaining callbacks are skipped.`,
 													Computed: true,
 													Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
+												},
+												"proactive_execution_enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+													Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
 												},
 												"python_code": {
 													Type:        schema.TypeString,
@@ -556,6 +616,95 @@ Format: 'projects/{project}/locations/{location}/apps/{app}/tools/{tool}'`,
 													Description: `The resource name of the toolset.
 Format:
 'projects/{project}/locations/{location}/apps/{app}/toolsets/{toolset}'`,
+												},
+											},
+										},
+									},
+									"transfer_rules": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Description: `List of transfer rules for the agent.
+If multiple rules match, the first one in the list will be used.`,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"child_agent": {
+													Type:     schema.TypeString,
+													Computed: true,
+													Description: `The resource name of the child agent the rule applies to.
+Format: 'projects/{project}/locations/{location}/apps/{app}/agents/{agent}'`,
+												},
+												"deterministic_transfer": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Description: `Deterministic transfer rule. When the condition evaluates to true, the
+transfer occurs.`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"expression_condition": {
+																Type:     schema.TypeList,
+																Computed: true,
+																Description: `A rule that evaluates a session state condition. If the condition
+evaluates to true, the transfer occurs.`,
+																Elem: &schema.Resource{
+																	Schema: map[string]*schema.Schema{
+																		"expression": {
+																			Type:        schema.TypeString,
+																			Computed:    true,
+																			Description: `The string representation of cloud.api.Expression condition.`,
+																		},
+																	},
+																},
+															},
+															"python_code_condition": {
+																Type:     schema.TypeList,
+																Computed: true,
+																Description: `A rule that uses Python code block to evaluate the conditions. If the
+condition evaluates to true, the transfer occurs.`,
+																Elem: &schema.Resource{
+																	Schema: map[string]*schema.Schema{
+																		"python_code": {
+																			Type:     schema.TypeString,
+																			Computed: true,
+																			Description: `The python code to execute. The function must be named
+'should_trigger_transfer_callback'.`,
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+												"direction": {
+													Type:     schema.TypeString,
+													Computed: true,
+													Description: `The direction of the transfer.
+Possible values:
+* PARENT_TO_CHILD
+* CHILD_TO_PARENT`,
+												},
+												"disable_planner_transfer": {
+													Type:        schema.TypeList,
+													Computed:    true,
+													Description: `A rule that prevents the planner from transferring to the target agent.`,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"expression_condition": {
+																Type:     schema.TypeList,
+																Computed: true,
+																Description: `If the condition evaluates to true, planner will not be allowed to
+transfer to the target agent.`,
+																Elem: &schema.Resource{
+																	Schema: map[string]*schema.Schema{
+																		"expression": {
+																			Type:        schema.TypeString,
+																			Computed:    true,
+																			Description: `The string representation of cloud.api.Expression condition.`,
+																		},
+																	},
+																},
+															},
+														},
+													},
 												},
 											},
 										},
@@ -986,6 +1135,27 @@ correctness. Must be a float between 0 and 1. Default is 1.0.`,
 																	},
 																},
 															},
+															"tool_matching_settings": {
+																Type:     schema.TypeList,
+																Computed: true,
+																Description: `The tool matching settings. An extra tool call is a tool call that is
+present in the execution but does not match any tool call in the golden
+expectation.`,
+																Elem: &schema.Resource{
+																	Schema: map[string]*schema.Schema{
+																		"extra_tool_call_behavior": {
+																			Type:     schema.TypeString,
+																			Computed: true,
+																			Description: `Defines the behavior when an extra tool call is encountered. An extra
+tool call is a tool call that is present in the execution but does
+not match any tool call in the golden expectation.
+Possible values:
+FAIL
+ALLOW`,
+																		},
+																	},
+																},
+															},
 															"turn_level_metrics_thresholds": {
 																Type:        schema.TypeList,
 																Computed:    true,
@@ -997,6 +1167,15 @@ correctness. Must be a float between 0 and 1. Default is 1.0.`,
 																			Computed: true,
 																			Description: `The success threshold for overall tool invocation correctness. Must be
 a float between 0 and 1. Default is 1.0.`,
+																		},
+																		"semantic_similarity_channel": {
+																			Type:     schema.TypeString,
+																			Computed: true,
+																			Description: `The semantic similarity channel to use for evaluation.
+Possible values:
+SEMANTIC_SIMILARITY_CHANNEL_UNSPECIFIED
+TEXT
+AUDIO`,
 																		},
 																		"semantic_similarity_success_threshold": {
 																			Type:     schema.TypeInt,
@@ -1804,6 +1983,16 @@ agent interaction.`,
 																Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 															},
+															"proactive_execution_enabled": {
+																Type:     schema.TypeBool,
+																Computed: true,
+																Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+															},
 															"python_code": {
 																Type:        schema.TypeString,
 																Computed:    true,
@@ -1829,6 +2018,16 @@ agent interaction.`,
 																Computed: true,
 																Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
+															},
+															"proactive_execution_enabled": {
+																Type:     schema.TypeBool,
+																Computed: true,
+																Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
 															},
 															"python_code": {
 																Type:        schema.TypeString,
@@ -1856,6 +2055,16 @@ agent interaction.`,
 																Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
 															},
+															"proactive_execution_enabled": {
+																Type:     schema.TypeBool,
+																Computed: true,
+																Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
+															},
 															"python_code": {
 																Type:        schema.TypeString,
 																Computed:    true,
@@ -1881,6 +2090,16 @@ agent interaction.`,
 																Computed: true,
 																Description: `Whether the callback is disabled. Disabled callbacks are ignored by the
 agent.`,
+															},
+															"proactive_execution_enabled": {
+																Type:     schema.TypeBool,
+																Computed: true,
+																Description: `If enabled, the callback will also be executed on intermediate model
+outputs. This setting only affects after model callback.
+**ENABLE WITH CAUTION**. Typically after model callback only needs to be
+executed after receiving all model responses. Enabling proactive execution
+may have negative implication on the execution cost and latency, and
+should only be enabled in rare situations.`,
 															},
 															"python_code": {
 																Type:        schema.TypeString,
@@ -3829,6 +4048,7 @@ func flattenCESAppVersionSnapshotAgents(v interface{}, d *schema.ResourceData, c
 			"remote_dialogflow_agent": flattenCESAppVersionSnapshotAgentsRemoteDialogflowAgent(original["remoteDialogflowAgent"], d, config),
 			"tools":                   flattenCESAppVersionSnapshotAgentsTools(original["tools"], d, config),
 			"toolsets":                flattenCESAppVersionSnapshotAgentsToolsets(original["toolsets"], d, config),
+			"transfer_rules":          flattenCESAppVersionSnapshotAgentsTransferRules(original["transferRules"], d, config),
 			"update_time":             flattenCESAppVersionSnapshotAgentsUpdateTime(original["updateTime"], d, config),
 		})
 	}
@@ -3848,9 +4068,10 @@ func flattenCESAppVersionSnapshotAgentsAfterAgentCallbacks(v interface{}, d *sch
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -3860,6 +4081,10 @@ func flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksDescription(v interfac
 }
 
 func flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsAfterAgentCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -3881,9 +4106,10 @@ func flattenCESAppVersionSnapshotAgentsAfterModelCallbacks(v interface{}, d *sch
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAppVersionSnapshotAgentsAfterModelCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAppVersionSnapshotAgentsAfterModelCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAppVersionSnapshotAgentsAfterModelCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAppVersionSnapshotAgentsAfterModelCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAppVersionSnapshotAgentsAfterModelCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAppVersionSnapshotAgentsAfterModelCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAppVersionSnapshotAgentsAfterModelCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -3893,6 +4119,10 @@ func flattenCESAppVersionSnapshotAgentsAfterModelCallbacksDescription(v interfac
 }
 
 func flattenCESAppVersionSnapshotAgentsAfterModelCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsAfterModelCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -3914,9 +4144,10 @@ func flattenCESAppVersionSnapshotAgentsAfterToolCallbacks(v interface{}, d *sche
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAppVersionSnapshotAgentsAfterToolCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAppVersionSnapshotAgentsAfterToolCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAppVersionSnapshotAgentsAfterToolCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAppVersionSnapshotAgentsAfterToolCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAppVersionSnapshotAgentsAfterToolCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAppVersionSnapshotAgentsAfterToolCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAppVersionSnapshotAgentsAfterToolCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -3926,6 +4157,10 @@ func flattenCESAppVersionSnapshotAgentsAfterToolCallbacksDescription(v interface
 }
 
 func flattenCESAppVersionSnapshotAgentsAfterToolCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsAfterToolCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -3947,9 +4182,10 @@ func flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacks(v interface{}, d *sc
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -3959,6 +4195,10 @@ func flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksDescription(v interfa
 }
 
 func flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsBeforeAgentCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -3980,9 +4220,10 @@ func flattenCESAppVersionSnapshotAgentsBeforeModelCallbacks(v interface{}, d *sc
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -3992,6 +4233,10 @@ func flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksDescription(v interfa
 }
 
 func flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsBeforeModelCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4013,9 +4258,10 @@ func flattenCESAppVersionSnapshotAgentsBeforeToolCallbacks(v interface{}, d *sch
 			continue
 		}
 		transformed = append(transformed, map[string]interface{}{
-			"description": flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksDescription(original["description"], d, config),
-			"disabled":    flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksDisabled(original["disabled"], d, config),
-			"python_code": flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksPythonCode(original["pythonCode"], d, config),
+			"description":                 flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksDescription(original["description"], d, config),
+			"disabled":                    flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksDisabled(original["disabled"], d, config),
+			"proactive_execution_enabled": flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config),
+			"python_code":                 flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksPythonCode(original["pythonCode"], d, config),
 		})
 	}
 	return transformed
@@ -4025,6 +4271,10 @@ func flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksDescription(v interfac
 }
 
 func flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsBeforeToolCallbacksProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4179,6 +4429,115 @@ func flattenCESAppVersionSnapshotAgentsToolsetsToolset(v interface{}, d *schema.
 }
 
 func flattenCESAppVersionSnapshotAgentsToolsetsToolIds(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsTransferRules(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return v
+	}
+	l := v.([]interface{})
+	transformed := make([]interface{}, 0, len(l))
+	for i, raw := range l {
+		_ = i
+		original := raw.(map[string]interface{})
+		if len(original) < 1 {
+			// Do not include empty json objects coming back from the api
+			continue
+		}
+		transformed = append(transformed, map[string]interface{}{
+			"child_agent":              flattenCESAppVersionSnapshotAgentsTransferRulesChildAgent(original["childAgent"], d, config),
+			"deterministic_transfer":   flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransfer(original["deterministicTransfer"], d, config),
+			"direction":                flattenCESAppVersionSnapshotAgentsTransferRulesDirection(original["direction"], d, config),
+			"disable_planner_transfer": flattenCESAppVersionSnapshotAgentsTransferRulesDisablePlannerTransfer(original["disablePlannerTransfer"], d, config),
+		})
+	}
+	return transformed
+}
+func flattenCESAppVersionSnapshotAgentsTransferRulesChildAgent(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransfer(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression_condition"] =
+		flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferExpressionCondition(original["expressionCondition"], d, config)
+	transformed["python_code_condition"] =
+		flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferPythonCodeCondition(original["pythonCodeCondition"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferExpressionCondition(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression"] =
+		flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferExpressionConditionExpression(original["expression"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferExpressionConditionExpression(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferPythonCodeCondition(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["python_code"] =
+		flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferPythonCodeConditionPythonCode(original["pythonCode"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAgentsTransferRulesDeterministicTransferPythonCodeConditionPythonCode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsTransferRulesDirection(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAgentsTransferRulesDisablePlannerTransfer(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression_condition"] =
+		flattenCESAppVersionSnapshotAgentsTransferRulesDisablePlannerTransferExpressionCondition(original["expressionCondition"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAgentsTransferRulesDisablePlannerTransferExpressionCondition(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["expression"] =
+		flattenCESAppVersionSnapshotAgentsTransferRulesDisablePlannerTransferExpressionConditionExpression(original["expression"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAgentsTransferRulesDisablePlannerTransferExpressionConditionExpression(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4574,6 +4933,8 @@ func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationM
 		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsExpectationLevelMetricsThresholds(original["expectationLevelMetricsThresholds"], d, config)
 	transformed["turn_level_metrics_thresholds"] =
 		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholds(original["turnLevelMetricsThresholds"], d, config)
+	transformed["tool_matching_settings"] =
+		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettings(original["toolMatchingSettings"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsExpectationLevelMetricsThresholds(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4606,6 +4967,8 @@ func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationM
 		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsOverallToolInvocationCorrectnessThreshold(original["overallToolInvocationCorrectnessThreshold"], d, config)
 	transformed["semantic_similarity_success_threshold"] =
 		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilaritySuccessThreshold(original["semanticSimilaritySuccessThreshold"], d, config)
+	transformed["semantic_similarity_channel"] =
+		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilarityChannel(original["semanticSimilarityChannel"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsOverallToolInvocationCorrectnessThreshold(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4627,6 +4990,27 @@ func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationM
 	}
 
 	return v // let terraform core handle it otherwise
+}
+
+func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilarityChannel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["extra_tool_call_behavior"] =
+		flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettingsExtraToolCallBehavior(original["extraToolCallBehavior"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettingsExtraToolCallBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
 }
 
 func flattenCESAppVersionSnapshotAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -5649,6 +6033,8 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallback(v inte
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallbackDescription(original["description"], d, config)
 	transformed["disabled"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallbackDisabled(original["disabled"], d, config)
+	transformed["proactive_execution_enabled"] =
+		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallbackProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config)
 	transformed["python_code"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallbackPythonCode(original["pythonCode"], d, config)
 	return []interface{}{transformed}
@@ -5658,6 +6044,10 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallbackDescrip
 }
 
 func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallbackDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterAgentCallbackProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -5678,6 +6068,8 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallback(v inte
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallbackDescription(original["description"], d, config)
 	transformed["disabled"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallbackDisabled(original["disabled"], d, config)
+	transformed["proactive_execution_enabled"] =
+		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallbackProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config)
 	transformed["python_code"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallbackPythonCode(original["pythonCode"], d, config)
 	return []interface{}{transformed}
@@ -5687,6 +6079,10 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallbackDescrip
 }
 
 func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallbackDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotGuardrailsCodeCallbackAfterModelCallbackProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -5707,6 +6103,8 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallback(v int
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallbackDescription(original["description"], d, config)
 	transformed["disabled"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallbackDisabled(original["disabled"], d, config)
+	transformed["proactive_execution_enabled"] =
+		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallbackProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config)
 	transformed["python_code"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallbackPythonCode(original["pythonCode"], d, config)
 	return []interface{}{transformed}
@@ -5716,6 +6114,10 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallbackDescri
 }
 
 func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallbackDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeAgentCallbackProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -5736,6 +6138,8 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallback(v int
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallbackDescription(original["description"], d, config)
 	transformed["disabled"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallbackDisabled(original["disabled"], d, config)
+	transformed["proactive_execution_enabled"] =
+		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallbackProactiveExecutionEnabled(original["proactiveExecutionEnabled"], d, config)
 	transformed["python_code"] =
 		flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallbackPythonCode(original["pythonCode"], d, config)
 	return []interface{}{transformed}
@@ -5745,6 +6149,10 @@ func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallbackDescri
 }
 
 func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallbackDisabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppVersionSnapshotGuardrailsCodeCallbackBeforeModelCallbackProactiveExecutionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 

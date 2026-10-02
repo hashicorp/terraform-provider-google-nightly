@@ -58,8 +58,9 @@ func TestAccSecretManagerSecretIamMemberListQuery_generated(t *testing.T) {
 			{
 				Config: testAccSecretManagerSecretIamMemberListQuery_create(context),
 				Check: resource.ComposeTestCheckFunc(
-					listScope.Capture(map[string]string{
-						"secret_id": "google_secret_manager_secret.secret-basic",
+					listScope.CaptureFrom(map[string]acctest.ListScopeSource{
+						"project":   {Addr: "google_secret_manager_secret.secret-basic", Attr: "project"},
+						"secret_id": {Addr: "google_secret_manager_secret.secret-basic", Attr: "secret_id"},
 					}),
 				),
 			},

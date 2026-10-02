@@ -67,7 +67,7 @@ func TestAccComputeNetworkFirewallPolicyRule_networkFirewallPolicyRuleExample(t 
 		"service_acct":  envvar.GetTestServiceAccountFromEnv(t),
 		"address_group": "tf-test-address-group" + randomSuffix,
 		"fw_policy":     "tf-test-fw-policy" + randomSuffix,
-		"network":       "network" + randomSuffix,
+		"network":       "tf-test-network" + randomSuffix,
 		"tag_key":       "tf-test-tag-key" + randomSuffix,
 		"tag_value":     "tf-test-tag-value" + randomSuffix,
 		"random_suffix": randomSuffix,
@@ -241,7 +241,7 @@ func TestAccComputeNetworkFirewallPolicyRule_networkFirewallPolicyRuleNetworkSco
 	context := map[string]interface{}{
 		"project_name":  envvar.GetTestProjectFromEnv(),
 		"fw_policy":     "tf-test-fw-policy" + randomSuffix,
-		"network":       "network" + randomSuffix,
+		"network":       "tf-test-network" + randomSuffix,
 		"random_suffix": randomSuffix,
 	}
 
@@ -380,7 +380,7 @@ func TestAccComputeNetworkFirewallPolicyRule_networkFirewallPolicyRuleNetworkCon
 	context := map[string]interface{}{
 		"project_name":  envvar.GetTestProjectFromEnv(),
 		"fw_policy":     "tf-test-fw-policy" + randomSuffix,
-		"network":       "network" + randomSuffix,
+		"network":       "tf-test-network" + randomSuffix,
 		"random_suffix": randomSuffix,
 	}
 
@@ -455,8 +455,9 @@ func TestAccComputeNetworkFirewallPolicyRule_networkFirewallPolicyRuleTargetType
 		"backend_subnet":  "tf-test-backend-subnet" + randomSuffix,
 		"forwarding_rule": "tf-test-forwarding-rule" + randomSuffix,
 		"fw_policy":       "tf-test-fw-policy" + randomSuffix,
+		"global_assoc":    "tf-test-global-policy-assoc" + randomSuffix,
 		"hc":              "tf-test-health-check" + randomSuffix,
-		"network":         "network" + randomSuffix,
+		"network":         "tf-test-network" + randomSuffix,
 		"proxy_subnet":    "tf-test-proxy-subnet" + randomSuffix,
 		"target_proxy":    "tf-test-target-http-proxy" + randomSuffix,
 		"url_map":         "tf-test-url-map" + randomSuffix,
@@ -592,7 +593,7 @@ resource "google_compute_network_firewall_policy_rule" "primary" {
 
 resource "google_compute_network_firewall_policy_association" "global_assoc" {
   provider          = google-beta
-  name              = "global-policy-assoc-%{random_suffix}"
+  name              = "%{global_assoc}"
   firewall_policy   = google_compute_network_firewall_policy.fw_policy.id
   attachment_target = google_compute_network.net.id
 }

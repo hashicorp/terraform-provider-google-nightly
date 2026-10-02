@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
@@ -543,7 +544,7 @@ resource "google_compute_region_instance_group_manager" "rigm" {
 }
 
 resource "google_compute_instance_template" "instance_template" {
-  name         = "template-%{region_backend_service_name}"
+  name         = "%{region_backend_service_name}-template"
   machine_type = "e2-medium"
 
   network_interface {
@@ -579,6 +580,133 @@ resource "google_compute_subnetwork" "default" {
   ip_cidr_range = "10.1.2.0/24"
   region        = "us-central1"
   network       = google_compute_network.default.id
+}
+`, context)
+}
+
+func TestAccComputeRegionBackendService_regionBackendServiceInFlightExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"health_check_name":           "tf-test-rbs-health-check" + randomSuffix,
+		"igm_name":                    "tf-test-instance-group-manager" + randomSuffix,
+		"instance_template_name":      "tf-test-instance-template" + randomSuffix,
+		"network_name":                "tf-test-custom-vpc" + randomSuffix,
+		"region_backend_service_name": "tf-test-region-service" + randomSuffix,
+		"subnetwork_name":             "tf-test-custom-subnet" + randomSuffix,
+		"random_suffix":               randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		CheckDestroy:             testAccCheckComputeRegionBackendServiceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeRegionBackendService_regionBackendServiceInFlightExample(context),
+			},
+			{
+				ResourceName:            "google_compute_region_backend_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"iap.0.oauth2_client_secret", "network", "params", "region"},
+			},
+			{
+				ResourceName:       "google_compute_region_backend_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccComputeRegionBackendService_regionBackendServiceInFlightExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_network" "custom" {
+  provider                = google-beta
+  name                    = "%{network_name}"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "default" {
+  provider      = google-beta
+  name          = "%{subnetwork_name}"
+  ip_cidr_range = "10.0.0.0/24"
+  region        = "us-central1"
+  network       = google_compute_network.custom.id
+}
+
+resource "google_compute_instance_template" "default" {
+  provider     = google-beta
+  name         = "%{instance_template_name}"
+  machine_type = "e2-micro"
+
+  disk {
+    source_image = "debian-cloud/debian-13"
+    auto_delete  = true
+    boot         = true
+  }
+
+  network_interface {
+    network    = google_compute_network.custom.id
+    subnetwork = google_compute_subnetwork.default.id
+  }
+
+  metadata = {
+    startup-script = <<-EOT
+      #!/bin/bash
+      echo "Hello World from MIG VM" > /var/www/html/index.html
+      apt-get update -y
+      apt-get install -y apache2
+      systemctl start apache2
+    EOT
+  }
+}
+
+resource "google_compute_region_instance_group_manager" "foobar" {
+  provider           = google-beta
+  name               = "%{igm_name}"
+  base_instance_name = "vm"
+  region             = "us-central1"
+
+  version {
+    instance_template = google_compute_instance_template.default.id
+  }
+
+  target_size = 1
+}
+
+resource "google_compute_region_backend_service" "default" {
+  provider              = google-beta
+  name                  = "%{region_backend_service_name}"
+  region                = "us-central1"
+  description           = "Hello World 1234"
+  port_name             = "http"
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  backend {
+    group                               = google_compute_region_instance_group_manager.foobar.instance_group
+    balancing_mode                      = "IN_FLIGHT"
+    capacity_scaler                     = 1.0
+    max_in_flight_requests_per_instance = 100
+    traffic_duration                    = "LONG"
+  }
+
+  health_checks = [google_compute_region_health_check.default.self_link]
+}
+
+resource "google_compute_region_health_check" "default" {
+  provider = google-beta
+  name     = "%{health_check_name}"
+  region   = "us-central1"
+
+  http_health_check {
+    port = 80
+  }
 }
 `, context)
 }
@@ -713,7 +841,7 @@ func TestAccComputeRegionBackendService_regionBackendServiceIlbCustomMetricsExam
 	context := map[string]interface{}{
 		"default_neg_name":            "tf-test-network-endpoint" + randomSuffix,
 		"health_check_name":           "tf-test-rbs-health-check" + randomSuffix,
-		"network_name":                "network" + randomSuffix,
+		"network_name":                "tf-test-network" + randomSuffix,
 		"region_backend_service_name": "tf-test-region-service" + randomSuffix,
 		"random_suffix":               randomSuffix,
 	}
@@ -1123,7 +1251,7 @@ func TestAccComputeRegionBackendService_regionBackendServiceTlsSettingsExample(t
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"authentication_name":         "authentication" + randomSuffix,
+		"authentication_name":         "tf-test-authentication" + randomSuffix,
 		"health_check_name":           "tf-test-health-check" + randomSuffix,
 		"region_backend_service_name": "tf-test-region-service" + randomSuffix,
 		"random_suffix":               randomSuffix,
@@ -1185,6 +1313,93 @@ resource "google_network_security_backend_authentication_config" "default" {
   name             = "%{authentication_name}"
   location = "europe-north1"
   well_known_roots = "PUBLIC_ROOTS"
+}
+`, context)
+}
+
+func TestAccComputeRegionBackendService_regionBackendServiceIdentityExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"description":                 "description",
+		"health_check_name":           "tf-test-health-check" + randomSuffix,
+		"region_backend_service_name": "tf-test-backend-service" + randomSuffix,
+		"random_suffix":               randomSuffix,
+	}
+
+	context_1 := map[string]interface{}{
+		"description":                 "updated description",
+		"health_check_name":           "tf-test-health-check" + randomSuffix,
+		"region_backend_service_name": "tf-test-backend-service" + randomSuffix,
+		"random_suffix":               randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeRegionBackendServiceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeRegionBackendService_regionBackendServiceIdentityExample(context),
+			},
+			{
+				ResourceName:            "google_compute_region_backend_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"iap.0.oauth2_client_secret", "network", "params", "region"},
+			},
+			{
+				ResourceName:       "google_compute_region_backend_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+			{
+				Config: testAccComputeRegionBackendService_regionBackendServiceIdentityExample(context_1),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_region_backend_service.default", plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ResourceName:            "google_compute_region_backend_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"iap.0.oauth2_client_secret", "network", "params", "region"},
+			},
+			{
+				ResourceName:       "google_compute_region_backend_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccComputeRegionBackendService_regionBackendServiceIdentityExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_region_backend_service" "default" {
+  region = "europe-north1"
+  name          = "%{region_backend_service_name}"
+  health_checks = [google_compute_region_health_check.default.id]
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  protocol = "HTTPS"
+  tls_settings {
+    identity = "//test.global.123456789.workload.id.goog/ns/test-ns/sa/test-id"
+  }
+  description = "%{description}"
+}
+
+resource "google_compute_region_health_check" "default" {
+  name = "%{health_check_name}"
+  region = "europe-north1"
+  http_health_check {
+    port = 80
+  }
 }
 `, context)
 }

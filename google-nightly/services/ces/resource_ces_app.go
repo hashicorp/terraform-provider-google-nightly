@@ -250,6 +250,16 @@ Note: Language code is case-insensitive.`,
 										Type:     schema.TypeString,
 										Required: true,
 									},
+									"instruction": {
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The instruction used to synthesize speech when using a generative model.`,
+									},
+									"model": {
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The model used to synthesize audio.`,
+									},
 									"speaking_rate": {
 										Type:     schema.TypeFloat,
 										Optional: true,
@@ -605,6 +615,26 @@ correctness. Must be a float between 0 and 1. Default is 1.0.`,
 											},
 										},
 									},
+									"tool_matching_settings": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Description: `The tool matching settings. An extra tool call is a tool call that is
+present in the execution but does not match any tool call in the golden
+expectation.`,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"extra_tool_call_behavior": {
+													Type:         schema.TypeString,
+													Optional:     true,
+													ValidateFunc: verify.ValidateEnum([]string{"FAIL", "ALLOW", ""}),
+													Description: `Defines the behavior when an extra tool call is encountered. An extra
+tool call is a tool call that is present in the execution but does
+not match any tool call in the golden expectation. Possible values: ["FAIL", "ALLOW"]`,
+												},
+											},
+										},
+									},
 									"turn_level_metrics_thresholds": {
 										Type:        schema.TypeList,
 										Optional:    true,
@@ -617,6 +647,15 @@ correctness. Must be a float between 0 and 1. Default is 1.0.`,
 													Optional: true,
 													Description: `The success threshold for overall tool invocation correctness. Must be
 a float between 0 and 1. Default is 1.0.`,
+												},
+												"semantic_similarity_channel": {
+													Type:     schema.TypeString,
+													Optional: true,
+													Description: `The semantic similarity channel to use for evaluation.
+Possible values:
+SEMANTIC_SIMILARITY_CHANNEL_UNSPECIFIED
+TEXT
+AUDIO`,
 												},
 												"semantic_similarity_success_threshold": {
 													Type:     schema.TypeInt,
@@ -1967,6 +2006,8 @@ func flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigs(v interface{}, d 
 			"language_code": k,
 			"voice":         flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsVoice(original["voice"], d, config),
 			"speaking_rate": flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsSpeakingRate(original["speakingRate"], d, config),
+			"model":         flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsModel(original["model"], d, config),
+			"instruction":   flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsInstruction(original["instruction"], d, config),
 		})
 	}
 	return transformed
@@ -1976,6 +2017,14 @@ func flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsVoice(v interface{
 }
 
 func flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsSpeakingRate(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsModel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppAudioProcessingConfigSynthesizeSpeechConfigsInstruction(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2258,6 +2307,8 @@ func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholds(v
 		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsExpectationLevelMetricsThresholds(original["expectationLevelMetricsThresholds"], d, config)
 	transformed["turn_level_metrics_thresholds"] =
 		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholds(original["turnLevelMetricsThresholds"], d, config)
+	transformed["tool_matching_settings"] =
+		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettings(original["toolMatchingSettings"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsExpectationLevelMetricsThresholds(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -2290,6 +2341,8 @@ func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTu
 		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsOverallToolInvocationCorrectnessThreshold(original["overallToolInvocationCorrectnessThreshold"], d, config)
 	transformed["semantic_similarity_success_threshold"] =
 		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilaritySuccessThreshold(original["semanticSimilaritySuccessThreshold"], d, config)
+	transformed["semantic_similarity_channel"] =
+		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilarityChannel(original["semanticSimilarityChannel"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsOverallToolInvocationCorrectnessThreshold(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -2311,6 +2364,27 @@ func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTu
 	}
 
 	return v // let terraform core handle it otherwise
+}
+
+func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilarityChannel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["extra_tool_call_behavior"] =
+		flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettingsExtraToolCallBehavior(original["extraToolCallBehavior"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettingsExtraToolCallBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
 }
 
 func flattenCESAppEvaluationMetricsThresholdsGoldenHallucinationMetricBehavior(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -3036,6 +3110,20 @@ func expandCESAppAudioProcessingConfigSynthesizeSpeechConfigs(v interface{}, d t
 			transformed["speakingRate"] = transformedSpeakingRate
 		}
 
+		transformedModel, err := expandCESAppAudioProcessingConfigSynthesizeSpeechConfigsModel(original["model"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedModel); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["model"] = transformedModel
+		}
+
+		transformedInstruction, err := expandCESAppAudioProcessingConfigSynthesizeSpeechConfigsInstruction(original["instruction"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedInstruction); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["instruction"] = transformedInstruction
+		}
+
 		transformedLanguageCode, err := tpgresource.ExpandString(original["language_code"], d, config)
 		if err != nil {
 			return nil, err
@@ -3050,6 +3138,14 @@ func expandCESAppAudioProcessingConfigSynthesizeSpeechConfigsVoice(v interface{}
 }
 
 func expandCESAppAudioProcessingConfigSynthesizeSpeechConfigsSpeakingRate(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppAudioProcessingConfigSynthesizeSpeechConfigsModel(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppAudioProcessingConfigSynthesizeSpeechConfigsInstruction(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -3490,6 +3586,13 @@ func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholds(v 
 		transformed["turnLevelMetricsThresholds"] = transformedTurnLevelMetricsThresholds
 	}
 
+	transformedToolMatchingSettings, err := expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettings(original["tool_matching_settings"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedToolMatchingSettings); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["toolMatchingSettings"] = transformedToolMatchingSettings
+	}
+
 	return transformed, nil
 }
 
@@ -3545,6 +3648,13 @@ func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTur
 		transformed["semanticSimilaritySuccessThreshold"] = transformedSemanticSimilaritySuccessThreshold
 	}
 
+	transformedSemanticSimilarityChannel, err := expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilarityChannel(original["semantic_similarity_channel"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedSemanticSimilarityChannel); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["semanticSimilarityChannel"] = transformedSemanticSimilarityChannel
+	}
+
 	return transformed, nil
 }
 
@@ -3553,6 +3663,36 @@ func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTur
 }
 
 func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilaritySuccessThreshold(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsTurnLevelMetricsThresholdsSemanticSimilarityChannel(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettings(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedExtraToolCallBehavior, err := expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettingsExtraToolCallBehavior(original["extra_tool_call_behavior"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedExtraToolCallBehavior); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["extraToolCallBehavior"] = transformedExtraToolCallBehavior
+	}
+
+	return transformed, nil
+}
+
+func expandCESAppEvaluationMetricsThresholdsGoldenEvaluationMetricsThresholdsToolMatchingSettingsExtraToolCallBehavior(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

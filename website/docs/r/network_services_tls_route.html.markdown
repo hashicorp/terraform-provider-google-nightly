@@ -228,7 +228,6 @@ resource "google_network_services_tls_route" "default" {
 
 ```hcl
 resource "google_compute_backend_service" "default" {
-  provider              = google-beta
   name                  = "my-backend-service"
   load_balancing_scheme = "INTERNAL_MANAGED"
   protocol              = "TCP"
@@ -236,7 +235,6 @@ resource "google_compute_backend_service" "default" {
 }
 
 resource "google_compute_health_check" "default" {
-  provider = google-beta
   name     = "my-health-check"
 
   https_health_check {
@@ -245,13 +243,11 @@ resource "google_compute_health_check" "default" {
 }
 
 resource "google_compute_target_tcp_proxy" "default" {
-  provider              = google-beta
   name                  = "my-target-tcp-proxy"
   load_balancing_scheme = "INTERNAL_MANAGED"
 }
 
 resource "google_network_services_tls_route" "default" {
-  provider = google-beta
   name     = "my-tls-route"
 
   target_proxies = [
@@ -280,7 +276,6 @@ resource "google_network_services_tls_route" "default" {
 
 ```hcl
 resource "google_compute_region_backend_service" "default" {
-  provider    = google-beta
   name        = "my-backend-service"
   protocol    = "TCP"
   timeout_sec = 10
@@ -291,7 +286,6 @@ resource "google_compute_region_backend_service" "default" {
 }
 
 resource "google_compute_region_health_check" "default" {
-  provider           = google-beta
   name               = "my-health-check"
   region             = "europe-west4"
   timeout_sec        = 1
@@ -302,14 +296,12 @@ resource "google_compute_region_health_check" "default" {
 }
 
 resource "google_compute_region_target_tcp_proxy" "default" {
-  provider              = google-beta
   name                  = "my-target-tcp-proxy"
   region                = "europe-west4"
   load_balancing_scheme = "EXTERNAL_MANAGED"
 }
 
 resource "google_network_services_tls_route" "default" {
-  provider = google-beta
   name     = "my-tls-route"
   location = "europe-west4"
 

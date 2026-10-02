@@ -22,7 +22,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 )
 
-func TestAccDataLossPreventionStoredInfoType_dlpStoredInfoTypeCustomDiffFuncForceNew(t *testing.T) {
+func TestDataLossPreventionStoredInfoType_dlpStoredInfoTypeCustomDiffFuncForceNew(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]struct {

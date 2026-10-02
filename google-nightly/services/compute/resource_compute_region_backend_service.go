@@ -1319,6 +1319,13 @@ If it is not provided, the provider region is used.`,
 				DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
 				Description:      `The security policy associated with this backend service.`,
 			},
+			"service_lb_policy": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Description: `URL to networkservices.ServiceLbPolicy resource.
+Can only be set if load balancing scheme is EXTERNAL_MANAGED or INTERNAL_MANAGED.
+The service lb policy must be regional and in the same region as the backend service.`,
+			},
 			"session_affinity": {
 				Type:         schema.TypeString,
 				Computed:     true,
@@ -1418,11 +1425,23 @@ The full range of timeout values allowed goes from 1 through 2,147,483,647 secon
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"authentication_config": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:             schema.TypeString,
+							Optional:         true,
+							DiffSuppressFunc: suppressAuthenticationConfigWhenIdentitySet,
 							Description: `Reference to the BackendAuthenticationConfig resource from the networksecurity.googleapis.com namespace.
 Can be used in authenticating TLS connections to the backend, as specified by the authenticationMode field.
 Can only be specified if authenticationMode is not NONE.`,
+							ConflictsWith: []string{"tls_settings.0.identity"},
+						},
+						"identity": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Description: `The fully-specified SPIFFE ID without the spiffe:// scheme. Must be in the format //<trust_domain>/ns/<namespace>/sa/<subject>.
+The load balancer uses certificates and roots of trust provisioned by the Managed Workload Identity system for this identity.
+The Trust Domain within the identity must refer to a valid Workload Identity Pool, from which the TrustConfig and CertificateIssuanceConfig are inherited.
+If set, you cannot configure sni, subjectAltNames, or authenticationConfig manually.`,
+							ConflictsWith: []string{"tls_settings.0.authentication_config", "tls_settings.0.sni", "tls_settings.0.subject_alt_names"},
 						},
 						"sni": {
 							Type:     schema.TypeString,
@@ -1431,6 +1450,7 @@ Can only be specified if authenticationMode is not NONE.`,
 TLS connection to the backend, and requires that this string match a Subject Alternative Name (SAN) in the backend's
 server certificate. With a Regional Internet NEG backend, if the SNI is specified here, the load balancer uses it
 regardless of whether the Regional Internet NEG is specified with FQDN or IP address and port.`,
+							ConflictsWith: []string{"tls_settings.0.identity"},
 						},
 						"subject_alt_names": {
 							Type:     schema.TypeList,
@@ -1456,6 +1476,7 @@ subjectAltNames.`,
 									},
 								},
 							},
+							ConflictsWith: []string{"tls_settings.0.identity"},
 						},
 					},
 				},
@@ -1534,11 +1555,11 @@ partial URL.`,
 			"balancing_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: verify.ValidateEnum([]string{"UTILIZATION", "RATE", "CONNECTION", "CUSTOM_METRICS", ""}),
+				ValidateFunc: verify.ValidateEnum([]string{"UTILIZATION", "RATE", "CONNECTION", "CUSTOM_METRICS", "IN_FLIGHT", ""}),
 				Description: `Specifies the balancing mode for this backend.
 
 See the [Backend Services Overview](https://cloud.google.com/load-balancing/docs/backend-service#balancing-mode)
-for an explanation of load balancing modes. Default value: "UTILIZATION" Possible values: ["UTILIZATION", "RATE", "CONNECTION", "CUSTOM_METRICS"]`,
+for an explanation of load balancing modes. Default value: "UTILIZATION" Possible values: ["UTILIZATION", "RATE", "CONNECTION", "CUSTOM_METRICS", "IN_FLIGHT"]`,
 				Default: "UTILIZATION",
 			},
 			"capacity_scaler": {
@@ -1908,6 +1929,12 @@ func resourceComputeRegionBackendServiceCreate(d *schema.ResourceData, meta inte
 		return err
 	} else if v, ok := d.GetOkExists("params"); !tpgresource.IsEmptyValue(reflect.ValueOf(paramsProp)) && (ok || !reflect.DeepEqual(v, paramsProp)) {
 		obj["params"] = paramsProp
+	}
+	serviceLbPolicyProp, err := expandComputeRegionBackendServiceServiceLbPolicy(d.Get("service_lb_policy"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("service_lb_policy"); !tpgresource.IsEmptyValue(reflect.ValueOf(serviceLbPolicyProp)) && (ok || !reflect.DeepEqual(v, serviceLbPolicyProp)) {
+		obj["serviceLbPolicy"] = serviceLbPolicyProp
 	}
 	tlsSettingsProp, err := expandComputeRegionBackendServiceTlsSettings(d.Get("tls_settings"), d, config)
 	if err != nil {
@@ -2377,6 +2404,12 @@ func resourceComputeRegionBackendServiceUpdate(d *schema.ResourceData, meta inte
 		return err
 	} else if v, ok := d.GetOkExists("params"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, paramsProp)) {
 		obj["params"] = paramsProp
+	}
+	serviceLbPolicyProp, err := expandComputeRegionBackendServiceServiceLbPolicy(d.Get("service_lb_policy"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("service_lb_policy"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, serviceLbPolicyProp)) {
+		obj["serviceLbPolicy"] = serviceLbPolicyProp
 	}
 	tlsSettingsProp, err := expandComputeRegionBackendServiceTlsSettings(d.Get("tls_settings"), d, config)
 	if err != nil {
@@ -4204,6 +4237,10 @@ func flattenComputeRegionBackendServiceHaPolicyLeaderNetworkEndpointInstance(v i
 	return v
 }
 
+func flattenComputeRegionBackendServiceServiceLbPolicy(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenComputeRegionBackendServiceTlsSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return nil
@@ -4219,6 +4256,8 @@ func flattenComputeRegionBackendServiceTlsSettings(v interface{}, d *schema.Reso
 		flattenComputeRegionBackendServiceTlsSettingsSubjectAltNames(original["subjectAltNames"], d, config)
 	transformed["authentication_config"] =
 		flattenComputeRegionBackendServiceTlsSettingsAuthenticationConfig(original["authenticationConfig"], d, config)
+	transformed["identity"] =
+		flattenComputeRegionBackendServiceTlsSettingsIdentity(original["identity"], d, config)
 	return []interface{}{transformed}
 }
 func flattenComputeRegionBackendServiceTlsSettingsSni(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4254,6 +4293,10 @@ func flattenComputeRegionBackendServiceTlsSettingsSubjectAltNamesUniformResource
 }
 
 func flattenComputeRegionBackendServiceTlsSettingsAuthenticationConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenComputeRegionBackendServiceTlsSettingsIdentity(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -5999,6 +6042,10 @@ func expandComputeRegionBackendServiceParamsResourceManagerTags(v interface{}, d
 	return m, nil
 }
 
+func expandComputeRegionBackendServiceServiceLbPolicy(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandComputeRegionBackendServiceTlsSettings(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -6030,6 +6077,13 @@ func expandComputeRegionBackendServiceTlsSettings(v interface{}, d tpgresource.T
 		return nil, err
 	} else if val := reflect.ValueOf(transformedAuthenticationConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
 		transformed["authenticationConfig"] = transformedAuthenticationConfig
+	}
+
+	transformedIdentity, err := expandComputeRegionBackendServiceTlsSettingsIdentity(original["identity"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedIdentity); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["identity"] = transformedIdentity
 	}
 
 	return transformed, nil
@@ -6080,6 +6134,10 @@ func expandComputeRegionBackendServiceTlsSettingsSubjectAltNamesUniformResourceI
 }
 
 func expandComputeRegionBackendServiceTlsSettingsAuthenticationConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandComputeRegionBackendServiceTlsSettingsIdentity(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -6282,6 +6340,9 @@ func ResourceComputeRegionBackendServiceFlatten(d *schema.ResourceData, meta int
 		return fmt.Errorf("Error reading RegionBackendService: %s", err)
 	}
 	if err = d.Set("ha_policy", flattenComputeRegionBackendServiceHaPolicy(res["haPolicy"], d, config)); err != nil {
+		return fmt.Errorf("Error reading RegionBackendService: %s", err)
+	}
+	if err = d.Set("service_lb_policy", flattenComputeRegionBackendServiceServiceLbPolicy(res["serviceLbPolicy"], d, config)); err != nil {
 		return fmt.Errorf("Error reading RegionBackendService: %s", err)
 	}
 	if err = d.Set("tls_settings", flattenComputeRegionBackendServiceTlsSettings(res["tlsSettings"], d, config)); err != nil {

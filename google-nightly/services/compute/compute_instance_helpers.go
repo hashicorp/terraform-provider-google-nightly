@@ -728,6 +728,10 @@ func flattenNetworkInterfaces(d *schema.ResourceData, config *transport_tpg.Conf
 		if !ok && iface["igmpQuery"] != nil {
 			log.Printf("[WARN] flattenNetworkInterfaces: unexpected type for igmpQuery at index %d: %T", i, iface["igmpQuery"])
 		}
+		enableVpcScopedDns, ok := iface["enableVpcScopedDns"].(bool)
+		if !ok && iface["enableVpcScopedDns"] != nil {
+			log.Printf("[WARN] flattenNetworkInterfaces: unexpected type for enableVpcScopedDns at index %d: %T", i, iface["enableVpcScopedDns"])
+		}
 
 		subnet, err := tpgresource.ParseSubnetworkFieldValue(subnetwork, d, config)
 		if err != nil {
@@ -752,6 +756,7 @@ func flattenNetworkInterfaces(d *schema.ResourceData, config *transport_tpg.Conf
 			"queue_count":                 flattenNetworkInterfaceInt64(iface["queueCount"]),
 			"internal_ipv6_prefix_length": flattenNetworkInterfaceInt64(iface["internalIpv6PrefixLength"]),
 			"igmp_query":                  igmpQuery,
+			"enable_vpc_scoped_dns":       enableVpcScopedDns,
 		}
 		// Instance template interfaces never have names, so they're absent
 		// in the instance template network_interface schema. We want to use the
@@ -934,6 +939,9 @@ func expandNetworkInterfaces(d tpgresource.TerraformResourceData, config *transp
 		}
 		if networkAttachment != "" {
 			iface["networkAttachment"] = networkAttachment
+		}
+		if v, ok := data["enable_vpc_scoped_dns"].(bool); ok && v {
+			iface["enableVpcScopedDns"] = v
 		}
 		if v := int64(data["vlan"].(int)); v != 0 {
 			iface["vlan"] = v
@@ -1197,6 +1205,20 @@ func flattenConfidentialInstanceConfig(ConfidentialInstanceConfig map[string]int
 		"enable_confidential_compute": ConfidentialInstanceConfig["enableConfidentialCompute"],
 		"confidential_instance_type":  ConfidentialInstanceConfig["confidentialInstanceType"],
 	}}
+}
+
+func performanceMonitoringUnitDiffSuppress(_ string, old, new string, d *schema.ResourceData) bool {
+	// DiffSuppressFunc runs during planning, before IsNewResource is marked during apply.
+	// An empty ID identifies a resource that does not exist in state yet, so a new resource
+	// must send an explicitly configured STANDARD value to the API.
+	if d == nil || d.Id() == "" {
+		return false
+	}
+
+	// Existing resources may have recorded an empty value after the suppressor from
+	// https://github.com/GoogleCloudPlatform/magic-modules/pull/17887 omitted an
+	// explicitly configured STANDARD value during creation.
+	return (old == "" && new == "STANDARD") || (old == "STANDARD" && new == "")
 }
 
 func expandAdvancedMachineFeatures(d tpgresource.TerraformResourceData) map[string]interface{} {

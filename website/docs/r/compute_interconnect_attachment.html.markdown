@@ -312,6 +312,11 @@ The following arguments are supported:
   L2 Interconnect Attachment related configuration.
   Structure is [documented below](#nested_l2_forwarding).
 
+* `multicast_enabled` -
+  (Optional)
+  Whether the VLAN attachment is enabled for multicast. Multicast
+  packets will be dropped if this is not enabled.
+
 * `region` -
   (Optional)
   Region where the regional interconnect attachment resides.
