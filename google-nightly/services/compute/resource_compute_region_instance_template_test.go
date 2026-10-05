@@ -928,6 +928,7 @@ func TestAccComputeRegionInstanceTemplate_performanceMonitoringUnit(t *testing.T
 				Config: testAccComputeRegionInstanceTemplate_performanceMonitoringUnit(context_1),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckComputeRegionInstanceTemplateExists(t, "google_compute_region_instance_template.foobar", &instanceTemplate),
+					resource.TestCheckResourceAttr("google_compute_region_instance_template.foobar", "advanced_machine_features.0.performance_monitoring_unit", "STANDARD"),
 				),
 			},
 			{
@@ -1826,7 +1827,7 @@ func TestAccComputeRegionInstanceTemplate_gracefulShutdown(t *testing.T) {
 	invalid_3 := map[string]interface{}{
 		"instance_name": instanceName,
 		"enabled":       fmt.Sprintf("enabled = %t", true),
-		"seconds":       fmt.Sprintf("seconds = %d", 3601),
+		"seconds":       fmt.Sprintf("seconds = %d", 86400),
 		"nanos":         fmt.Sprintf("nanos = %d", 1000000),
 	}
 	invalid_4 := map[string]interface{}{
@@ -1851,7 +1852,7 @@ func TestAccComputeRegionInstanceTemplate_gracefulShutdown(t *testing.T) {
 			},
 			{
 				Config:      testAccComputeRegionInstanceTemplate_gracefulShutdown(invalid_3),
-				ExpectError: regexp.MustCompile("must be more than 1 second in the future and less than 1 hour., invalid"),
+				ExpectError: regexp.MustCompile("must be more than 1 second in the future and less than 6 hours., invalid"),
 			},
 			{
 				Config:      testAccComputeRegionInstanceTemplate_gracefulShutdown(invalid_4),
@@ -2021,7 +2022,8 @@ resource "google_compute_region_instance_template" "foobar" {
   }
 
   network_interface {
-	network_attachment = "%{network_attachment}"
+	network_attachment    = "%{network_attachment}"
+	enable_vpc_scoped_dns = true
   }
 }
 `, context)
@@ -3549,7 +3551,7 @@ resource "google_compute_network" "network" {
 }
 
 resource "google_compute_subnetwork" "subnetwork" {
-  name          = "subnetwork-%s"
+  name          = "tf-test-subnetwork-%s"
   ip_cidr_range = "10.0.0.0/24"
   region        = "us-central1"
   network       = google_compute_network.network.self_link
@@ -3641,7 +3643,7 @@ resource "google_compute_network" "network" {
 }
 
 resource "google_compute_subnetwork" "subnetwork" {
-  name          = "subnetwork-%s"
+  name          = "tf-test-subnetwork-%s"
   ip_cidr_range = "10.0.0.0/24"
   region        = "us-central1"
   network       = google_compute_network.network.self_link
@@ -3750,7 +3752,7 @@ resource "google_compute_network" "inst-test-network" {
 }
 
 resource "google_compute_subnetwork" "inst-test-subnetwork" {
-  name          = "inst-test-subnetwork-%s"
+  name          = "tf-test-inst-test-subnetwork-%s"
   ip_cidr_range = "10.0.0.0/16"
   region        = "us-central1"
   network       = google_compute_network.inst-test-network.self_link
@@ -5236,13 +5238,13 @@ func testAccComputeRegionInstanceTemplate_resourceManagerTags(context map[string
 	return acctest.Nprintf(`
 resource "google_tags_tag_key" "key" {
   parent = "projects/%{project}"
-  short_name = "foobarbaz%{random_suffix}"
+  short_name = "tf-test-foobarbaz%{random_suffix}"
   description = "For foo/bar resources."
 }
 
 resource "google_tags_tag_value" "value" {
   parent = google_tags_tag_key.key.id
-  short_name = "foo%{random_suffix}"
+  short_name = "tf-test-foo%{random_suffix}"
   description = "For foo resources."
 }
 

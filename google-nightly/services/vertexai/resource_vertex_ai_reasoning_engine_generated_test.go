@@ -438,8 +438,8 @@ func TestAccVertexAIReasoningEngine_vertexAiReasoningEngineFullExample(t *testin
 		"bucket_name":        "tf-test-reasoning-engine" + randomSuffix,
 		"kms_key_name":       kms.BootstrapKMSKeyWithPurposeInLocationAndName(t, "ENCRYPT_DECRYPT", "us-central1", "tf-bootstrap-re-key1").CryptoKey.Name,
 		"name":               "tf-test-reasoning-engine" + randomSuffix,
-		"secret_name":        "secret" + randomSuffix,
-		"service_account_id": "sa" + randomSuffix,
+		"secret_name":        "tf-test-secret" + randomSuffix,
+		"service_account_id": "tf-test-sa" + randomSuffix,
 		"random_suffix":      randomSuffix,
 	}
 
@@ -702,7 +702,7 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
   context_spec {
     memory_bank_config {
       generation_config {
-        model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/gemini-2.5-flash"
+        model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/gemini-3.5-flash"
         generation_trigger_config {
           generation_rule {
             idle_duration       = "300s"
@@ -914,7 +914,7 @@ resource "google_vertex_ai_reasoning_engine" "reasoning_engine" {
   context_spec {
     memory_bank_config {
       generation_config {
-        model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/gemini-2.5-flash"
+        model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/gemini-3.5-flash"
       }
       similarity_search_config {
         embedding_model = "projects/${data.google_project.project.project_id}/locations/us-central1/publishers/google/models/text-embedding-005"

@@ -455,7 +455,7 @@ func TestAccComputeGlobalForwardingRule_globalForwardingRuleHttpExample(t *testi
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"backend_service_name": "backend" + randomSuffix,
+		"backend_service_name": "tf-test-backend" + randomSuffix,
 		"forwarding_rule_name": "tf-test-global-rule" + randomSuffix,
 		"http_proxy_name":      "tf-test-target-proxy" + randomSuffix,
 		"random_suffix":        randomSuffix,
@@ -500,7 +500,7 @@ resource "google_compute_target_http_proxy" "default" {
 }
 
 resource "google_compute_url_map" "default" {
-  name            = "url-map-%{http_proxy_name}"
+  name            = "%{http_proxy_name}-url-map"
   description     = "a description"
   default_service = google_compute_backend_service.default.id
 
@@ -530,7 +530,7 @@ resource "google_compute_backend_service" "default" {
 }
 
 resource "google_compute_health_check" "default" {
-  name               = "check-%{backend_service_name}"
+  name               = "%{backend_service_name}-check"
   check_interval_sec = 1
   timeout_sec        = 1
   http_health_check {
@@ -547,7 +547,7 @@ func TestAccComputeGlobalForwardingRule_globalForwardingRuleInternalExample(t *t
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"backend_service_name": "backend" + randomSuffix,
+		"backend_service_name": "tf-test-backend" + randomSuffix,
 		"forwarding_rule_name": "tf-test-global-rule" + randomSuffix,
 		"http_proxy_name":      "tf-test-target-proxy" + randomSuffix,
 		"igm_name":             "tf-test-igm-internal" + randomSuffix,
@@ -605,7 +605,7 @@ resource "google_compute_target_http_proxy" "default" {
 
 resource "google_compute_url_map" "default" {
   provider        = google-beta
-  name            = "url-map-%{http_proxy_name}"
+  name            = "%{http_proxy_name}-url-map"
   description     = "a description"
   default_service = google_compute_backend_service.default.id
 
@@ -663,7 +663,7 @@ resource "google_compute_instance_group_manager" "igm" {
 
 resource "google_compute_instance_template" "instance_template" {
   provider     = google-beta
-  name         = "template-%{backend_service_name}"
+  name         = "%{backend_service_name}-template"
   machine_type = "e2-medium"
 
   network_interface {
@@ -679,7 +679,7 @@ resource "google_compute_instance_template" "instance_template" {
 
 resource "google_compute_health_check" "default" {
   provider           = google-beta
-  name               = "check-%{backend_service_name}"
+  name               = "%{backend_service_name}-check"
   check_interval_sec = 1
   timeout_sec        = 1
 
@@ -696,7 +696,7 @@ func TestAccComputeGlobalForwardingRule_globalForwardingRuleExternalManagedExamp
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"backend_service_name": "backend" + randomSuffix,
+		"backend_service_name": "tf-test-backend" + randomSuffix,
 		"forwarding_rule_name": "tf-test-global-rule" + randomSuffix,
 		"http_proxy_name":      "tf-test-target-proxy" + randomSuffix,
 		"random_suffix":        randomSuffix,
@@ -743,7 +743,7 @@ resource "google_compute_target_http_proxy" "default" {
 }
 
 resource "google_compute_url_map" "default" {
-  name            = "url-map-%{http_proxy_name}"
+  name            = "%{http_proxy_name}-url-map"
   description     = "a description"
   default_service = google_compute_backend_service.default.id
 
@@ -914,7 +914,7 @@ resource "google_compute_health_check" "default" {
 }
 
 resource "google_compute_url_map" "default" {
-  name            = "url-map-%{http_proxy_name}"
+  name            = "%{http_proxy_name}-url-map"
   description     = "a description"
   default_service = google_compute_backend_service.default.id
 
@@ -1194,7 +1194,7 @@ func TestAccComputeGlobalForwardingRule_privateServiceConnectGoogleApisExample(t
 
 	context := map[string]interface{}{
 		"project":              envvar.GetTestProjectFromEnv(),
-		"forwarding_rule_name": "globalrule" + randomSuffix,
+		"forwarding_rule_name": "frtest" + randomSuffix,
 		"global_address_name":  "tf-test-global-psconnect-ip" + randomSuffix,
 		"network_name":         "tf-test-my-network" + randomSuffix,
 		"subnetwork_name":      "tf-test-my-subnetwork" + randomSuffix,
@@ -1277,7 +1277,7 @@ func TestAccComputeGlobalForwardingRule_privateServiceConnectGoogleApisNoAutomat
 
 	context := map[string]interface{}{
 		"project":              envvar.GetTestProjectFromEnv(),
-		"forwarding_rule_name": "globalrule" + randomSuffix,
+		"forwarding_rule_name": "frtest" + randomSuffix,
 		"global_address_name":  "tf-test-global-psconnect-ip" + randomSuffix,
 		"network_name":         "tf-test-my-network" + randomSuffix,
 		"subnetwork_name":      "tf-test-my-subnetwork" + randomSuffix,

@@ -1,4 +1,5 @@
 # Copyright IBM Corp. 2014, 2026
+# Copyright 2026 Google LLC
 # SPDX-License-Identifier: MPL-2.0
 resource: google_compute_interconnect_attachment
 generation_type: mmv1
@@ -40,6 +41,7 @@ fields:
     - api_field: labelFingerprint
     - api_field: labels
     - api_field: mtu
+    - api_field: multicastEnabled
     - api_field: name
     - api_field: pairingKey
     - api_field: params.resourceManagerTags

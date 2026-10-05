@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
@@ -735,9 +736,13 @@ func TestAccComputeBackendService_backendServiceInFlightExample(t *testing.T) {
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"backend_service_name": "tf-test-backend-service" + randomSuffix,
-		"health_check_name":    "tf-test-health-check" + randomSuffix,
-		"random_suffix":        randomSuffix,
+		"backend_service_name":   "tf-test-backend-service" + randomSuffix,
+		"health_check_name":      "tf-test-health-check" + randomSuffix,
+		"igm_name":               "tf-test-instance-group-manager" + randomSuffix,
+		"instance_template_name": "tf-test-instance-template" + randomSuffix,
+		"network_name":           "tf-test-custom-vpc" + randomSuffix,
+		"subnetwork_name":        "tf-test-custom-subnet" + randomSuffix,
+		"random_suffix":          randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -768,13 +773,13 @@ func testAccComputeBackendService_backendServiceInFlightExample(context map[stri
 	return acctest.Nprintf(`
 resource "google_compute_network" "custom" {
   provider              = google-beta
-  name                    = "custom-vpc"
+  name                    = "%{network_name}"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "default" {
   provider              = google-beta
-  name          = "custom-subnet"
+  name          = "%{subnetwork_name}"
   ip_cidr_range = "10.0.0.0/24"
   region        = "us-central1"
   network       = google_compute_network.custom.id
@@ -782,7 +787,7 @@ resource "google_compute_subnetwork" "default" {
 
 resource "google_compute_instance_template" "default" {
   provider              = google-beta
-  name                  = "instance-template"
+  name                  = "%{instance_template_name}"
   machine_type          = "e2-micro"
 
   disk {
@@ -809,7 +814,7 @@ resource "google_compute_instance_template" "default" {
 
 resource "google_compute_region_instance_group_manager" "foobar" {
   provider              = google-beta
-  name               = "instance-group-manager"
+  name               = "%{igm_name}"
   base_instance_name = "vm"
   region             = "us-central1"
 
@@ -955,7 +960,7 @@ func TestAccComputeBackendService_backendServiceCustomMetricsExample(t *testing.
 		"backend_service_name": "tf-test-backend-service" + randomSuffix,
 		"default_neg_name":     "tf-test-network-endpoint" + randomSuffix,
 		"health_check_name":    "tf-test-health-check" + randomSuffix,
-		"network_name":         "network" + randomSuffix,
+		"network_name":         "tf-test-network" + randomSuffix,
 		"random_suffix":        randomSuffix,
 	}
 
@@ -1049,7 +1054,7 @@ func TestAccComputeBackendService_backendServiceTlsSettingsExample(t *testing.T)
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"authentication_name":  "authentication" + randomSuffix,
+		"authentication_name":  "tf-test-authentication" + randomSuffix,
 		"backend_service_name": "tf-test-backend-service" + randomSuffix,
 		"health_check_name":    "tf-test-health-check" + randomSuffix,
 		"random_suffix":        randomSuffix,
@@ -1108,6 +1113,91 @@ resource "google_compute_health_check" "default" {
 resource "google_network_security_backend_authentication_config" "default" {
   name             = "%{authentication_name}"
   well_known_roots = "PUBLIC_ROOTS"
+}
+`, context)
+}
+
+func TestAccComputeBackendService_backendServiceIdentityExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"backend_service_name": "tf-test-backend-service" + randomSuffix,
+		"description":          "description",
+		"health_check_name":    "tf-test-health-check" + randomSuffix,
+		"random_suffix":        randomSuffix,
+	}
+
+	context_1 := map[string]interface{}{
+		"backend_service_name": "tf-test-backend-service" + randomSuffix,
+		"description":          "updated description",
+		"health_check_name":    "tf-test-health-check" + randomSuffix,
+		"random_suffix":        randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeBackendServiceDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeBackendService_backendServiceIdentityExample(context),
+			},
+			{
+				ResourceName:            "google_compute_backend_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"iap.0.oauth2_client_id", "iap.0.oauth2_client_id_wo", "iap.0.oauth2_client_id_wo_version", "iap.0.oauth2_client_secret", "iap.0.oauth2_client_secret_wo", "iap.0.oauth2_client_secret_wo_version", "params", "security_settings.0.aws_v4_authentication.0.access_key"},
+			},
+			{
+				ResourceName:       "google_compute_backend_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+			{
+				Config: testAccComputeBackendService_backendServiceIdentityExample(context_1),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_compute_backend_service.default", plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ResourceName:            "google_compute_backend_service.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"iap.0.oauth2_client_id", "iap.0.oauth2_client_id_wo", "iap.0.oauth2_client_id_wo_version", "iap.0.oauth2_client_secret", "iap.0.oauth2_client_secret_wo", "iap.0.oauth2_client_secret_wo_version", "params", "security_settings.0.aws_v4_authentication.0.access_key"},
+			},
+			{
+				ResourceName:       "google_compute_backend_service.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccComputeBackendService_backendServiceIdentityExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_backend_service" "default" {
+  name          = "%{backend_service_name}"
+  health_checks = [google_compute_health_check.default.id]
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  protocol = "HTTPS"
+  tls_settings {
+    identity = "//test.global.123456789.workload.id.goog/ns/test-ns/sa/test-id"
+  }
+  description = "%{description}"
+}
+
+resource "google_compute_health_check" "default" {
+  name = "%{health_check_name}"
+  http_health_check {
+    port = 80
+  }
 }
 `, context)
 }

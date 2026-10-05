@@ -2267,6 +2267,7 @@ func TestAccComputeInstance_performanceMonitoringUnit(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckComputeInstanceExists(
 						t, "google_compute_instance.foobar", &instance),
+					resource.TestCheckResourceAttr("google_compute_instance.foobar", "advanced_machine_features.0.performance_monitoring_unit", "STANDARD"),
 				),
 			},
 			computeInstanceImportStep("us-central1-a", context_1["instance_name"].(string), []string{"allow_stopping_for_update"}),
@@ -4813,7 +4814,7 @@ func TestAccComputeInstance_GracefulShutdownWithResetUpdate(t *testing.T) {
 		"instance_name":             instanceName,
 		"allow_stopping_for_update": fmt.Sprintf("allow_stopping_for_update = %t", true),
 		"enabled":                   fmt.Sprintf("enabled = %t", true),
-		"seconds":                   fmt.Sprintf("seconds = %d", 3601),
+		"seconds":                   fmt.Sprintf("seconds = %d", 86400),
 		"nanos":                     "",
 	}
 	ivalid_2 := map[string]interface{}{
@@ -4857,7 +4858,7 @@ func TestAccComputeInstance_GracefulShutdownWithResetUpdate(t *testing.T) {
 			},
 			{
 				Config:      testAccComputeInstance_GracefulShutdownUpdate(ivalid_1),
-				ExpectError: regexp.MustCompile("must be more than 1 second in the future and less than 1 hour., invalid"),
+				ExpectError: regexp.MustCompile("must be more than 1 second in the future and less than 6 hours., invalid"),
 			},
 			{
 				Config:      testAccComputeInstance_GracefulShutdownUpdate(ivalid_2),
@@ -4911,7 +4912,7 @@ func TestAccComputeInstance_GracefulShutdownWithoutResetUpdate(t *testing.T) {
 		"instance_name":             instanceName,
 		"allow_stopping_for_update": "",
 		"enabled":                   fmt.Sprintf("enabled = %t", true),
-		"seconds":                   fmt.Sprintf("seconds = %d", 3601),
+		"seconds":                   fmt.Sprintf("seconds = %d", 86400),
 		"nanos":                     "",
 	}
 	ivalid_4 := map[string]interface{}{
@@ -4960,7 +4961,7 @@ func TestAccComputeInstance_GracefulShutdownWithoutResetUpdate(t *testing.T) {
 			},
 			{
 				Config:      testAccComputeInstance_GracefulShutdownUpdate(ivalid_3),
-				ExpectError: regexp.MustCompile("must be more than 1 second in the future and less than 1 hour., invalid"),
+				ExpectError: regexp.MustCompile("must be more than 1 second in the future and less than 6 hours., invalid"),
 			},
 			{
 				Config:      testAccComputeInstance_GracefulShutdownUpdate(ivalid_4),
@@ -5138,7 +5139,7 @@ func testAccComputeInstance_nic_securityPolicyCreateWithTwoAccessConfigsUpdateSe
 				// before creating a new one. Only one can exist per region.
 				PreConfig: func() {
 					config := acctest.GoogleProviderConfig(t)
-					client := tpgcompute.NewClient(config, config.UserAgent)
+					client := tpgcompute.DEPRECATED_LegacyApiaryClient(config, config.UserAgent)
 					found, err := client.NetworkEdgeSecurityServices.AggregatedList(config.Project).Do()
 					if err != nil {
 						return
@@ -5617,7 +5618,7 @@ func TestAccComputeInstance_multiZone_switchZones_noDiff(t *testing.T) {
 			{
 				PreConfig: func() {
 					config := acctest.GoogleProviderConfig(t)
-					client := tpgcompute.NewClient(config, config.UserAgent)
+					client := tpgcompute.DEPRECATED_LegacyApiaryClient(config, config.UserAgent)
 
 					op, err := client.Instances.Delete(config.Project, zone1, instanceName).Do()
 					if err != nil {
@@ -5849,6 +5850,7 @@ func TestAccComputeInstance_NetworkAttachment(t *testing.T) {
 					testAccCheckComputeInstanceExists(
 						t, "google_compute_instance.foobar", &instance),
 					testAccCheckComputeInstanceHasNetworkAttachment(&instance, fmt.Sprintf("https://www.googleapis.com/compute/%s/%s", providerVersion, fullFormNetworkAttachmentName)),
+					resource.TestCheckResourceAttr("google_compute_instance.foobar", "network_interface.1.enable_vpc_scoped_dns", "true"),
 				),
 			},
 		},
@@ -7642,13 +7644,13 @@ func testAccComputeInstance_resourceManagerTags(context map[string]interface{}) 
 	return acctest.Nprintf(`
 resource "google_tags_tag_key" "key" {
   parent = "projects/%{project}"
-  short_name = "foobarbaz%{random_suffix}"
+  short_name = "tf-test-foobarbaz%{random_suffix}"
   description = "For foo/bar resources."
 }
 
 resource "google_tags_tag_value" "value" {
   parent      = google_tags_tag_key.key.id
-  short_name  = "foo%{random_suffix}"
+  short_name  = "tf-test-foo%{random_suffix}"
   description = "For foo resources."
 }
 
@@ -7688,25 +7690,25 @@ func testAccComputeInstance_resourceManagerTagsUpdate(context map[string]interfa
 	return acctest.Nprintf(`
 resource "google_tags_tag_key" "key" {
   parent = "projects/%{project}"
-  short_name = "foobarbaz%{random_suffix}"
+  short_name = "tf-test-foobarbaz%{random_suffix}"
   description = "For foo/bar resources."
 }
 
 resource "google_tags_tag_value" "value" {
   parent      = google_tags_tag_key.key.id
-  short_name  = "foo%{random_suffix}"
+  short_name  = "tf-test-foo%{random_suffix}"
   description = "For foo resources."
 }
 
 resource "google_tags_tag_key" "key_new" {
   parent = "projects/%{project}"
-  short_name = "foobarbaznew%{random_suffix}"
+  short_name = "tf-test-foobarbaznew%{random_suffix}"
   description = "New key for foo/bar resources."
 }
 
 resource "google_tags_tag_value" "value_new" {
   parent      = google_tags_tag_key.key_new.id
-  short_name  = "foonew%{random_suffix}"
+  short_name  = "tf-test-foonew%{random_suffix}"
   description = "New value for foo resources."
 }
 
@@ -7751,7 +7753,7 @@ data "google_compute_image" "my_image" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy" {
-  name    = "test-policy-%{random_suffix}"
+  name    = "tf-test-test-policy-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -7763,7 +7765,7 @@ resource "google_compute_resource_policy" "test-snapshot-policy" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy2" {
-  name    = "test-policy2-%{random_suffix}"
+  name    = "tf-test-test-policy2-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -7801,7 +7803,7 @@ data "google_compute_image" "my_image" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy" {
-  name    = "test-policy-%{random_suffix}"
+  name    = "tf-test-test-policy-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -7813,7 +7815,7 @@ resource "google_compute_resource_policy" "test-snapshot-policy" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy2" {
-  name    = "test-policy2-%{random_suffix}"
+  name    = "tf-test-test-policy2-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -7851,7 +7853,7 @@ data "google_compute_image" "my_image" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy" {
-  name    = "test-policy-%{random_suffix}"
+  name    = "tf-test-test-policy-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -7863,7 +7865,7 @@ resource "google_compute_resource_policy" "test-snapshot-policy" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy2" {
-  name    = "test-policy2-%{random_suffix}"
+  name    = "tf-test-test-policy2-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -7901,7 +7903,7 @@ data "google_compute_image" "my_image" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy" {
-  name    = "test-policy-%{random_suffix}"
+  name    = "tf-test-test-policy-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -7913,7 +7915,7 @@ resource "google_compute_resource_policy" "test-snapshot-policy" {
 }
 
 resource "google_compute_resource_policy" "test-snapshot-policy2" {
-  name    = "test-policy2-%{random_suffix}"
+  name    = "tf-test-test-policy2-%{random_suffix}"
   snapshot_schedule_policy {
     schedule {
       hourly_schedule {
@@ -10100,7 +10102,7 @@ resource "google_compute_network" "inst-test-network" {
 }
 
 resource "google_compute_subnetwork" "inst-test-subnetwork" {
-  name          = "inst-test-subnetwork-%s"
+  name          = "tf-test-subnetwork-%s"
   ip_cidr_range = "10.0.0.0/16"
   region        = "us-central1"
   network       = google_compute_network.inst-test-network.self_link
@@ -13815,7 +13817,8 @@ resource "google_compute_instance" "foobar" {
 	}
 
 	network_interface {
-		network_attachment = google_compute_network_attachment.test_network_attachment.self_link
+		network_attachment    = google_compute_network_attachment.test_network_attachment.self_link
+		enable_vpc_scoped_dns = true
 	}
 
 	metadata = {

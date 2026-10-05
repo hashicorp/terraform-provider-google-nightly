@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -69,7 +70,7 @@ func TestAccComputeInterconnectAttachment_interconnectAttachmentBasicExample(t *
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckComputeInterconnectAttachmentDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -132,7 +133,7 @@ func TestAccComputeInterconnectAttachment_interconnectAttachmentDedicatedExample
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckComputeInterconnectAttachmentDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -211,7 +212,7 @@ func TestAccComputeInterconnectAttachment_computeInterconnectAttachmentIpsecEncr
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckComputeInterconnectAttachmentDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -285,7 +286,7 @@ func TestAccComputeInterconnectAttachment_computeInterconnectAttachmentCustomRan
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
 		CheckDestroy:             testAccCheckComputeInterconnectAttachmentDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -326,6 +327,86 @@ resource "google_compute_interconnect_attachment" "custom-ranges-interconnect-at
 resource "google_compute_router" "foobar" {
   name     = "%{router_name}"
   network  = google_compute_network.foobar.name
+  bgp {
+    asn = 16550
+  }
+}
+
+resource "google_compute_network" "foobar" {
+  name                    = "%{network_name}"
+  auto_create_subnetworks = false
+}
+`, context)
+}
+
+func TestAccComputeInterconnectAttachment_interconnectAttachmentMulticastEnabledExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"interconnect_attachment_name": "tf-test-on-prem-attachment" + randomSuffix,
+		"interconnect_name":            "tf-test-interconnect-1" + randomSuffix,
+		"network_name":                 "tf-test-network-1" + randomSuffix,
+		"router_name":                  "tf-test-router-1" + randomSuffix,
+		"random_suffix":                randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		CheckDestroy:             testAccCheckComputeInterconnectAttachmentDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeInterconnectAttachment_interconnectAttachmentMulticastEnabledExample(context),
+			},
+			{
+				ResourceName:            "google_compute_interconnect_attachment.on_prem",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"candidate_subnets", "labels", "params", "region", "router", "subnet_length", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_compute_interconnect_attachment.on_prem",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccComputeInterconnectAttachment_interconnectAttachmentMulticastEnabledExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+data "google_project" "project" {}
+
+resource "google_compute_interconnect" "foobar" {
+  name                 = "%{interconnect_name}"
+  customer_name        = "internal_customer" # Special customer only available for Google testing.
+  interconnect_type    = "DEDICATED"
+  link_type            = "LINK_TYPE_ETHERNET_10G_LR"
+  requested_link_count = 1
+  location             = "https://www.googleapis.com/compute/v1/projects/${data.google_project.project.name}/global/interconnectLocations/z2z-us-east4-zone1-nciadf-a" # Special location only available for Google testing.
+}
+
+resource "google_compute_interconnect_attachment" "on_prem" {
+  name                     = "%{interconnect_attachment_name}"
+  type                     = "DEDICATED"
+  interconnect             = google_compute_interconnect.foobar.id
+  router                   = google_compute_router.foobar.id
+  mtu                      = 1500
+  subnet_length            = 29
+  vlan_tag8021q            = 1000
+  region                   = "https://www.googleapis.com/compute/v1/projects/${data.google_project.project.name}/regions/us-east4"
+  stack_type               = "IPV4_ONLY"
+  multicast_enabled        = true
+  labels                   = { mykey = "myvalue" }
+}
+
+resource "google_compute_router" "foobar" {
+  name    = "%{router_name}"
+  network = google_compute_network.foobar.name
+  region  = "us-east4"
   bgp {
     asn = 16550
   }

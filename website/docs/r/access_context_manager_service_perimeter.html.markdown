@@ -1185,6 +1185,9 @@ In addition to the arguments listed above, the following computed attributes are
 * `update_time` -
   Time the AccessPolicy was updated in UTC.
 
+* `etag` -
+  The etag for the version of the ServicePerimeter that this request is based on.
+
 
 ## Timeouts
 

@@ -1111,6 +1111,32 @@ subnetwork with the same name with the network will be used.`,
 								},
 							},
 						},
+						"workload_identity_config": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: `Workload identity settings for this Revision.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"identity": {
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The Revision's SPIFFE workload identity. Enables provisioning of SPIFFE workload certificates.`,
+									},
+									"identity_certificate_enabled": {
+										Type:        schema.TypeBool,
+										Optional:    true,
+										Description: `Controls whether an instance receives a MWLID certificate.`,
+									},
+									"identity_type": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: verify.ValidateEnum([]string{"IDENTITY_TYPE_SERVICE_ACCOUNT", "IDENTITY_TYPE_WORKLOAD_IDENTITY", "IDENTITY_TYPE_AGENT_IDENTITY", ""}),
+										Description:  `The type of identity to use. Possible values: ["IDENTITY_TYPE_SERVICE_ACCOUNT", "IDENTITY_TYPE_WORKLOAD_IDENTITY", "IDENTITY_TYPE_AGENT_IDENTITY"]`,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -1338,6 +1364,11 @@ For example, if ALPHA is provided as input, but only BETA and GA-level features 
 						},
 					},
 				},
+			},
+			"ssh_enabled": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: `Enables SSH access to the Service.`,
 			},
 			"tags": {
 				Type:     schema.TypeMap,
@@ -1821,6 +1852,12 @@ func resourceCloudRunV2ServiceCreate(d *schema.ResourceData, meta interface{}) e
 	} else if v, ok := d.GetOkExists("iap_enabled"); !tpgresource.IsEmptyValue(reflect.ValueOf(iapEnabledProp)) && (ok || !reflect.DeepEqual(v, iapEnabledProp)) {
 		obj["iapEnabled"] = iapEnabledProp
 	}
+	sshEnabledProp, err := expandCloudRunV2ServiceSshEnabled(d.Get("ssh_enabled"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("ssh_enabled"); !tpgresource.IsEmptyValue(reflect.ValueOf(sshEnabledProp)) && (ok || !reflect.DeepEqual(v, sshEnabledProp)) {
+		obj["sshEnabled"] = sshEnabledProp
+	}
 	effectiveLabelsProp, err := expandCloudRunV2ServiceEffectiveLabels(d.Get("effective_labels"), d, config)
 	if err != nil {
 		return err
@@ -2142,6 +2179,12 @@ func resourceCloudRunV2ServiceUpdate(d *schema.ResourceData, meta interface{}) e
 		return err
 	} else if v, ok := d.GetOkExists("iap_enabled"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, iapEnabledProp)) {
 		obj["iapEnabled"] = iapEnabledProp
+	}
+	sshEnabledProp, err := expandCloudRunV2ServiceSshEnabled(d.Get("ssh_enabled"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("ssh_enabled"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, sshEnabledProp)) {
+		obj["sshEnabled"] = sshEnabledProp
 	}
 	effectiveLabelsProp, err := expandCloudRunV2ServiceEffectiveLabels(d.Get("effective_labels"), d, config)
 	if err != nil {
@@ -2525,6 +2568,8 @@ func flattenCloudRunV2ServiceTemplate(v interface{}, d *schema.ResourceData, con
 		flattenCloudRunV2ServiceTemplateHealthCheckDisabled(original["healthCheckDisabled"], d, config)
 	transformed["sandboxes"] =
 		flattenCloudRunV2ServiceTemplateSandboxes(original["sandboxes"], d, config)
+	transformed["workload_identity_config"] =
+		flattenCloudRunV2ServiceTemplateWorkloadIdentityConfig(original["workloadIdentityConfig"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCloudRunV2ServiceTemplateRevision(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -3961,6 +4006,35 @@ func flattenCloudRunV2ServiceTemplateSandboxesTemplatesWorkingDir(v interface{},
 	return v
 }
 
+func flattenCloudRunV2ServiceTemplateWorkloadIdentityConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["identity"] =
+		flattenCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentity(original["identity"], d, config)
+	transformed["identity_certificate_enabled"] =
+		flattenCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityCertificateEnabled(original["identityCertificateEnabled"], d, config)
+	transformed["identity_type"] =
+		flattenCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityType(original["identityType"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentity(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityCertificateEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenCloudRunV2ServiceTraffic(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return v
@@ -4309,6 +4383,10 @@ func flattenCloudRunV2ServiceIapEnabled(v interface{}, d *schema.ResourceData, c
 	return v
 }
 
+func flattenCloudRunV2ServiceSshEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenCloudRunV2ServiceTerraformLabels(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return v
@@ -4614,6 +4692,13 @@ func expandCloudRunV2ServiceTemplate(v interface{}, d tpgresource.TerraformResou
 		return nil, err
 	} else if val := reflect.ValueOf(transformedSandboxes); val.IsValid() && !tpgresource.IsEmptyValue(val) {
 		transformed["sandboxes"] = transformedSandboxes
+	}
+
+	transformedWorkloadIdentityConfig, err := expandCloudRunV2ServiceTemplateWorkloadIdentityConfig(original["workload_identity_config"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedWorkloadIdentityConfig); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["workloadIdentityConfig"] = transformedWorkloadIdentityConfig
 	}
 
 	return transformed, nil
@@ -6547,6 +6632,54 @@ func expandCloudRunV2ServiceTemplateSandboxesTemplatesWorkingDir(v interface{}, 
 	return v, nil
 }
 
+func expandCloudRunV2ServiceTemplateWorkloadIdentityConfig(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedIdentity, err := expandCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentity(original["identity"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedIdentity); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["identity"] = transformedIdentity
+	}
+
+	transformedIdentityCertificateEnabled, err := expandCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityCertificateEnabled(original["identity_certificate_enabled"], d, config)
+	if err != nil {
+		return nil, err
+	} else {
+		transformed["identityCertificateEnabled"] = transformedIdentityCertificateEnabled
+	}
+
+	transformedIdentityType, err := expandCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityType(original["identity_type"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedIdentityType); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["identityType"] = transformedIdentityType
+	}
+
+	return transformed, nil
+}
+
+func expandCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentity(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityCertificateEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCloudRunV2ServiceTemplateWorkloadIdentityConfigIdentityType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandCloudRunV2ServiceTraffic(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -6775,6 +6908,10 @@ func expandCloudRunV2ServiceIapEnabled(v interface{}, d tpgresource.TerraformRes
 	return v, nil
 }
 
+func expandCloudRunV2ServiceSshEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandCloudRunV2ServiceEffectiveLabels(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (map[string]string, error) {
 	if v == nil {
 		return map[string]string{}, nil
@@ -6903,6 +7040,9 @@ func ResourceCloudRunV2ServiceFlatten(d *schema.ResourceData, meta interface{}, 
 		return fmt.Errorf("Error reading Service: %s", err)
 	}
 	if err = d.Set("iap_enabled", flattenCloudRunV2ServiceIapEnabled(res["iapEnabled"], d, config)); err != nil {
+		return fmt.Errorf("Error reading Service: %s", err)
+	}
+	if err = d.Set("ssh_enabled", flattenCloudRunV2ServiceSshEnabled(res["sshEnabled"], d, config)); err != nil {
 		return fmt.Errorf("Error reading Service: %s", err)
 	}
 	if err = d.Set("terraform_labels", flattenCloudRunV2ServiceTerraformLabels(res["labels"], d, config)); err != nil {

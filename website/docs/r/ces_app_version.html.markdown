@@ -279,6 +279,12 @@ In addition to the arguments listed above, the following computed attributes are
   List of toolsets for the agent.
   Structure is [documented below](#nested_snapshot_agents_toolsets).
 
+* `transfer_rules` -
+  (Output)
+  List of transfer rules for the agent.
+  If multiple rules match, the first one in the list will be used.
+  Structure is [documented below](#nested_snapshot_agents_transfer_rules).
+
 * `update_time` -
   (Output)
   Timestamp when the agent was last updated.
@@ -295,6 +301,15 @@ In addition to the arguments listed above, the following computed attributes are
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
 
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
+
 * `python_code` -
   (Output)
   The python code to execute for the callback.
@@ -309,6 +324,15 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
+
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
 
 * `python_code` -
   (Output)
@@ -325,6 +349,15 @@ In addition to the arguments listed above, the following computed attributes are
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
 
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
+
 * `python_code` -
   (Output)
   The python code to execute for the callback.
@@ -339,6 +372,15 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
+
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
 
 * `python_code` -
   (Output)
@@ -355,6 +397,15 @@ In addition to the arguments listed above, the following computed attributes are
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
 
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
+
 * `python_code` -
   (Output)
   The python code to execute for the callback.
@@ -369,6 +420,15 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
+
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
 
 * `python_code` -
   (Output)
@@ -433,6 +493,75 @@ In addition to the arguments listed above, the following computed attributes are
 * `tool_ids` -
   (Output)
   The tools IDs to filter the toolset.
+
+<a name="nested_snapshot_agents_transfer_rules"></a>The `transfer_rules` block contains:
+
+* `child_agent` -
+  (Output)
+  The resource name of the child agent the rule applies to.
+  Format: `projects/{project}/locations/{location}/apps/{app}/agents/{agent}`
+
+* `deterministic_transfer` -
+  (Output)
+  Deterministic transfer rule. When the condition evaluates to true, the
+  transfer occurs.
+  Structure is [documented below](#nested_snapshot_agents_transfer_rules_deterministic_transfer).
+
+* `direction` -
+  (Output)
+  The direction of the transfer.
+  Possible values:
+  * PARENT_TO_CHILD
+  * CHILD_TO_PARENT
+
+* `disable_planner_transfer` -
+  (Output)
+  A rule that prevents the planner from transferring to the target agent.
+  Structure is [documented below](#nested_snapshot_agents_transfer_rules_disable_planner_transfer).
+
+
+<a name="nested_snapshot_agents_transfer_rules_deterministic_transfer"></a>The `deterministic_transfer` block contains:
+
+* `expression_condition` -
+  (Output)
+  A rule that evaluates a session state condition. If the condition
+  evaluates to true, the transfer occurs.
+  Structure is [documented below](#nested_snapshot_agents_transfer_rules_deterministic_transfer_expression_condition).
+
+* `python_code_condition` -
+  (Output)
+  A rule that uses Python code block to evaluate the conditions. If the
+  condition evaluates to true, the transfer occurs.
+  Structure is [documented below](#nested_snapshot_agents_transfer_rules_deterministic_transfer_python_code_condition).
+
+
+<a name="nested_snapshot_agents_transfer_rules_deterministic_transfer_expression_condition"></a>The `expression_condition` block contains:
+
+* `expression` -
+  (Output)
+  The string representation of cloud.api.Expression condition.
+
+<a name="nested_snapshot_agents_transfer_rules_deterministic_transfer_python_code_condition"></a>The `python_code_condition` block contains:
+
+* `python_code` -
+  (Output)
+  The python code to execute. The function must be named
+  `should_trigger_transfer_callback`.
+
+<a name="nested_snapshot_agents_transfer_rules_disable_planner_transfer"></a>The `disable_planner_transfer` block contains:
+
+* `expression_condition` -
+  (Output)
+  If the condition evaluates to true, planner will not be allowed to
+  transfer to the target agent.
+  Structure is [documented below](#nested_snapshot_agents_transfer_rules_disable_planner_transfer_expression_condition).
+
+
+<a name="nested_snapshot_agents_transfer_rules_disable_planner_transfer_expression_condition"></a>The `expression_condition` block contains:
+
+* `expression` -
+  (Output)
+  The string representation of cloud.api.Expression condition.
 
 <a name="nested_snapshot_app"></a>The `app` block contains:
 
@@ -797,6 +926,13 @@ In addition to the arguments listed above, the following computed attributes are
   Turn level metrics thresholds.
   Structure is [documented below](#nested_snapshot_app_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_turn_level_metrics_thresholds).
 
+* `tool_matching_settings` -
+  (Output)
+  The tool matching settings. An extra tool call is a tool call that is
+  present in the execution but does not match any tool call in the golden
+  expectation.
+  Structure is [documented below](#nested_snapshot_app_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_tool_matching_settings).
+
 
 <a name="nested_snapshot_app_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_expectation_level_metrics_thresholds"></a>The `expectation_level_metrics_thresholds` block contains:
 
@@ -816,6 +952,25 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   The success threshold for semantic similarity. Must be an integer
   between 0 and 4. Default is >= 3.
+
+* `semantic_similarity_channel` -
+  (Output)
+  The semantic similarity channel to use for evaluation.
+  Possible values:
+  SEMANTIC_SIMILARITY_CHANNEL_UNSPECIFIED
+  TEXT
+  AUDIO
+
+<a name="nested_snapshot_app_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_tool_matching_settings"></a>The `tool_matching_settings` block contains:
+
+* `extra_tool_call_behavior` -
+  (Output)
+  Defines the behavior when an extra tool call is encountered. An extra
+  tool call is a tool call that is present in the execution but does
+  not match any tool call in the golden expectation.
+  Possible values:
+  FAIL
+  ALLOW
 
 <a name="nested_snapshot_app_language_settings"></a>The `language_settings` block contains:
 
@@ -1521,6 +1676,15 @@ In addition to the arguments listed above, the following computed attributes are
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
 
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
+
 * `python_code` -
   (Output)
   The python code to execute for the callback.
@@ -1535,6 +1699,15 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
+
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
 
 * `python_code` -
   (Output)
@@ -1551,6 +1724,15 @@ In addition to the arguments listed above, the following computed attributes are
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
 
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
+
 * `python_code` -
   (Output)
   The python code to execute for the callback.
@@ -1565,6 +1747,15 @@ In addition to the arguments listed above, the following computed attributes are
   (Output)
   Whether the callback is disabled. Disabled callbacks are ignored by the
   agent.
+
+* `proactive_execution_enabled` -
+  (Output)
+  If enabled, the callback will also be executed on intermediate model
+  outputs. This setting only affects after model callback.
+  **ENABLE WITH CAUTION**. Typically after model callback only needs to be
+  executed after receiving all model responses. Enabling proactive execution
+  may have negative implication on the execution cost and latency, and
+  should only be enabled in rare situations.
 
 * `python_code` -
   (Output)

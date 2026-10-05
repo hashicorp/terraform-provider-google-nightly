@@ -137,9 +137,13 @@ resource "google_ces_app" "ces_app_basic" {
       turn_level_metrics_thresholds {
         semantic_similarity_success_threshold        = 3
         overall_tool_invocation_correctness_threshold = 1.0
+        semantic_similarity_channel                   = "TEXT"
       }
       expectation_level_metrics_thresholds {
         tool_invocation_parameter_correctness_threshold = 1.0
+      }
+      tool_matching_settings {
+        extra_tool_call_behavior = "ALLOW"
       }
     }
     golden_hallucination_metric_behavior   = "ENABLED"
@@ -635,6 +639,14 @@ The following arguments are supported:
   speed supported by the specific voice. 2.0 is twice as fast, and 0.5 is
   half as fast. Values outside of the range [0.25, 2.0] will return an error.
 
+* `model` -
+  (Optional)
+  The model used to synthesize audio.
+
+* `instruction` -
+  (Optional)
+  The instruction used to synthesize speech when using a generative model.
+
 <a name="nested_data_store_settings"></a>The `data_store_settings` block supports:
 
 * `engines` -
@@ -824,6 +836,13 @@ The following arguments are supported:
   Turn level metrics thresholds.
   Structure is [documented below](#nested_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_turn_level_metrics_thresholds).
 
+* `tool_matching_settings` -
+  (Optional)
+  The tool matching settings. An extra tool call is a tool call that is
+  present in the execution but does not match any tool call in the golden
+  expectation.
+  Structure is [documented below](#nested_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_tool_matching_settings).
+
 
 <a name="nested_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_expectation_level_metrics_thresholds"></a>The `expectation_level_metrics_thresholds` block supports:
 
@@ -843,6 +862,23 @@ The following arguments are supported:
   (Optional)
   The success threshold for semantic similarity. Must be an integer
   between 0 and 4. Default is >= 3.
+
+* `semantic_similarity_channel` -
+  (Optional)
+  The semantic similarity channel to use for evaluation.
+  Possible values:
+  SEMANTIC_SIMILARITY_CHANNEL_UNSPECIFIED
+  TEXT
+  AUDIO
+
+<a name="nested_evaluation_metrics_thresholds_golden_evaluation_metrics_thresholds_tool_matching_settings"></a>The `tool_matching_settings` block supports:
+
+* `extra_tool_call_behavior` -
+  (Optional)
+  Defines the behavior when an extra tool call is encountered. An extra
+  tool call is a tool call that is present in the execution but does
+  not match any tool call in the golden expectation.
+  Possible values are: `FAIL`, `ALLOW`.
 
 <a name="nested_language_settings"></a>The `language_settings` block supports:
 

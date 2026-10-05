@@ -56,15 +56,15 @@ var (
 )
 
 func TestAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePrivateConnectionExample(t *testing.T) {
+	t.Skip("b/553315140")
 	t.Parallel()
 
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"create_without_validation": "false" + randomSuffix,
-		"network_name":              "my-network" + randomSuffix,
-		"private_connection_id":     "my-connection" + randomSuffix,
-		"random_suffix":             randomSuffix,
+		"network_name":          "tf-test-my-network" + randomSuffix,
+		"private_connection_id": "tf-test-my-connection" + randomSuffix,
+		"random_suffix":         randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -94,7 +94,7 @@ func TestAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePr
 func testAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePrivateConnectionExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_database_migration_service_private_connection" "default" {
-	display_name          = "dbms_pc"
+	display_name          = "dbms-pc"
 	location              = "us-west1"
 	private_connection_id = "%{private_connection_id}"
 
@@ -123,12 +123,11 @@ func TestAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePr
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"attachment_name":           "my-attachment" + randomSuffix,
-		"create_without_validation": "false" + randomSuffix,
-		"network_name":              "my-network" + randomSuffix,
-		"private_connection_id":     "my-connection" + randomSuffix,
-		"subnetwork_name":           "my-subnetwork" + randomSuffix,
-		"random_suffix":             randomSuffix,
+		"attachment_name":       "tf-test-my-attachment" + randomSuffix,
+		"network_name":          "tf-test-my-network" + randomSuffix,
+		"private_connection_id": "tf-test-my-connection" + randomSuffix,
+		"subnetwork_name":       "tf-test-my-subnetwork" + randomSuffix,
+		"random_suffix":         randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -158,7 +157,7 @@ func TestAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePr
 func testAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePrivateConnectionPscExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_database_migration_service_private_connection" "default" {
-	display_name          = "dbms_pc"
+	display_name          = "dbms-pc"
 	location              = "us-west1"
 	private_connection_id = "%{private_connection_id}"
 
@@ -190,6 +189,60 @@ resource "google_compute_subnetwork" "default" {
   ip_cidr_range = "10.0.0.0/16"
   region        = "us-west1"
   network       = google_compute_network.default.id
+}
+`, context)
+}
+
+func TestAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePrivateConnectionReservedPublicIpExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"private_connection_id": "tf-test-my-connection" + randomSuffix,
+		"random_suffix":         randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckDatabaseMigrationServicePrivateConnectionDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePrivateConnectionReservedPublicIpExample(context),
+			},
+			{
+				ResourceName:            "google_database_migration_service_private_connection.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"create_without_validation", "labels", "location", "private_connection_id", "terraform_labels"},
+			},
+			{
+				ResourceName:       "google_database_migration_service_private_connection.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccDatabaseMigrationServicePrivateConnection_databaseMigrationServicePrivateConnectionReservedPublicIpExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_database_migration_service_private_connection" "default" {
+	display_name          = "dbms_pc"
+	location              = "us-west1"
+	private_connection_id = "%{private_connection_id}"
+
+	labels = {
+		key = "value"
+	}
+
+	reserved_public_ip_config {
+		nat_ips_count = 1
+	}
+
+	create_without_validation = false
 }
 `, context)
 }

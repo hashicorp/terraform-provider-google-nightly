@@ -119,6 +119,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/firebasestorage"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/firestore"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gemini"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/geminidataanalytics"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gkebackup"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gkehub"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gkehub2"

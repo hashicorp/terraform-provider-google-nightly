@@ -47,6 +47,15 @@ resource "google_chronicle_environment" "sample" {
   data_access_scopes_json = jsonencode([])
   retention_duration = 3
 
+  base64_image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABHNCSVQICAgIfAhkiAAAAA1JREFUCJljYPjPUA8AA4EBf4abPZ0AAAAASUVORK5CYII="
+  dynamic_parameters {
+    dynamic_parameter_id = 123
+    value = "value1"
+  }
+  instance_uri = "https://test.backstory.chronicle.security?foo=bar"
+  parallel_instance = "projects/my-project-name/locations/us/instances/00000000-0000-0000-0000-000000000001"
+  weight = 1
+
   deletion_protection  = false
 }
 ```
@@ -102,6 +111,35 @@ The following arguments are supported:
   (Optional)
   data access scopes.
 
+* `base64_image` -
+  (Optional)
+  Environment icon.
+
+* `dynamic_parameters` -
+  (Optional)
+  Additional custom properties for enriching the environment.
+  Structure is [documented below](#nested_dynamic_parameters).
+
+* `instance_uri` -
+  (Optional)
+  URL of the environment. Used to route UI links to the correct SIEM instance
+  when making cross-SecOps requests from SOAR.
+
+* `parallel_instance` -
+  (Optional)
+  The optional parallel SIEM instance used as a data source. Used to route
+  API requests to the correct SIEM instance when making cross-SecOps requests
+  from SOAR. For most customers, this is not required, since the parent
+  instance is used as the data source by default.
+  Format:
+  projects/{project}/locations/{location}/instances/{instance}
+
+* `weight` -
+  (Optional)
+  The weight of the environment, enabling customers to control distribution
+  of resources between the separate environments in a single instance of
+  Chronicle SOAR.
+
 * `project` - (Optional) The ID of the project in which the resource belongs.
     If it is not provided, the provider project is used.
 
@@ -113,6 +151,20 @@ The following arguments are supported:
 	When set to "DELETE", deleting the resource is allowed.
 * `deletion_protection` - (Optional) Whether Terraform will be prevented from destroying the environment. Deleting an environment will remove all its data and all playbooks, environments, integrations instances, reports and agents related to the environment. Once you delete an environment, it cannot be reversed. Deleting environments via terraform destroy or terraform apply will only succeed if this field is false in the Terraform state.
 
+
+<a name="nested_dynamic_parameters"></a>The `dynamic_parameters` block supports:
+
+* `value` -
+  (Required)
+  The value of the dynamic parameter.
+
+* `dynamic_parameter_id` -
+  (Required)
+  The ID of the dynamic parameter.
+
+* `environment_id` -
+  (Output)
+  The ID of the environment.
 
 ## Attributes Reference
 

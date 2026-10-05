@@ -686,6 +686,13 @@ func ResourceComputeInstance() *schema.Resource {
 							Description:      `The URL of the network attachment that this interface should connect to in the following format: projects/{projectNumber}/regions/{region_name}/networkAttachments/{network_attachment_name}.`,
 						},
 
+						"enable_vpc_scoped_dns": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							ForceNew:    true,
+							Description: `If true, DNS resolution will be enabled over this interface. Only valid with network_attachment.`,
+						},
+
 						"parent_nic_name": {
 							Type:        schema.TypeString,
 							Computed:    true,
@@ -1513,7 +1520,7 @@ be from 0 to 999,999,999 inclusive.`,
 							Type:             schema.TypeString,
 							Optional:         true,
 							AtLeastOneOf:     advancedMachineFeaturesKeys,
-							DiffSuppressFunc: tpgresource.EmptyOrDefaultStringSuppress("STANDARD"),
+							DiffSuppressFunc: performanceMonitoringUnitDiffSuppress,
 							ValidateFunc:     validation.StringInSlice([]string{"STANDARD", "ENHANCED", "ARCHITECTURAL"}, false),
 							Description:      `The PMU is a hardware component within the CPU core that monitors how the processor runs code. Valid values for the level of PMU are "STANDARD", "ENHANCED", and "ARCHITECTURAL".`,
 						},
@@ -2422,7 +2429,7 @@ func buildBulkInsertPayload(d *schema.ResourceData, meta interface{}, config *tr
 	instanceProperties := normalizeForBulkInsert(payload)
 
 	denyMap := make(map[string]interface{})
-	zoneList, err := NewClient(config, userAgent).Zones.List(project).Filter(fmt.Sprintf("region eq .*%s", region)).Do()
+	zoneList, err := DEPRECATED_LegacyApiaryClient(config, userAgent).Zones.List(project).Filter(fmt.Sprintf("region eq .*%s", region)).Do()
 	if err != nil {
 		return nil, fmt.Errorf("Error listing zones for region %s: %s", region, err)
 	}
@@ -2554,7 +2561,7 @@ func bulkInsert(d *schema.ResourceData, meta interface{}, config *transport_tpg.
 	var createdZone string
 	for _, z := range zones {
 		log.Printf("[DEBUG] Checking if instance %s was created in zone %s", d.Get("name").(string), z)
-		inst, err := NewClient(config, userAgent).Instances.Get(project, z, d.Get("name").(string)).View("FULL").Do()
+		inst, err := DEPRECATED_LegacyApiaryClient(config, userAgent).Instances.Get(project, z, d.Get("name").(string)).View("FULL").Do()
 		if err == nil && inst != nil {
 			createdZone = z
 			break

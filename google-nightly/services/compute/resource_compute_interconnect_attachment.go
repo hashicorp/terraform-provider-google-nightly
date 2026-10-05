@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -407,6 +408,13 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 				Description: `Maximum Transmission Unit (MTU), in bytes, of packets passing through this interconnect attachment.
 Valid values are 1440, 1460, 1500, and 8896. If not specified, the value will default to 1440.`,
 			},
+			"multicast_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Description: `Whether the VLAN attachment is enabled for multicast. Multicast
+packets will be dropped if this is not enabled.`,
+			},
 			"params": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -744,6 +752,12 @@ func resourceComputeInterconnectAttachmentCreate(d *schema.ResourceData, meta in
 		return err
 	} else if v, ok := d.GetOkExists("l2_forwarding"); !tpgresource.IsEmptyValue(reflect.ValueOf(l2ForwardingProp)) && (ok || !reflect.DeepEqual(v, l2ForwardingProp)) {
 		obj["l2Forwarding"] = l2ForwardingProp
+	}
+	multicastEnabledProp, err := expandComputeInterconnectAttachmentMulticastEnabled(d.Get("multicast_enabled"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("multicast_enabled"); !tpgresource.IsEmptyValue(reflect.ValueOf(multicastEnabledProp)) && (ok || !reflect.DeepEqual(v, multicastEnabledProp)) {
+		obj["multicastEnabled"] = multicastEnabledProp
 	}
 	effectiveLabelsProp, err := expandComputeInterconnectAttachmentEffectiveLabels(d.Get("effective_labels"), d, config)
 	if err != nil {
@@ -1552,6 +1566,10 @@ func flattenComputeInterconnectAttachmentL2ForwardingApplianceMappings(v interfa
 	return l
 }
 
+func flattenComputeInterconnectAttachmentMulticastEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenComputeInterconnectAttachmentTerraformLabels(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return v
@@ -1857,6 +1875,10 @@ func expandComputeInterconnectAttachmentL2ForwardingApplianceMappings(v interfac
 	return m, nil
 }
 
+func expandComputeInterconnectAttachmentMulticastEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandComputeInterconnectAttachmentEffectiveLabels(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (map[string]string, error) {
 	if v == nil {
 		return map[string]string{}, nil
@@ -1970,6 +1992,9 @@ func ResourceComputeInterconnectAttachmentFlatten(d *schema.ResourceData, meta i
 		return fmt.Errorf("Error reading InterconnectAttachment: %s", err)
 	}
 	if err = d.Set("l2_forwarding", flattenComputeInterconnectAttachmentL2Forwarding(res["l2Forwarding"], d, config)); err != nil {
+		return fmt.Errorf("Error reading InterconnectAttachment: %s", err)
+	}
+	if err = d.Set("multicast_enabled", flattenComputeInterconnectAttachmentMulticastEnabled(res["multicastEnabled"], d, config)); err != nil {
 		return fmt.Errorf("Error reading InterconnectAttachment: %s", err)
 	}
 	if err = d.Set("terraform_labels", flattenComputeInterconnectAttachmentTerraformLabels(res["labels"], d, config)); err != nil {

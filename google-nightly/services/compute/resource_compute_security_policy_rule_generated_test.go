@@ -60,7 +60,7 @@ func TestAccComputeSecurityPolicyRule_securityPolicyRuleBasicExample(t *testing.
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"sec_policy_name": "policyruletest" + randomSuffix,
+		"sec_policy_name": "tf-test-policyruletest" + randomSuffix,
 		"random_suffix":   randomSuffix,
 	}
 
@@ -118,7 +118,7 @@ func TestAccComputeSecurityPolicyRule_securityPolicyRuleDefaultRuleExample(t *te
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"sec_policy_name": "policyruletest" + randomSuffix,
+		"sec_policy_name": "tf-test-policyruletest" + randomSuffix,
 		"random_suffix":   randomSuffix,
 	}
 
@@ -189,7 +189,7 @@ func TestAccComputeSecurityPolicyRule_securityPolicyRuleMultipleRulesExample(t *
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"sec_policy_name": "policywithmultiplerules" + randomSuffix,
+		"sec_policy_name": "tf-test-policywithmultiplerules" + randomSuffix,
 		"random_suffix":   randomSuffix,
 	}
 
@@ -261,7 +261,7 @@ func TestAccComputeSecurityPolicyRule_securityPolicyRuleAdvancedFeaturesExample(
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"sec_policy_name": "policyruletest" + randomSuffix,
+		"sec_policy_name": "tf-test-policyruletest" + randomSuffix,
 		"random_suffix":   randomSuffix,
 	}
 
@@ -336,10 +336,10 @@ func TestAccComputeSecurityPolicyRule_securityPolicyRuleWithBodyExcludeExample(t
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"backend_name":      "backendpolicy" + randomSuffix,
+		"backend_name":      "tf-test-backendpolicy" + randomSuffix,
 		"health_check_name": "tf-test-test-health-check" + randomSuffix,
 		"network_name":      "tf-test-test-network" + randomSuffix,
-		"sec_policy_name":   "policyruletest" + randomSuffix,
+		"sec_policy_name":   "tf-test-policyruletest" + randomSuffix,
 		"subnetwork_name":   "tf-test-test-subnet" + randomSuffix,
 		"random_suffix":     randomSuffix,
 	}
@@ -480,6 +480,64 @@ resource "google_compute_security_policy_rule" "policy_rule_one" {
   depends_on = [
     google_compute_backend_service.default
   ]
+}
+`, context)
+}
+
+func TestAccComputeSecurityPolicyRule_securityPolicyRuleRequestBodyExpressionExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"sec_policy_name": "tf-test-policyruletest" + randomSuffix,
+		"random_suffix":   randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		CheckDestroy:             testAccCheckComputeSecurityPolicyRuleDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeSecurityPolicyRule_securityPolicyRuleRequestBodyExpressionExample(context),
+			},
+			{
+				ResourceName:            "google_compute_security_policy_rule.policy_rule",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_policy"},
+			},
+			{
+				ResourceName:       "google_compute_security_policy_rule.policy_rule",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccComputeSecurityPolicyRule_securityPolicyRuleRequestBodyExpressionExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_compute_security_policy" "default" {
+  provider    = google-beta
+  name        = "%{sec_policy_name}"
+  description = "basic global security policy"
+  type        = "CLOUD_ARMOR"
+}
+
+resource "google_compute_security_policy_rule" "policy_rule" {
+  provider        = google-beta
+  security_policy = google_compute_security_policy.default.name
+  description     = "Deny requests containing specific body string"
+  action          = "deny(403)"
+  priority        = 1000
+  match {
+    expr {
+      expression = "request.body.contains('my-match-string')"
+    }
+  }
 }
 `, context)
 }
