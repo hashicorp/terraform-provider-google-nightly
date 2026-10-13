@@ -93,6 +93,26 @@ func forwardingRuleCustomizeDiff(_ context.Context, diff *schema.ResourceDiff, v
 		}
 	}
 
+	// Suppress diff for ip_address if the change is equivalent (e.g. IPv6 formatting or IP to reference),
+	// but do NOT suppress if the new value is unknown (e.g. referencing an address being recreated),
+	// allowing ForceNew to recreate the forwarding rule.
+	if diff.Id() != "" && diff.HasChange("ip_address") {
+		if !diff.NewValueKnown("ip_address") {
+			// Address is unknown (known after apply). Let the diff stand so ForceNew triggers recreation.
+		} else {
+			oldIp, newIp := diff.GetChange("ip_address")
+			if oldIpStr, ok := oldIp.(string); ok {
+				if newIpStr, ok := newIp.(string); ok {
+					if internalIpDiffSuppressLogic(oldIpStr, newIpStr) {
+						if err := diff.Clear("ip_address"); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -124,6 +144,10 @@ func IpCollectionDiffSuppress(_, old, new string, d *schema.ResourceData) bool {
 // Suppresses diff for IPv4 and IPv6 different formats.
 // It also suppresses diffs if an IP is changing to a reference.
 func InternalIpDiffSuppress(_, old, new string, _ *schema.ResourceData) bool {
+	return internalIpDiffSuppressLogic(old, new)
+}
+
+func internalIpDiffSuppressLogic(old, new string) bool {
 	addr_equality := false
 	netmask_equality := false
 
@@ -282,11 +306,10 @@ APIs, the forwarding rule name must be a 1-20 characters string with
 lowercase letters and numbers and must start with a letter.`,
 			},
 			"ip_address": {
-				Type:             schema.TypeString,
-				Computed:         true,
-				Optional:         true,
-				ForceNew:         true,
-				DiffSuppressFunc: InternalIpDiffSuppress,
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+				ForceNew: true,
 				Description: `IP address for which this forwarding rule accepts traffic. When a client
 sends traffic to this IP address, the forwarding rule directs the traffic
 to the referenced 'target' or 'backendService'.
@@ -472,10 +495,11 @@ For more information about forwarding rules, refer to
 				Optional:         true,
 				ForceNew:         true,
 				DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
-				Description: `This field is not used for external load balancing.
+				Description: `This field is not used for global external load balancing.
 
-For Internal TCP/UDP Load Balancing, this field identifies the network that
-the load balanced IP should belong to for this Forwarding Rule.
+For Internal TCP/UDP Load Balancing and Regional External Load Balancing ('EXTERNAL_MANAGED'),
+this field identifies the network that the load balanced IP should belong to
+for this Forwarding Rule.
 If the subnetwork is specified, the network of the subnetwork will be used.
 If neither subnetwork nor this field is specified, the default network will
 be used.
@@ -642,8 +666,9 @@ This field is only used for INTERNAL load balancing.`,
 				ForceNew:         true,
 				DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
 				Description: `This field identifies the subnetwork that the load balanced IP should
-belong to for this Forwarding Rule, used in internal load balancing and
-network load balancing with IPv6.
+belong to for this Forwarding Rule, used in internal load balancing,
+network load balancing with IPv6, and regional external ('EXTERNAL_MANAGED')
+load balancing with IPv6.
 
 If the network specified is in auto subnet mode, this field is optional.
 However, a subnetwork must be specified if the network is in custom subnet

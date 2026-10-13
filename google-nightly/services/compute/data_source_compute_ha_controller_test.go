@@ -47,7 +47,7 @@ func TestAccDataSourceComputeHaController_basic(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckComputeHaControllerDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -75,13 +75,11 @@ locals {
 }
 
 data "google_compute_image" "debian_12" {
-  provider = google-private
   family   = "debian-12"
   project  = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
-  provider                  = google-private
   name                      = "%{hac_name}-rd"
   physical_block_size_bytes = 4096
   type                      = "pd-balanced"
@@ -92,7 +90,6 @@ resource "google_compute_region_disk" "regional_disk" {
 }
 
 resource "google_compute_instance" "vm" {
-  provider     = google-private
   name         = "%{hac_name}-inst"
   machine_type = "e2-micro"
   zones {
@@ -115,7 +112,6 @@ resource "google_compute_instance" "vm" {
 }
 
 resource "google_compute_ha_controller" "default" {
-  provider            = google-private
   name                = "%{hac_name}"
   region              = local.region
   instance_name       = google_compute_instance.vm.name

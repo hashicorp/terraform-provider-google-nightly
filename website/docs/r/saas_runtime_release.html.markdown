@@ -54,7 +54,7 @@ resource "google_saas_runtime_release" "example_previous" {
   release_id        = "previous-release"
   unit_kind         = google_saas_runtime_unit_kind.example_unitkind.id
   blueprint {
-    package = "us-central1-docker.pkg.dev/ci-test-project-188019/test-repo/tf-test-easysaas-alpha-image@sha256:7992fdbaeaf998ecd31a7f937bb26e38a781ecf49b24857a6176c1e9bfc299ee"
+    package = "us-central1-docker.pkg.dev/ci-test-project-188019/test-repo/tf-test-easysaas-alpha-image@sha256:16f50ddbcbc7926ad9d4f09fa6c37306b88ccc4d6370f627a4733b1ab0823680"
   }
 }
 
@@ -64,7 +64,7 @@ resource "google_saas_runtime_release" "example" {
   release_id        = "example-release"
   unit_kind         = google_saas_runtime_unit_kind.example_unitkind.id
   blueprint {
-    package = "us-central1-docker.pkg.dev/ci-test-project-188019/test-repo/tf-test-easysaas-beta-image@sha256:7bba0fa85b2956df7768f7b32e715b6fe11f4f4193e2a70a35bf3f286a6cdf9e"
+    package = "us-central1-docker.pkg.dev/ci-test-project-188019/test-repo/tf-test-easysaas-beta-image@sha256:c28fbfbb6c5d8ee1c1c1a00561df17c8e47d2c5b673c61ce0c189de9a27ae09a"
   }
   input_variable_defaults {
     variable = "name"
@@ -184,6 +184,12 @@ In addition to the arguments listed above, the following computed attributes are
 
 * `id` - an identifier for the resource with format `projects/{{project}}/locations/{{location}}/releases/{{release_id}}`
 
+* `application_template_component` -
+  Reference to a component and revision in a composite Application Design
+  Center ApplicationTemplate. Set by the service on Releases created by an
+  ApplicationTemplate import.
+  Structure is [documented below](#nested_application_template_component).
+
 * `create_time` -
   The timestamp when the resource was created.
 
@@ -229,6 +235,37 @@ In addition to the arguments listed above, the following computed attributes are
 * `effective_labels` -
   All of labels (key/value pairs) present on the resource in GCP, including the labels configured through Terraform, other clients and services.
 
+
+<a name="nested_application_template_component"></a>The `application_template_component` block contains:
+
+* `composite_ref` -
+  (Output)
+  Reference to the composite ApplicationTemplate.
+  Structure is [documented below](#nested_application_template_component_composite_ref).
+
+* `component` -
+  (Output)
+  Name of the component in the composite ApplicationTemplate.
+
+* `revision` -
+  (Output)
+  Revision of the component. If the component does not have a revision,
+  this is the revision of the composite ApplicationTemplate.
+
+
+<a name="nested_application_template_component_composite_ref"></a>The `composite_ref` block contains:
+
+* `application_template` -
+  (Output)
+  Reference to the ApplicationTemplate resource.
+
+* `revision` -
+  (Output)
+  Revision of the ApplicationTemplate.
+
+* `sync_operation` -
+  (Output)
+  Reference to the ongoing import and replication operation. Opaque for external usage.
 
 <a name="nested_input_variables"></a>The `input_variables` block contains:
 

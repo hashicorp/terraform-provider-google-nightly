@@ -693,6 +693,13 @@ func ResourceComputeInstance() *schema.Resource {
 							Description: `If true, DNS resolution will be enabled over this interface. Only valid with network_attachment.`,
 						},
 
+						"service_class_id": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							ForceNew:    true,
+							Description: `Producer Service's Service class Id for the region of this network interface. Can only be used with network_attachment. It is not possible to use on its own; however, network_attachment can be used without service_class_id.`,
+						},
+
 						"parent_nic_name": {
 							Type:        schema.TypeString,
 							Computed:    true,
@@ -4838,6 +4845,18 @@ func resourceComputeInstanceDelete(d *schema.ResourceData, meta interface{}) err
 	if d.Get("deletion_protection").(bool) {
 		return fmt.Errorf("Cannot delete instance %s: instance Deletion Protection is enabled. Set deletion_protection to false for this resource and run \"terraform apply\" before attempting to delete it.", d.Get("name").(string))
 	} else {
+		zones := parseZones(d.Get("zones"))
+		if len(zones) >= 2 {
+			instance, err := getInstanceFromZones(config, d, project, zones)
+			if err != nil || instance == nil {
+				return err
+			}
+			instanceZone, _ := instance["zone"].(string)
+			if err := d.Set("zone", tpgresource.GetResourceNameFromSelfLink(instanceZone)); err != nil {
+				return fmt.Errorf("Error setting zone: %s", err)
+			}
+		}
+
 		deleteUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instances/{{name}}")
 		if err != nil {
 			return fmt.Errorf("Error generating delete URL: %s", err)
