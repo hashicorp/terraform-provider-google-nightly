@@ -763,6 +763,30 @@ feature which together with Service Extension allows customized and complex rout
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"forward_proxy": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							ForceNew:    true,
+							Description: `Dynamic Forwarding Proxy configuration.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:        schema.TypeBool,
+										Required:    true,
+										ForceNew:    true,
+										Description: `A boolean flag enabling dynamic forwarding proxy.`,
+									},
+									"proxy_mode": {
+										Type:         schema.TypeString,
+										Required:     true,
+										ForceNew:     true,
+										ValidateFunc: verify.ValidateEnum([]string{"DIRECT_FORWARDING", "CLOUD_RUN"}),
+										Description:  `Determines the dynamic forwarding proxy mode Possible values: ["DIRECT_FORWARDING", "CLOUD_RUN"]`,
+									},
+								},
+							},
+						},
 						"ip_port_selection": {
 							Type:        schema.TypeList,
 							Optional:    true,
@@ -4536,6 +4560,8 @@ func flattenComputeBackendServiceDynamicForwarding(v interface{}, d *schema.Reso
 	transformed := make(map[string]interface{})
 	transformed["ip_port_selection"] =
 		flattenComputeBackendServiceDynamicForwardingIpPortSelection(original["ipPortSelection"], d, config)
+	transformed["forward_proxy"] =
+		flattenComputeBackendServiceDynamicForwardingForwardProxy(original["forwardProxy"], d, config)
 	return []interface{}{transformed}
 }
 func flattenComputeBackendServiceDynamicForwardingIpPortSelection(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4552,6 +4578,29 @@ func flattenComputeBackendServiceDynamicForwardingIpPortSelection(v interface{},
 	return []interface{}{transformed}
 }
 func flattenComputeBackendServiceDynamicForwardingIpPortSelectionEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenComputeBackendServiceDynamicForwardingForwardProxy(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["enabled"] =
+		flattenComputeBackendServiceDynamicForwardingForwardProxyEnabled(original["enabled"], d, config)
+	transformed["proxy_mode"] =
+		flattenComputeBackendServiceDynamicForwardingForwardProxyProxyMode(original["proxyMode"], d, config)
+	return []interface{}{transformed}
+}
+func flattenComputeBackendServiceDynamicForwardingForwardProxyEnabled(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenComputeBackendServiceDynamicForwardingForwardProxyProxyMode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -5249,16 +5298,118 @@ func expandComputeBackendServiceCdnPolicySignedUrlCacheMaxAgeSec(v interface{}, 
 	return v, nil
 }
 
+// expandComputeBackendServiceCdnPolicyDefaultTtl uses raw config inspection so that an explicitly
+// configured `default_ttl = 0` reaches the API, while an unconfigured field stays out
+// of the request entirely.
+//
+// `default_ttl` is Optional + Computed, and 0 is the zero value for ints in Terraform
+// SDKv2, so resource data alone cannot distinguish "the practitioner asked for 0" from "the
+// practitioner said nothing". Neither of the two simple options works:
+//
+//   - Omitting every 0 (the default expander behavior) drops a configured 0, the API substitutes
+//     its own default, and the next plan shows a permanent diff.
+//   - Sending every 0 (send_empty_value) makes unconfigured TTLs explicit, which both overrides the
+//     API-side default and breaks cache modes that forbid TTLs, e.g. the API rejects
+//     "default_ttl cannot be specified with USE_ORIGIN_HEADERS cache_mode".
+//
+// Returning a *int64 threads the needle: a non-nil pointer is not an empty value, so a configured 0
+// is included in the request, while nil leaves the field out.
 func expandComputeBackendServiceCdnPolicyDefaultTtl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
+	ttl, ok := v.(int)
+	if !ok {
+		return nil, nil
+	}
+	if ttl != 0 {
+		return ttl, nil
+	}
+
+	// A 0 is only meaningful when it came from the configuration rather than from the zero value of
+	// an unset field.
+	if rd, ok := d.(*schema.ResourceData); ok {
+		path := cty.GetAttrPath("cdn_policy").IndexInt(0).GetAttr("default_ttl")
+		if val, _ := rd.GetRawConfigAt(path); !val.IsNull() && val.IsKnown() {
+			zero := int64(0)
+			return &zero, nil
+		}
+	}
+
+	return nil, nil
 }
 
+// expandComputeBackendServiceCdnPolicyMaxTtl uses raw config inspection so that an explicitly
+// configured `max_ttl = 0` reaches the API, while an unconfigured field stays out
+// of the request entirely.
+//
+// `max_ttl` is Optional + Computed, and 0 is the zero value for ints in Terraform
+// SDKv2, so resource data alone cannot distinguish "the practitioner asked for 0" from "the
+// practitioner said nothing". Neither of the two simple options works:
+//
+//   - Omitting every 0 (the default expander behavior) drops a configured 0, the API substitutes
+//     its own default, and the next plan shows a permanent diff.
+//   - Sending every 0 (send_empty_value) makes unconfigured TTLs explicit, which both overrides the
+//     API-side default and breaks cache modes that forbid TTLs, e.g. the API rejects
+//     "default_ttl cannot be specified with USE_ORIGIN_HEADERS cache_mode".
+//
+// Returning a *int64 threads the needle: a non-nil pointer is not an empty value, so a configured 0
+// is included in the request, while nil leaves the field out.
 func expandComputeBackendServiceCdnPolicyMaxTtl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
+	ttl, ok := v.(int)
+	if !ok {
+		return nil, nil
+	}
+	if ttl != 0 {
+		return ttl, nil
+	}
+
+	// A 0 is only meaningful when it came from the configuration rather than from the zero value of
+	// an unset field.
+	if rd, ok := d.(*schema.ResourceData); ok {
+		path := cty.GetAttrPath("cdn_policy").IndexInt(0).GetAttr("max_ttl")
+		if val, _ := rd.GetRawConfigAt(path); !val.IsNull() && val.IsKnown() {
+			zero := int64(0)
+			return &zero, nil
+		}
+	}
+
+	return nil, nil
 }
 
+// expandComputeBackendServiceCdnPolicyClientTtl uses raw config inspection so that an explicitly
+// configured `client_ttl = 0` reaches the API, while an unconfigured field stays out
+// of the request entirely.
+//
+// `client_ttl` is Optional + Computed, and 0 is the zero value for ints in Terraform
+// SDKv2, so resource data alone cannot distinguish "the practitioner asked for 0" from "the
+// practitioner said nothing". Neither of the two simple options works:
+//
+//   - Omitting every 0 (the default expander behavior) drops a configured 0, the API substitutes
+//     its own default, and the next plan shows a permanent diff.
+//   - Sending every 0 (send_empty_value) makes unconfigured TTLs explicit, which both overrides the
+//     API-side default and breaks cache modes that forbid TTLs, e.g. the API rejects
+//     "default_ttl cannot be specified with USE_ORIGIN_HEADERS cache_mode".
+//
+// Returning a *int64 threads the needle: a non-nil pointer is not an empty value, so a configured 0
+// is included in the request, while nil leaves the field out.
 func expandComputeBackendServiceCdnPolicyClientTtl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
+	ttl, ok := v.(int)
+	if !ok {
+		return nil, nil
+	}
+	if ttl != 0 {
+		return ttl, nil
+	}
+
+	// A 0 is only meaningful when it came from the configuration rather than from the zero value of
+	// an unset field.
+	if rd, ok := d.(*schema.ResourceData); ok {
+		path := cty.GetAttrPath("cdn_policy").IndexInt(0).GetAttr("client_ttl")
+		if val, _ := rd.GetRawConfigAt(path); !val.IsNull() && val.IsKnown() {
+			zero := int64(0)
+			return &zero, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func expandComputeBackendServiceCdnPolicyNegativeCaching(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -6388,6 +6539,13 @@ func expandComputeBackendServiceDynamicForwarding(v interface{}, d tpgresource.T
 		transformed["ipPortSelection"] = transformedIpPortSelection
 	}
 
+	transformedForwardProxy, err := expandComputeBackendServiceDynamicForwardingForwardProxy(original["forward_proxy"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedForwardProxy); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["forwardProxy"] = transformedForwardProxy
+	}
+
 	return transformed, nil
 }
 
@@ -6414,6 +6572,43 @@ func expandComputeBackendServiceDynamicForwardingIpPortSelection(v interface{}, 
 }
 
 func expandComputeBackendServiceDynamicForwardingIpPortSelectionEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandComputeBackendServiceDynamicForwardingForwardProxy(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedEnabled, err := expandComputeBackendServiceDynamicForwardingForwardProxyEnabled(original["enabled"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["enabled"] = transformedEnabled
+	}
+
+	transformedProxyMode, err := expandComputeBackendServiceDynamicForwardingForwardProxyProxyMode(original["proxy_mode"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedProxyMode); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["proxyMode"] = transformedProxyMode
+	}
+
+	return transformed, nil
+}
+
+func expandComputeBackendServiceDynamicForwardingForwardProxyEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandComputeBackendServiceDynamicForwardingForwardProxyProxyMode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

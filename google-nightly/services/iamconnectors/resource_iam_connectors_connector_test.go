@@ -18,13 +18,11 @@
 package iamconnectors_test
 
 import (
-	"testing"
-
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
-
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
+	"testing"
 )
 
 func TestAccIamConnectorsConnector_iamConnectorsConnectorUpdate(t *testing.T) {
@@ -32,7 +30,7 @@ func TestAccIamConnectorsConnector_iamConnectorsConnectorUpdate(t *testing.T) {
 
 	randomSuffix := acctest.RandString(t, 10)
 
-	context := map[string]interface{}{
+	context := map[string]any{
 		"project":       envvar.GetTestProjectFromEnv(),
 		"connector":     "connector" + randomSuffix,
 		"random_suffix": randomSuffix,
@@ -53,7 +51,7 @@ func TestAccIamConnectorsConnector_iamConnectorsConnectorUpdate(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"connector_id", "connector_type_params.0.api_key.0.api_key", "connector_type_params.0.three_legged_oauth.0.client_secret", "connector_type_params.0.two_legged_oauth.0.client_secret", "location", "workload_ids"},
 			},
 			{
-				Config: testAccIamConnectorsConnector_iamConnectorsConnectorUpdate(context),
+				Config: testAccIamConnectorsConnectorIamConnectorsConnectorUpdate(context),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(
@@ -90,7 +88,7 @@ func TestAccIamConnectorsConnector_iamConnectorsConnectorUpdate(t *testing.T) {
 	})
 }
 
-func testAccIamConnectorsConnector_iamConnectorsConnectorUpdate(context map[string]interface{}) string {
+func testAccIamConnectorsConnectorIamConnectorsConnectorUpdate(context map[string]any) string {
 	return acctest.Nprintf(`
 provider "google-nightly" {}
 

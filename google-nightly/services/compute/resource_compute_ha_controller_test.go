@@ -19,17 +19,15 @@ package compute_test
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
+	tpgcompute "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
+	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 	"os"
 	"testing"
 	"time"
 
-	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
-
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/plancheck"
-
-	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
-	tpgcompute "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/tags"
 )
 
@@ -42,7 +40,7 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 	region := "us-central1"
 
 	hacName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
-	context := map[string]interface{}{
+	context := map[string]any{
 		"hac_name": hacName,
 		"zone1":    zone1,
 		"zone2":    zone2,
@@ -54,7 +52,7 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccHaController_basic(context),
+				Config: testAccHaControllerBasic(context),
 			},
 			{
 				PreConfig: func() {
@@ -75,7 +73,7 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 					}
 
 					var primaryZone string
-					if status, ok := res["status"].(map[string]interface{}); ok {
+					if status, ok := res["status"].(map[string]any); ok {
 						if pZone, ok := status["primaryZone"].(string); ok {
 							primaryZone = pZone
 						}
@@ -88,18 +86,18 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 						targetZone = zone1
 					}
 
-					req := map[string]interface{}{
+					req := map[string]any{
 						"failoverToZone": targetZone,
 					}
 
-					failoverUrl := fmt.Sprintf("%sprojects/%s/regions/%s/haControllers/%s/failover",
+					failoverURL := fmt.Sprintf("%sprojects/%s/regions/%s/haControllers/%s/failover",
 						transport_tpg.BaseUrl(tpgcompute.Product, config), config.Project, region, hacName)
 
 					op, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 						Config:    config,
 						Method:    "POST",
 						Project:   config.Project,
-						RawURL:    failoverUrl,
+						RawURL:    failoverURL,
 						UserAgent: config.UserAgent,
 						Body:      req,
 					})
@@ -111,7 +109,7 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 						t.Fatalf("Error waiting for failover: %s", waitErr)
 					}
 				},
-				Config: testAccHaController_noHac(context),
+				Config: testAccHaControllerNoHac(context),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction("google_compute_instance.vm", plancheck.ResourceActionNoop),
@@ -119,14 +117,14 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 				},
 			},
 			{
-				Config:             testAccHaController_noHac(context),
+				Config:             testAccHaControllerNoHac(context),
 				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
 }
 
-func testAccHaController_basic(context map[string]interface{}) string {
+func testAccHaControllerBasic(context map[string]any) string {
 	return acctest.Nprintf(`
 data "google_compute_image" "debian_12" {
   family   = "debian-12"
@@ -181,7 +179,7 @@ resource "google_compute_ha_controller" "foobar" {
 `, context)
 }
 
-func testAccHaController_noHac(context map[string]interface{}) string {
+func testAccHaControllerNoHac(context map[string]any) string {
 	return acctest.Nprintf(`
 data "google_compute_image" "debian_12" {
   family   = "debian-12"

@@ -183,7 +183,8 @@ The name must be 1-63 characters long and comply with RFC1035.`,
 Currently, you can specify only one backend service,
 and it must be an L4 Internal Load Balancer (ILB).`,
 				Elem: &schema.Schema{
-					Type: schema.TypeString,
+					Type:             schema.TypeString,
+					DiffSuppressFunc: tpgresource.CompareResourceNames,
 				},
 			},
 			"description": {

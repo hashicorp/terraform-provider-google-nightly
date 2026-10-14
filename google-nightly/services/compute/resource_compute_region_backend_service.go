@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -257,6 +258,7 @@ When the load balancing scheme is INTERNAL, this field is not used.`,
 			},
 			"backend": {
 				Type:        schema.TypeSet,
+				Computed:    true,
 				Optional:    true,
 				Description: `The set of backends that serve this RegionBackendService.`,
 				Elem:        computeRegionBackendServiceBackendSchema(),
@@ -830,6 +832,7 @@ Supported values are:
 						},
 						"leader": {
 							Type:     schema.TypeList,
+							Computed: true,
 							Optional: true,
 							Description: `Selects one of the network endpoints attached to the backend NEGs of this service as the
 active endpoint (the leader) that receives all traffic.`,
@@ -838,6 +841,7 @@ active endpoint (the leader) that receives all traffic.`,
 								Schema: map[string]*schema.Schema{
 									"backend_group": {
 										Type:             schema.TypeString,
+										Computed:         true,
 										Optional:         true,
 										DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
 										Description: `A fully-qualified URL of the zonal Network Endpoint Group (NEG) that the leader is
@@ -845,6 +849,7 @@ attached to.`,
 									},
 									"network_endpoint": {
 										Type:        schema.TypeList,
+										Computed:    true,
 										Optional:    true,
 										Description: `The network endpoint within the leader.backendGroup that is designated as the leader.`,
 										MaxItems:    1,
@@ -852,6 +857,7 @@ attached to.`,
 											Schema: map[string]*schema.Schema{
 												"instance": {
 													Type:     schema.TypeString,
+													Computed: true,
 													Optional: true,
 													Description: `The name of the VM instance of the leader network endpoint. The instance must
 already be attached to the NEG specified in the haPolicy.leader.backendGroup.`,
@@ -4968,16 +4974,118 @@ func expandComputeRegionBackendServiceCdnPolicySignedUrlCacheMaxAgeSec(v interfa
 	return v, nil
 }
 
+// expandComputeRegionBackendServiceCdnPolicyDefaultTtl uses raw config inspection so that an explicitly
+// configured `default_ttl = 0` reaches the API, while an unconfigured field stays out
+// of the request entirely.
+//
+// `default_ttl` is Optional + Computed, and 0 is the zero value for ints in Terraform
+// SDKv2, so resource data alone cannot distinguish "the practitioner asked for 0" from "the
+// practitioner said nothing". Neither of the two simple options works:
+//
+//   - Omitting every 0 (the default expander behavior) drops a configured 0, the API substitutes
+//     its own default, and the next plan shows a permanent diff.
+//   - Sending every 0 (send_empty_value) makes unconfigured TTLs explicit, which both overrides the
+//     API-side default and breaks cache modes that forbid TTLs, e.g. the API rejects
+//     "default_ttl cannot be specified with USE_ORIGIN_HEADERS cache_mode".
+//
+// Returning a *int64 threads the needle: a non-nil pointer is not an empty value, so a configured 0
+// is included in the request, while nil leaves the field out.
 func expandComputeRegionBackendServiceCdnPolicyDefaultTtl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
+	ttl, ok := v.(int)
+	if !ok {
+		return nil, nil
+	}
+	if ttl != 0 {
+		return ttl, nil
+	}
+
+	// A 0 is only meaningful when it came from the configuration rather than from the zero value of
+	// an unset field.
+	if rd, ok := d.(*schema.ResourceData); ok {
+		path := cty.GetAttrPath("cdn_policy").IndexInt(0).GetAttr("default_ttl")
+		if val, _ := rd.GetRawConfigAt(path); !val.IsNull() && val.IsKnown() {
+			zero := int64(0)
+			return &zero, nil
+		}
+	}
+
+	return nil, nil
 }
 
+// expandComputeRegionBackendServiceCdnPolicyMaxTtl uses raw config inspection so that an explicitly
+// configured `max_ttl = 0` reaches the API, while an unconfigured field stays out
+// of the request entirely.
+//
+// `max_ttl` is Optional + Computed, and 0 is the zero value for ints in Terraform
+// SDKv2, so resource data alone cannot distinguish "the practitioner asked for 0" from "the
+// practitioner said nothing". Neither of the two simple options works:
+//
+//   - Omitting every 0 (the default expander behavior) drops a configured 0, the API substitutes
+//     its own default, and the next plan shows a permanent diff.
+//   - Sending every 0 (send_empty_value) makes unconfigured TTLs explicit, which both overrides the
+//     API-side default and breaks cache modes that forbid TTLs, e.g. the API rejects
+//     "default_ttl cannot be specified with USE_ORIGIN_HEADERS cache_mode".
+//
+// Returning a *int64 threads the needle: a non-nil pointer is not an empty value, so a configured 0
+// is included in the request, while nil leaves the field out.
 func expandComputeRegionBackendServiceCdnPolicyMaxTtl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
+	ttl, ok := v.(int)
+	if !ok {
+		return nil, nil
+	}
+	if ttl != 0 {
+		return ttl, nil
+	}
+
+	// A 0 is only meaningful when it came from the configuration rather than from the zero value of
+	// an unset field.
+	if rd, ok := d.(*schema.ResourceData); ok {
+		path := cty.GetAttrPath("cdn_policy").IndexInt(0).GetAttr("max_ttl")
+		if val, _ := rd.GetRawConfigAt(path); !val.IsNull() && val.IsKnown() {
+			zero := int64(0)
+			return &zero, nil
+		}
+	}
+
+	return nil, nil
 }
 
+// expandComputeRegionBackendServiceCdnPolicyClientTtl uses raw config inspection so that an explicitly
+// configured `client_ttl = 0` reaches the API, while an unconfigured field stays out
+// of the request entirely.
+//
+// `client_ttl` is Optional + Computed, and 0 is the zero value for ints in Terraform
+// SDKv2, so resource data alone cannot distinguish "the practitioner asked for 0" from "the
+// practitioner said nothing". Neither of the two simple options works:
+//
+//   - Omitting every 0 (the default expander behavior) drops a configured 0, the API substitutes
+//     its own default, and the next plan shows a permanent diff.
+//   - Sending every 0 (send_empty_value) makes unconfigured TTLs explicit, which both overrides the
+//     API-side default and breaks cache modes that forbid TTLs, e.g. the API rejects
+//     "default_ttl cannot be specified with USE_ORIGIN_HEADERS cache_mode".
+//
+// Returning a *int64 threads the needle: a non-nil pointer is not an empty value, so a configured 0
+// is included in the request, while nil leaves the field out.
 func expandComputeRegionBackendServiceCdnPolicyClientTtl(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
+	ttl, ok := v.(int)
+	if !ok {
+		return nil, nil
+	}
+	if ttl != 0 {
+		return ttl, nil
+	}
+
+	// A 0 is only meaningful when it came from the configuration rather than from the zero value of
+	// an unset field.
+	if rd, ok := d.(*schema.ResourceData); ok {
+		path := cty.GetAttrPath("cdn_policy").IndexInt(0).GetAttr("client_ttl")
+		if val, _ := rd.GetRawConfigAt(path); !val.IsNull() && val.IsKnown() {
+			zero := int64(0)
+			return &zero, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func expandComputeRegionBackendServiceCdnPolicyNegativeCaching(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -6156,8 +6264,9 @@ func resourceComputeRegionBackendServiceEncoder(d *schema.ResourceData, meta int
 
 	// To remove subsetting on an ILB, "NONE" must be specified. If subsetting
 	// isn't specified, we set the value to NONE to make this use case work.
-	_, ok := obj["subsetting"]
-	if !ok {
+	_, hasSubsetting := obj["subsetting"]
+	_, hasHaPolicy := obj["haPolicy"]
+	if !hasSubsetting && !hasHaPolicy {
 		loadBalancingScheme, ok := obj["loadBalancingScheme"]
 		// External load balancing scheme does not support subsetting
 		if !ok || loadBalancingScheme.(string) != "EXTERNAL" {

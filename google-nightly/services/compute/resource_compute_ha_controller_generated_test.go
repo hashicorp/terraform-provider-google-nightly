@@ -67,7 +67,7 @@ func TestAccComputeHaController_computeHaControllerBasicExample(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckComputeHaControllerDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -98,13 +98,11 @@ locals {
 }
 
 data "google_compute_image" "debian_12" {
-  provider = google-private
   family   = "debian-12"
   project  = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
-  provider                  = google-private
   name                      = "%{hac_name}-rd"
   physical_block_size_bytes = 4096
   type                      = "pd-balanced"
@@ -115,7 +113,6 @@ resource "google_compute_region_disk" "regional_disk" {
 }
 
 resource "google_compute_instance" "vm" {
-  provider     = google-private
   name         = "%{hac_name}-inst"
   machine_type = "e2-micro"
   zones {
@@ -138,7 +135,6 @@ resource "google_compute_instance" "vm" {
 }
 
 resource "google_compute_ha_controller" "default" {
-  provider            = google-private
   name                = "%{hac_name}"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -166,7 +162,7 @@ func TestAccComputeHaController_computeHaControllerReservationsExample(t *testin
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckComputeHaControllerDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -197,13 +193,11 @@ locals {
 }
 
 data "google_compute_image" "debian_12" {
-  provider = google-private
   family   = "debian-12"
   project  = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
-  provider                  = google-private
   name                      = "%{hac_name}-rd"
   physical_block_size_bytes = 4096
   type                      = "pd-balanced"
@@ -214,7 +208,6 @@ resource "google_compute_region_disk" "regional_disk" {
 }
 
 resource "google_compute_reservation" "reservation_zone1" {
-  provider = google-private
   name     = "%{hac_name}-rv" # same name as in zone 2
   zone     = local.zone1
 
@@ -233,7 +226,6 @@ resource "google_compute_reservation" "reservation_zone1" {
 }
 
 resource "google_compute_reservation" "reservation_zone2" {
-  provider = google-private
   name     = "%{hac_name}-rv" # same name as in zone 1
   zone     = local.zone2
 
@@ -252,7 +244,6 @@ resource "google_compute_reservation" "reservation_zone2" {
 }
 
 resource "google_compute_instance" "vm" {
-  provider     = google-private
   name         = "%{hac_name}-inst"
   machine_type = "e2-micro"
   zones {
@@ -284,7 +275,6 @@ resource "google_compute_instance" "vm" {
 }
 
 resource "google_compute_ha_controller" "default" {
-  provider            = google-private
   name                = "%{hac_name}"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -332,7 +322,7 @@ func TestAccComputeHaController_computeHaControllerSoleTenancyExample(t *testing
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckComputeHaControllerDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -363,13 +353,11 @@ locals {
 }
 
 data "google_compute_image" "debian_12" {
-  provider = google-private
   family   = "debian-12"
   project  = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
-  provider                  = google-private
   name                      = "%{hac_name}-rd"
   physical_block_size_bytes = 4096
   type                      = "pd-balanced"
@@ -380,7 +368,6 @@ resource "google_compute_region_disk" "regional_disk" {
 }
 
 resource "google_compute_node_template" "node_template1" {
-  provider  = google-private
   name      = "%{hac_name}-ntmpl"
   region    = local.region
   node_type = "n1-node-96-624"
@@ -391,7 +378,6 @@ resource "google_compute_node_template" "node_template1" {
 }
 
 resource "google_compute_node_template" "node_template2" {
-  provider  = google-private
   name      = "%{hac_name}-ntmpl2"
   region    = local.region
   node_type = "n1-node-96-624"
@@ -402,7 +388,6 @@ resource "google_compute_node_template" "node_template2" {
 }
 
 resource "google_compute_node_group" "sole_tenant_group1" {
-  provider      = google-private
   name          = "%{hac_name}-stgrp1"
   zone          = local.zone1
   node_template = google_compute_node_template.node_template1.id
@@ -410,7 +395,6 @@ resource "google_compute_node_group" "sole_tenant_group1" {
 }
 
 resource "google_compute_node_group" "sole_tenant_group2" {
-  provider      = google-private
   name          = "%{hac_name}-stgrp2"
   zone          = local.zone2
   node_template = google_compute_node_template.node_template2.id
@@ -418,7 +402,6 @@ resource "google_compute_node_group" "sole_tenant_group2" {
 }
 
 resource "google_compute_instance" "vm" {
-  provider     = google-private
   name         = "%{hac_name}-inst"
   machine_type = "n1-standard-1"
   zones {
@@ -455,7 +438,6 @@ resource "google_compute_instance" "vm" {
 }
 
 resource "google_compute_ha_controller" "default" {
-  provider            = google-private
   name                = "%{hac_name}"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -476,6 +458,118 @@ resource "google_compute_ha_controller" "default" {
       operator = "IN"
       values   = ["synthetic"]
     }
+  }
+}
+`, context)
+}
+
+func TestAccComputeHaController_computeHaControllerBackendServiceExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"hac_name":      "tf-test-hac-rbs" + randomSuffix,
+		"random_suffix": randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeHaControllerDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeHaController_computeHaControllerBackendServiceExample(context),
+			},
+			{
+				ResourceName:            "google_compute_ha_controller.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"region"},
+			},
+			{
+				ResourceName:       "google_compute_ha_controller.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccComputeHaController_computeHaControllerBackendServiceExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+locals {
+  region  = "us-central1"
+  zone1   = "us-central1-a"
+  zone2   = "us-central1-b"
+  network = "default"
+}
+
+data "google_compute_image" "debian_12" {
+  family  = "debian-12"
+  project = "debian-cloud"
+}
+
+resource "google_compute_region_disk" "regional_disk" {
+  name                      = "%{hac_name}-rd"
+  physical_block_size_bytes = 4096
+  type                      = "pd-balanced"
+  region                    = local.region
+  replica_zones             = [local.zone1, local.zone2]
+  size                      = 10
+  image                     = data.google_compute_image.debian_12.self_link
+}
+
+resource "google_compute_instance" "vm" {
+  name         = "%{hac_name}-inst"
+  machine_type = "e2-micro"
+  zones {
+    zone = local.zone1
+  }
+  zones {
+    zone = local.zone2
+  }
+
+  boot_disk {
+    auto_delete = false
+    source      = google_compute_region_disk.regional_disk.self_link
+  }
+
+  network_interface {
+    network = local.network
+  }
+
+  allow_stopping_for_update = true
+}
+
+resource "google_compute_region_backend_service" "bs" {
+  name                  = "%{hac_name}-bs"
+  region                = local.region
+  protocol              = "UNSPECIFIED"
+  load_balancing_scheme = "INTERNAL"
+  network               = local.network
+
+  ha_policy {
+    fast_ip_move = "DISABLED"
+  }
+
+  connection_draining_timeout_sec = 0
+}
+
+resource "google_compute_ha_controller" "default" {
+  name                = "%{hac_name}"
+  region              = local.region
+  instance_name       = google_compute_instance.vm.name
+  failover_initiation = "MANUAL_ONLY"
+
+  backend_services = [google_compute_region_backend_service.bs.self_link]
+
+  zone_configuration {
+    zone = local.zone1
+  }
+  zone_configuration {
+    zone = local.zone2
   }
 }
 `, context)
