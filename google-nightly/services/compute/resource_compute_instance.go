@@ -277,6 +277,9 @@ func ResourceComputeInstance() *schema.Resource {
 				}
 			},
 		},
+		ResourceBehavior: schema.ResourceBehavior{
+			MutableIdentity: true,
+		},
 
 		// A compute instance is more or less a superset of a compute instance
 		// template. Please attempt to maintain consistency with the
@@ -2035,6 +2038,13 @@ func getInstanceFromZones(config *transport_tpg.Config, d *schema.ResourceData, 
 			return nil, fmt.Errorf("instance %s exists in multiple zones (%v), which is not supported.", name, foundZones)
 		}
 		log.Printf("[WARN] instance %s exists in multiple zones (%v), ignoring multiple zone check", name, foundZones)
+		if currentZone := tpgresource.GetResourceNameFromSelfLink(d.Get("zone").(string)); currentZone != "" {
+			for i, z := range foundZones {
+				if z == currentZone {
+					return foundInstances[i], nil
+				}
+			}
+		}
 	}
 
 	if len(foundInstances) == 0 {
@@ -2727,6 +2737,14 @@ func resourceComputeInstanceRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 
+	if len(parseZones(d.Get("zones"))) == 0 {
+		if identity, err := d.Identity(); err == nil && identity != nil {
+			if priorZone, ok := identity.GetOk("zone"); ok && priorZone.(string) != "" && tpgresource.GetResourceNameFromSelfLink(priorZone.(string)) != zone {
+				return fmt.Errorf("Unexpected Identity Change: zone changed from %q to %q when zones is not specified", priorZone, zone)
+			}
+		}
+	}
+
 	if err := tpgresource.SetResourceIdentityAttributes(d, map[string]interface{}{
 		"project": project,
 		"zone":    zone,
@@ -3057,6 +3075,18 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 	project, err := tpgresource.GetProject(d, config)
 	if err != nil {
 		return err
+	}
+
+	zones := parseZones(d.Get("zones"))
+	if len(zones) >= 2 {
+		instance, err := getInstanceFromZones(config, d, project, zones)
+		if err != nil || instance == nil {
+			return err
+		}
+		instanceZone, _ := instance["zone"].(string)
+		if err := d.Set("zone", tpgresource.GetResourceNameFromSelfLink(instanceZone)); err != nil {
+			return fmt.Errorf("Error setting zone: %s", err)
+		}
 	}
 
 	zone, err := tpgresource.GetZone(d, config)
@@ -4527,6 +4557,14 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 
 	// We made it, disable partial mode
 	d.Partial(false)
+
+	if len(parseZones(d.Get("zones"))) == 0 {
+		if identity, err := d.Identity(); err == nil && identity != nil {
+			if priorZone, ok := identity.GetOk("zone"); ok && priorZone.(string) != "" && tpgresource.GetResourceNameFromSelfLink(priorZone.(string)) != zone {
+				return fmt.Errorf("Unexpected Identity Change: zone changed from %q to %q when zones is not specified", priorZone, zone)
+			}
+		}
+	}
 
 	if err := tpgresource.SetResourceIdentityAttributes(d, map[string]interface{}{
 		"project": project,
