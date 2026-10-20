@@ -1980,6 +1980,8 @@ func resourceComputeRegionBackendServiceCreate(d *schema.ResourceData, meta inte
 	}
 
 	headers := make(http.Header)
+	// security_policy isn't set by Create
+	delete(obj, "securityPolicy")
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 		Config:    config,
 		Method:    "POST",
@@ -2443,6 +2445,10 @@ func resourceComputeRegionBackendServiceUpdate(d *schema.ResourceData, meta inte
 	log.Printf("[DEBUG] Updating RegionBackendService %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
 
+	// params (e.g. resourceManagerTags) can only be set on create. Since updates are sent as a
+	// full PUT, it must be removed here or the API rejects the request.
+	delete(obj, "params")
+
 	// err == nil indicates that the billing_project value was found
 	if bp, err := tpgresource.GetBillingProject(d, config); err == nil {
 		billingProject = bp
@@ -2490,6 +2496,9 @@ func resourceComputeRegionBackendServiceUpdate(d *schema.ResourceData, meta inte
 		}
 
 		headers := make(http.Header)
+		// params (e.g. resourceManagerTags) can only be set on create. Since updates are sent as a
+		// full PUT, it must be removed here or the API rejects the request.
+		delete(obj, "params")
 
 		// err == nil indicates that the billing_project value was found
 		if bp, err := tpgresource.GetBillingProject(d, config); err == nil {

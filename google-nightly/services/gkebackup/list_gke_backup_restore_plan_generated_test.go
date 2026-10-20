@@ -31,8 +31,7 @@ import (
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
-	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/compute"
-	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/container"
+	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/container"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/gkebackup"
 )
 
@@ -48,13 +47,11 @@ func TestAccGKEBackupRestorePlanListQuery_generated(t *testing.T) {
 
 	randomSuffix := acctest.RandString(t, 10)
 	context := map[string]interface{}{
-		"project":             envvar.GetTestProjectFromEnv(),
-		"deletion_protection": false,
-		"name":                "tf-test-restore-all-ns" + randomSuffix,
-		"network_name":        compute.BootstrapSharedTestNetwork(t, "gke-cluster"),
-		"subnetwork_name":     compute.BootstrapSubnetInRegion(t, "gke-cluster", compute.BootstrapSharedTestNetwork(t, "gke-cluster"), "us-east1", "10.79.0.0/20"),
-		"location":            envvar.GetTestRegionFromEnv(),
-		"random_suffix":       randomSuffix,
+		"cluster":       container.BootstrapSharedGKECluster(t, "gkebackup"),
+		"name":          "tf-test-restore-all-ns" + randomSuffix,
+		"location":      envvar.GetTestRegionFromEnv(),
+		"project":       envvar.GetTestProjectFromEnv(),
+		"random_suffix": randomSuffix,
 	}
 
 	var listDisplayName acctest.ListDisplayName

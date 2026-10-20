@@ -271,8 +271,8 @@ The following arguments are supported:
   If you do not provide an encryption key when creating the disk, then
   the disk will be encrypted using an automatically generated key and
   you do not need to provide a key to use the disk later.
-  ~>**NOTE** Only changing `kms_key_name` between Cloud KMS keys is done
-  in place; other changes to this block recreate the disk.
+  ~>**NOTE** `kms_key_name` can be added or changed in place. Removing it
+  fails at plan time. Other changes to this block recreate the disk.
   Structure is [documented below](#nested_disk_encryption_key).
 
 * `source_image_encryption_key` -
@@ -445,6 +445,7 @@ The name of the snapshot by default will be `{{disk-name}}-YYYYMMDD-HHmm`
 * `kms_key_name` -
   (Optional)
   The name of the encryption key that is stored in Google Cloud KMS.
+  Specify the key without a `/cryptoKeyVersions/` suffix.
 
 * `raw_key_wo` -
   (Optional, Write-Only)
@@ -528,7 +529,7 @@ The name of the snapshot by default will be `{{disk-name}}-YYYYMMDD-HHmm`
 * `type` -
   (Required)
   The type of supported feature. Read [Enabling guest operating system features](https://cloud.google.com/compute/docs/images/create-delete-deprecate-private-images#guest-os-features) to see a list of available options.
-  Possible values are: `MULTI_IP_SUBNET`, `SECURE_BOOT`, `SEV_CAPABLE`, `UEFI_COMPATIBLE`, `VIRTIO_SCSI_MULTIQUEUE`, `WINDOWS`, `GVNIC`, `SEV_LIVE_MIGRATABLE`, `SEV_SNP_CAPABLE`, `SUSPEND_RESUME_COMPATIBLE`, `TDX_CAPABLE`, `SEV_LIVE_MIGRATABLE_V2`, `SNP_SVSM_CAPABLE`.
+  Possible values are: `MULTI_IP_SUBNET`, `SECURE_BOOT`, `SEV_CAPABLE`, `UEFI_COMPATIBLE`, `VIRTIO_SCSI_MULTIQUEUE`, `WINDOWS`, `GVNIC`, `IDPF`, `SEV_LIVE_MIGRATABLE`, `SEV_SNP_CAPABLE`, `SUSPEND_RESUME_COMPATIBLE`, `TDX_CAPABLE`, `SEV_LIVE_MIGRATABLE_V2`, `SNP_SVSM_CAPABLE`, `SUSPEND_SAFE_FPR`.
 
 ## Attributes Reference
 

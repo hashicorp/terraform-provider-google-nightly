@@ -239,6 +239,13 @@ func isBeenEnabled(_ context.Context, old, new, _ interface{}) bool {
 	return false
 }
 
+func suppressDiffForClusterDns(k, o, n string, d *schema.ResourceData) bool {
+	if o == "" && n == "PROVIDER_UNSPECIFIED" {
+		return true
+	}
+	return false
+}
+
 func suppressDiffForClusterDnsScope(k, o, n string, d *schema.ResourceData) bool {
 	if o == "" && n == "DNS_SCOPE_UNSPECIFIED" {
 		return true
@@ -2754,11 +2761,12 @@ func ResourceContainerCluster() *schema.Resource {
 							Optional:    true,
 						},
 						"cluster_dns": {
-							Type:         schema.TypeString,
-							Default:      "PROVIDER_UNSPECIFIED",
-							ValidateFunc: validation.StringInSlice([]string{"PROVIDER_UNSPECIFIED", "PLATFORM_DEFAULT", "CLOUD_DNS", "KUBE_DNS"}, false),
-							Description:  `Which in-cluster DNS provider should be used.`,
-							Optional:     true,
+							Type:             schema.TypeString,
+							Default:          "PROVIDER_UNSPECIFIED",
+							ValidateFunc:     validation.StringInSlice([]string{"PROVIDER_UNSPECIFIED", "PLATFORM_DEFAULT", "CLOUD_DNS", "KUBE_DNS"}, false),
+							Description:      `Which in-cluster DNS provider should be used.`,
+							Optional:         true,
+							DiffSuppressFunc: suppressDiffForClusterDns,
 						},
 						"cluster_dns_scope": {
 							Type:             schema.TypeString,
@@ -2914,6 +2922,22 @@ func ResourceContainerCluster() *schema.Resource {
 							Type:        schema.TypeBool,
 							Required:    true,
 							Description: `Whether the alts handshaker should be enabled or not for direct-path. Requires Workload Identity (workloadPool must be non-empty).`,
+						},
+					},
+				},
+			},
+			"schedule_upgrade_config": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Computed:    true,
+				MaxItems:    1,
+				Description: `Configuration for scheduled upgrades on the cluster.`,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:        schema.TypeBool,
+							Required:    true,
+							Description: `Whether scheduled upgrades are enabled.`,
 						},
 					},
 				},
@@ -3451,6 +3475,9 @@ func resourceContainerClusterCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOk("workload_alts_config"); ok {
 		cluster.WorkloadAltsConfig = expandWorkloadAltsConfig(v)
+	}
+	if v, ok := d.GetOk("schedule_upgrade_config"); ok {
+		cluster.ScheduleUpgradeConfig = expandScheduleUpgradeConfig(v)
 	}
 
 	req := &container.CreateClusterRequest{
@@ -4029,6 +4056,10 @@ func resourceContainerClusterRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if err := d.Set("workload_alts_config", flattenWorkloadAltsConfig(cluster.WorkloadAltsConfig)); err != nil {
+		return err
+	}
+
+	if err := d.Set("schedule_upgrade_config", flattenScheduleUpgradeConfig(cluster.ScheduleUpgradeConfig)); err != nil {
 		return err
 	}
 
@@ -5591,6 +5622,27 @@ func resourceContainerClusterUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		log.Printf("[INFO] GKE cluster %s's WorkloadALTSConfig has been updated", d.Id())
+	}
+	if d.HasChange("schedule_upgrade_config") {
+		suc := expandScheduleUpgradeConfig(d.Get("schedule_upgrade_config"))
+		if suc == nil {
+			suc = &container.ScheduleUpgradeConfig{
+				Enabled:         false,
+				ForceSendFields: []string{"Enabled"},
+			}
+		}
+		req := &container.UpdateClusterRequest{
+			Update: &container.ClusterUpdate{
+				DesiredScheduleUpgradeConfig: suc,
+			},
+		}
+
+		updateF := updateFunc(req, "updating GKE cluster ScheduleUpgradeConfig")
+		if err := updateF(); err != nil {
+			return err
+		}
+
+		log.Printf("[INFO] GKE cluster %s's ScheduleUpgradeConfig has been updated", d.Id())
 	}
 
 	if d.HasChange("user_managed_keys_config") {
@@ -7170,8 +7222,12 @@ func expandResourceUsageExportConfig(configured interface{}) *container.Resource
 
 func expandDnsConfig(configured interface{}) *container.DNSConfig {
 	l := configured.([]interface{})
-	if len(l) == 0 || l[0] == nil {
+	if len(l) == 0 {
 		return nil
+	}
+
+	if l[0] == nil {
+		return &container.DNSConfig{}
 	}
 
 	config := l[0].(map[string]interface{})
@@ -7467,6 +7523,19 @@ func expandWorkloadAltsConfig(configured interface{}) *container.WorkloadALTSCon
 	return &container.WorkloadALTSConfig{
 		EnableAlts:      config["enable_alts"].(bool),
 		ForceSendFields: []string{"EnableAlts"},
+	}
+}
+
+func expandScheduleUpgradeConfig(configured interface{}) *container.ScheduleUpgradeConfig {
+	l := configured.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil
+	}
+
+	config := l[0].(map[string]interface{})
+	return &container.ScheduleUpgradeConfig{
+		Enabled:         config["enabled"].(bool),
+		ForceSendFields: []string{"Enabled"},
 	}
 }
 
@@ -8684,6 +8753,17 @@ func flattenWorkloadAltsConfig(c *container.WorkloadALTSConfig) []map[string]int
 	return []map[string]interface{}{
 		{
 			"enable_alts": c.EnableAlts,
+		},
+	}
+}
+
+func flattenScheduleUpgradeConfig(c *container.ScheduleUpgradeConfig) []map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return []map[string]interface{}{
+		{
+			"enabled": c.Enabled,
 		},
 	}
 }

@@ -959,6 +959,17 @@ controls the randomness of the model's responses. Lower temperatures
 produce responses that are more predictable. Higher temperatures produce
 responses that are more creative.`,
 															},
+															"thinking_level": {
+																Type:         schema.TypeString,
+																Optional:     true,
+																ValidateFunc: verify.ValidateEnum([]string{"DEFAULT", "LOW", "MEDIUM", "HIGH", ""}),
+																Description: `The thinking level of the model.
+Possible values:
+DEFAULT
+LOW
+MEDIUM
+HIGH Possible values: ["DEFAULT", "LOW", "MEDIUM", "HIGH"]`,
+															},
 														},
 													},
 												},
@@ -987,6 +998,12 @@ responses that are more creative.`,
 													Type:        schema.TypeBool,
 													Optional:    true,
 													Description: `Whether snippets are enabled.`,
+												},
+												"max_snippets": {
+													Type:     schema.TypeInt,
+													Optional: true,
+													Description: `Number of snippets to return per query.
+If unset, returns all snippets from the service by default.`,
 												},
 											},
 										},
@@ -1023,6 +1040,17 @@ If not set, the agent will inherit the model from its parent agent.`,
 controls the randomness of the model's responses. Lower temperatures
 produce responses that are more predictable. Higher temperatures produce
 responses that are more creative.`,
+															},
+															"thinking_level": {
+																Type:         schema.TypeString,
+																Optional:     true,
+																ValidateFunc: verify.ValidateEnum([]string{"DEFAULT", "LOW", "MEDIUM", "HIGH", ""}),
+																Description: `The thinking level of the model.
+Possible values:
+DEFAULT
+LOW
+MEDIUM
+HIGH Possible values: ["DEFAULT", "LOW", "MEDIUM", "HIGH"]`,
 															},
 														},
 													},
@@ -4041,6 +4069,8 @@ func flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettings(v int
 		flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsModel(original["model"], d, config)
 	transformed["temperature"] =
 		flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsTemperature(original["temperature"], d, config)
+	transformed["thinking_level"] =
+		flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsThinkingLevel(original["thinkingLevel"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsModel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4048,6 +4078,10 @@ func flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsModel(
 }
 
 func flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsTemperature(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsThinkingLevel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -4066,10 +4100,29 @@ func flattenCESToolDataStoreToolModalityConfigsSnippetsConfig(v interface{}, d *
 	transformed := make(map[string]interface{})
 	transformed["enable_snippets"] =
 		flattenCESToolDataStoreToolModalityConfigsSnippetsConfigEnableSnippets(original["enableSnippets"], d, config)
+	transformed["max_snippets"] =
+		flattenCESToolDataStoreToolModalityConfigsSnippetsConfigMaxSnippets(original["maxSnippets"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESToolDataStoreToolModalityConfigsSnippetsConfigEnableSnippets(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
+}
+
+func flattenCESToolDataStoreToolModalityConfigsSnippetsConfigMaxSnippets(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	// Handles the string fixed64 format
+	if strVal, ok := v.(string); ok {
+		if intVal, err := tpgresource.StringToFixed64(strVal); err == nil {
+			return intVal
+		}
+	}
+
+	// number values are represented as float64
+	if floatVal, ok := v.(float64); ok {
+		intVal := int(floatVal)
+		return intVal
+	}
+
+	return v // let terraform core handle it otherwise
 }
 
 func flattenCESToolDataStoreToolModalityConfigsSummarizationConfig(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4106,6 +4159,8 @@ func flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettings(
 		flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsModel(original["model"], d, config)
 	transformed["temperature"] =
 		flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsTemperature(original["temperature"], d, config)
+	transformed["thinking_level"] =
+		flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsThinkingLevel(original["thinkingLevel"], d, config)
 	return []interface{}{transformed}
 }
 func flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsModel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -4113,6 +4168,10 @@ func flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsM
 }
 
 func flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsTemperature(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsThinkingLevel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -6994,6 +7053,13 @@ func expandCESToolDataStoreToolModalityConfigsRewriterConfigModelSettings(v inte
 		transformed["temperature"] = transformedTemperature
 	}
 
+	transformedThinkingLevel, err := expandCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsThinkingLevel(original["thinking_level"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedThinkingLevel); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["thinkingLevel"] = transformedThinkingLevel
+	}
+
 	return transformed, nil
 }
 
@@ -7002,6 +7068,10 @@ func expandCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsModel(v
 }
 
 func expandCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsTemperature(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESToolDataStoreToolModalityConfigsRewriterConfigModelSettingsThinkingLevel(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -7028,10 +7098,21 @@ func expandCESToolDataStoreToolModalityConfigsSnippetsConfig(v interface{}, d tp
 		transformed["enableSnippets"] = transformedEnableSnippets
 	}
 
+	transformedMaxSnippets, err := expandCESToolDataStoreToolModalityConfigsSnippetsConfigMaxSnippets(original["max_snippets"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedMaxSnippets); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["maxSnippets"] = transformedMaxSnippets
+	}
+
 	return transformed, nil
 }
 
 func expandCESToolDataStoreToolModalityConfigsSnippetsConfigEnableSnippets(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESToolDataStoreToolModalityConfigsSnippetsConfigMaxSnippets(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -7101,6 +7182,13 @@ func expandCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettings(v
 		transformed["temperature"] = transformedTemperature
 	}
 
+	transformedThinkingLevel, err := expandCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsThinkingLevel(original["thinking_level"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedThinkingLevel); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["thinkingLevel"] = transformedThinkingLevel
+	}
+
 	return transformed, nil
 }
 
@@ -7109,6 +7197,10 @@ func expandCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsMo
 }
 
 func expandCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsTemperature(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESToolDataStoreToolModalityConfigsSummarizationConfigModelSettingsThinkingLevel(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

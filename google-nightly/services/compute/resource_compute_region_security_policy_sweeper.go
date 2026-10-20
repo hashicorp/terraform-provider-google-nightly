@@ -24,7 +24,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
@@ -39,6 +38,10 @@ func init() {
 		Name:           "google_compute_region_security_policy",
 		ListAndAction:  listAndActionComputeRegionSecurityPolicy,
 		DeleteFunction: testSweepComputeRegionSecurityPolicy,
+	}
+	// Add dependencies
+	s.Dependencies = []string{
+		"ComputeNetworkEdgeSecurityService",
 	}
 
 	// Register the sweeper
@@ -59,7 +62,7 @@ func listAndActionComputeRegionSecurityPolicy(action sweeper.ResourceAction) err
 	t := &testing.T{}
 	billingId := envvar.GetTestBillingAccountFromEnv(t)
 	// Build URL substitution maps individually to ensure proper formatting
-	intermediateValues := make([]map[string]string, 7)
+	intermediateValues := make([]map[string]string, 8)
 	intermediateValues[0] = map[string]string{}
 	intermediateValues[0]["region"] = "us-south1"
 	intermediateValues[1] = map[string]string{}
@@ -73,7 +76,9 @@ func listAndActionComputeRegionSecurityPolicy(action sweeper.ResourceAction) err
 	intermediateValues[5] = map[string]string{}
 	intermediateValues[5]["region"] = "southamerica-west1"
 	intermediateValues[6] = map[string]string{}
-	intermediateValues[6]["region"] = "us-central1"
+	intermediateValues[6]["region"] = "southamerica-east1"
+	intermediateValues[7] = map[string]string{}
+	intermediateValues[7]["region"] = "us-central1"
 
 	// Create configs from intermediate values
 	for _, values := range intermediateValues {
@@ -128,7 +133,7 @@ func listAndActionComputeRegionSecurityPolicy(action sweeper.ResourceAction) err
 		}
 
 		// Prepare list URL
-		listTemplate := strings.Split("https://compute.googleapis.com/compute/alpha/projects/{{project}}/regions/{{region}}/securityPolicies", "?")[0]
+		listTemplate := "https://compute.googleapis.com/compute/alpha/projects/{{project}}/regions/{{region}}/securityPolicies"
 		listUrl, err := tpgresource.ReplaceVars(mockConfig, config, listTemplate)
 		if err != nil {
 			log.Printf("[INFO][SWEEPER_LOG] error preparing sweeper list url: %s", err)
@@ -139,50 +144,67 @@ func listAndActionComputeRegionSecurityPolicy(action sweeper.ResourceAction) err
 		// Log additional info for parent-based resources
 		log.Printf("[INFO][SWEEPER_LOG] Listing %s resources at %s", resourceName, listUrl)
 
-		res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-			Config:    config,
-			Method:    "GET",
-			Project:   config.Project,
-			RawURL:    listUrl,
-			UserAgent: config.UserAgent,
-		})
-		if err != nil {
-			log.Printf("[INFO][SWEEPER_LOG] Error in response from request %s: %s", listUrl, err)
-			lastError = err
-			continue
-		}
-
-		// First try the expected resource key
-		resourceList, ok := res["securityPolicies"]
-		if ok {
-			log.Printf("[INFO][SWEEPER_LOG] Found resources under expected key 'securityPolicies'")
-		} else {
-			// Next, try the common "items" pattern
-			resourceList, ok = res["items"]
-			if ok {
-				log.Printf("[INFO][SWEEPER_LOG] Found resources under standard 'items' key")
-			} else {
-				log.Printf("[INFO][SWEEPER_LOG] no resources found")
-				continue
-			}
-		}
-		rl := resourceList.([]interface{})
-
-		log.Printf("[INFO][SWEEPER_LOG] Found %d items in %s list response.", len(rl), resourceName)
-		// Keep count of items that aren't sweepable for logging.
-		nonPrefixCount := 0
-		for _, ri := range rl {
-			obj, ok := ri.(map[string]interface{})
-			if !ok {
-				log.Printf("[INFO][SWEEPER_LOG] Item was not a map: %T", ri)
-				continue
-			}
-
-			if err := action(config, mockConfig, obj); err != nil {
-				log.Printf("[INFO][SWEEPER_LOG] Error in action: %s", err)
+		// Page zero's URL is the raw list URL. Successive pages will return the token for the next page.
+		pageUrl := listUrl
+		for {
+			res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+				Config:    config,
+				Method:    "GET",
+				Project:   config.Project,
+				RawURL:    pageUrl,
+				UserAgent: config.UserAgent,
+			})
+			if err != nil {
+				log.Printf("[INFO][SWEEPER_LOG] Error in response from request %s: %s", pageUrl, err)
 				lastError = err
+				break
+			}
+
+			// First try the expected resource key
+			resourceList, ok := res["securityPolicies"]
+			if ok {
+				log.Printf("[INFO][SWEEPER_LOG] Found resources under expected key 'securityPolicies'")
 			} else {
-				nonPrefixCount++
+				// Next, try the common "items" pattern
+				resourceList, ok = res["items"]
+				if ok {
+					log.Printf("[INFO][SWEEPER_LOG] Found resources under standard 'items' key")
+				} else {
+					log.Printf("[INFO][SWEEPER_LOG] no resources found")
+				}
+			}
+
+			if ok {
+				rl := resourceList.([]interface{})
+
+				log.Printf("[INFO][SWEEPER_LOG] Found %d items in %s list response.", len(rl), resourceName)
+				// Keep count of items that aren't sweepable for logging.
+				nonPrefixCount := 0
+				for _, ri := range rl {
+					obj, ok := ri.(map[string]interface{})
+					if !ok {
+						log.Printf("[INFO][SWEEPER_LOG] Item was not a map: %T", ri)
+						continue
+					}
+
+					if err := action(config, mockConfig, obj); err != nil {
+						log.Printf("[INFO][SWEEPER_LOG] Error in action: %s", err)
+						lastError = err
+					} else {
+						nonPrefixCount++
+					}
+				}
+			}
+
+			pageToken, ok := res["nextPageToken"].(string)
+			if !ok || pageToken == "" {
+				break
+			}
+			pageUrl, err = transport_tpg.AddQueryParams(listUrl, map[string]string{"pageToken": pageToken})
+			if err != nil {
+				log.Printf("[INFO][SWEEPER_LOG] error preparing paginated list url: %s", err)
+				lastError = err
+				break
 			}
 		}
 	}
