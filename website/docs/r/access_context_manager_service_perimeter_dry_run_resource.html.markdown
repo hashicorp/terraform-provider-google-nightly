@@ -23,7 +23,7 @@ description: |-
 
 Allows configuring a single GCP resource that should be inside of the `spec` block of a dry run service perimeter.
 This resource is intended to be used in cases where it is not possible to compile a full list
-of projects to include in a `google_access_context_manager_service_perimeter` resource,
+of resources (projects, folders, or VPC networks) to include in a `google_access_context_manager_service_perimeter` resource,
 to enable them to be added separately.
 If your perimeter is NOT in dry-run mode use `google_access_context_manager_service_perimeter_resource` instead.
 
@@ -43,6 +43,7 @@ you must specify a `billing_project` and set `user_project_override` to true
 in the provider configuration. Otherwise the ACM API will return a 403 error.
 Your account must have the `serviceusage.services.use` permission on the
 `billing_project` you defined.
+
 
 ## Example Usage - Access Context Manager Service Perimeter Dry Run Resource Basic
 

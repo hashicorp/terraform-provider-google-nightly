@@ -97,6 +97,7 @@ func TestAccVertexAIIndexEndpointDeployedIndex_vertexAiIndexEndpointDeployedInde
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckVertexAIIndexEndpointDeployedIndexDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccVertexAIIndexEndpointDeployedIndex_vertexAiIndexEndpointDeployedIndexDedicatedResourcesBasicExample_full(context),
@@ -130,7 +131,7 @@ resource "google_vertex_ai_index_endpoint_deployed_index" "dedicated_resources_u
   display_name = "tf-test-vertex-deployed-index%{random_suffix}"
   dedicated_resources {
     machine_spec {
-      machine_type      = "n1-standard-32"
+      machine_type      = "e2-standard-2"
     }
     max_replica_count = 2
     min_replica_count = 1
@@ -166,7 +167,7 @@ resource "google_vertex_ai_index" "index" {
     config {
       dimensions = 2
       approximate_neighbors_count = 150
-      shard_size = "SHARD_SIZE_MEDIUM"
+      shard_size = "SHARD_SIZE_SMALL"
       distance_measure_type = "DOT_PRODUCT_DISTANCE"
       algorithm_config {
         tree_ah_config {
@@ -204,7 +205,7 @@ resource "google_vertex_ai_index_endpoint_deployed_index" "dedicated_resources_u
   display_name = "tf-test-vertex-deployed-index%{random_suffix}"
   dedicated_resources {
     machine_spec {
-      machine_type      = "n1-standard-32"
+      machine_type      = "e2-standard-2"
     }
     max_replica_count = 3
     min_replica_count = 2
@@ -240,7 +241,7 @@ resource "google_vertex_ai_index" "index" {
     config {
       dimensions = 2
       approximate_neighbors_count = 150
-      shard_size = "SHARD_SIZE_MEDIUM"
+      shard_size = "SHARD_SIZE_SMALL"
       distance_measure_type = "DOT_PRODUCT_DISTANCE"
       algorithm_config {
         tree_ah_config {
@@ -278,6 +279,7 @@ func TestAccVertexAIIndexEndpointDeployedIndex_vertexAiIndexEndpointAutomaticRes
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckVertexAIIndexEndpointDeployedIndexDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccVertexAIIndexEndpointDeployedIndex_vertexAiIndexEndpointDeployedIndexAutomaticResourcesBasicExample_full(context),
@@ -310,8 +312,8 @@ resource "google_vertex_ai_index_endpoint_deployed_index" "automatic_resources_u
   deployed_index_id = "tf_test_deployed_index_id%{random_suffix}"
   display_name = "tf-test-vertex-deployed-index%{random_suffix}"
   automatic_resources {
-  min_replica_count = 3
-  max_replica_count = 4
+  min_replica_count = 1
+  max_replica_count = 2
   }
 }
 
@@ -344,7 +346,7 @@ resource "google_vertex_ai_index" "index" {
     config {
       dimensions = 2
       approximate_neighbors_count = 150
-      shard_size = "SHARD_SIZE_MEDIUM"
+      shard_size = "SHARD_SIZE_SMALL"
       distance_measure_type = "DOT_PRODUCT_DISTANCE"
       algorithm_config {
         tree_ah_config {
@@ -381,8 +383,8 @@ resource "google_vertex_ai_index_endpoint_deployed_index" "automatic_resources_u
   deployed_index_id = "tf_test_deployed_index_id%{random_suffix}"
   display_name = "tf-test-vertex-deployed-index%{random_suffix}"
   automatic_resources {
-  min_replica_count = 5
-  max_replica_count = 6
+  min_replica_count = 2
+  max_replica_count = 3
   }
 }
 
@@ -415,7 +417,7 @@ resource "google_vertex_ai_index" "index" {
     config {
       dimensions = 2
       approximate_neighbors_count = 150
-      shard_size = "SHARD_SIZE_MEDIUM"
+      shard_size = "SHARD_SIZE_SMALL"
       distance_measure_type = "DOT_PRODUCT_DISTANCE"
       algorithm_config {
         tree_ah_config {

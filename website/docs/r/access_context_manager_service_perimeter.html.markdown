@@ -29,7 +29,7 @@ ServicePerimeter. If a request with a source within this ServicePerimeter
 has a target outside of the ServicePerimeter, the request will be blocked.
 Otherwise the request is allowed. There are two types of Service Perimeter
 - Regular and Bridge. Regular Service Perimeters cannot overlap, a single
-GCP project can only belong to a single regular Service Perimeter. Service
+GCP project, folder, or VPC network can only belong to a single regular Service Perimeter. Service
 Perimeter Bridges can contain only GCP projects as members, a single GCP
 project may belong to multiple Service Perimeter Bridges.
 
@@ -46,6 +46,7 @@ you must specify a `billing_project` and set `user_project_override` to true
 in the provider configuration. Otherwise the ACM API will return a 403 error.
 Your account must have the `serviceusage.services.use` permission on the
 `billing_project` you defined.
+
 
 ## Example Usage - Access Context Manager Service Perimeter Basic
 
@@ -86,6 +87,7 @@ resource "google_access_context_manager_access_policy" "access-policy" {
   title  = "my policy"
 }
 ```
+
 ## Example Usage - Access Context Manager Service Perimeter Secure Data Exchange
 
 
@@ -198,6 +200,7 @@ resource "google_access_context_manager_service_perimeter" "test-access" {
   }
 }
 ```
+
 ## Example Usage - Access Context Manager Service Perimeter Dry-Run
 
 
@@ -226,6 +229,7 @@ resource "google_access_context_manager_access_policy" "access-policy" {
   title  = "my policy"
 }
 ```
+
 ## Example Usage - Access Context Manager Service Perimeter Granular Controls
 
 
@@ -320,6 +324,7 @@ resource "google_access_context_manager_service_perimeter" "test-access" {
   }
 }
 ```
+
 ## Example Usage - Access Context Manager Service Perimeter Weakened For Testing
 
 
@@ -591,11 +596,10 @@ The following arguments are supported:
   A Google Cloud resource that is allowed to ingress the perimeter.
   Requests from these resources will be allowed to access perimeter data.
   Projects, folders, organizations, and VPC networks are allowed.
-  Project format: `projects/{projectNumber}`
-  Folder format: `folders/{folderNumber}`
-  Organization format: `organizations/{organizationNumber}`
-  VPC network format:
-  `//compute.googleapis.com/projects/{PROJECT_ID}/global/networks/{NAME}`.
+  Project format: `projects/{project_number}`
+  Folder format: `folders/{folder_number}`
+  Organization format: `organizations/{organization_number}`
+  VPC network format: `//compute.googleapis.com/projects/{PROJECT_ID}/global/networks/{NAME}`.
   The resource may be in any Google Cloud organization, not just the
   organization that the perimeter is defined in. `*` is not allowed, the case
   of allowing all Google Cloud resources only is not supported.

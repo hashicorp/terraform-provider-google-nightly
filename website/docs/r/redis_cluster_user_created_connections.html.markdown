@@ -34,11 +34,12 @@ If you remove a connections item from the resource, the corresponding forwarding
 If the corresponding forwarding rule is represented in your terraform configuration it is recommended to delete that
 `google_compute_forwarding_rule` resource at the same time.
 
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_user_created_connections&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_user_created_connections&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster User Created Connections
 
 
@@ -184,7 +185,8 @@ resource "google_compute_network" "network2" {
 // redis cluster without endpoint
 resource "google_redis_cluster" "cluster-user-conn" {
   name           = "cluster-user-conn"
-  shard_count    = 3
+  shard_count    = 1
+  node_type = "REDIS_SHARED_CORE_NANO"
   region = "us-east1"
   replica_count = 0
   deletion_protection_enabled = false
@@ -193,11 +195,12 @@ resource "google_redis_cluster" "cluster-user-conn" {
 data "google_project" "project" {
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_user_and_auto_created_connections&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_user_and_auto_created_connections&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster User And Auto Created Connections
 
 
@@ -276,7 +279,8 @@ resource "google_compute_network" "network2" {
 // redis cluster without endpoint
 resource "google_redis_cluster" "cluster-user-auto-conn" {
   name           = "cluster-user-auto-conn"
-  shard_count    = 3
+  shard_count    = 1
+  node_type = "REDIS_SHARED_CORE_NANO"
   region = "us-east1"
   replica_count = 0
   deletion_protection_enabled = false

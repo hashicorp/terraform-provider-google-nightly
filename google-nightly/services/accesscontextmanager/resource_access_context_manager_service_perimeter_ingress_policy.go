@@ -240,6 +240,7 @@ func ResourceAccessContextManagerServicePerimeterIngressPolicy() *schema.Resourc
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
+				ValidateFunc:     verify.ValidateRegexp(`^accessPolicies/[^/]+/servicePerimeters/[^/]+$`),
 				DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
 				Description:      `The name of the Service Perimeter to add this resource to.`,
 			},
@@ -314,9 +315,9 @@ Forwarding rule format: '//compute.googleapis.com/projects/{PROJECT_ID}/global/f
 										Description: `A Google Cloud resource that is allowed to ingress the perimeter.
 Requests from these resources will be allowed to access perimeter data.
 Projects, folders, organizations, and VPC networks are allowed.
-Project format: 'projects/{projectNumber}'
-Folder format: 'folders/{folderNumber}'
-Organization format: 'organizations/{organizationNumber}'
+Project format: 'projects/{project_number}'
+Folder format: 'folders/{folder_number}'
+Organization format: 'organizations/{organization_number}'
 VPC network format:
 '//compute.googleapis.com/projects/{PROJECT_ID}/global/networks/{NAME}'.
 The resource may be in any Google Cloud organization, not just the
@@ -1309,6 +1310,9 @@ func resourceAccessContextManagerServicePerimeterIngressPolicyEncoder(d *schema.
 	// The is logic is inside the encoder since the access_policy_id field is part of
 	// the mutex lock and encoders run before the lock is set.
 	parts := strings.Split(d.Get("perimeter").(string), "/")
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("unexpected format for perimeter (%s), expected accessPolicies/{accessPolicy}/servicePerimeters/{servicePerimeter}", d.Get("perimeter").(string))
+	}
 	d.Set("access_policy_id", fmt.Sprintf("accessPolicies/%s", parts[1]))
 
 	return obj, nil

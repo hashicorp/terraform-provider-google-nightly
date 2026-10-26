@@ -106,18 +106,19 @@ To [detach](https://cloud.google.com/memorystore/docs/cluster/working-with-cross
           * Manually update `cross_cluster_replication_config` field in the configuration file(s) for those clusters with the latest value from the state.
           * Execute `terraform plan` once again. This should not generate any diff, confirming the configuration is in sync with the infrastructure.
 
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_ha_with_labels&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_ha_with_labels&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Ha With Labels
 
 
 ```hcl
 resource "google_redis_cluster" "cluster-ha-with-labels" {
   name           = "ha-cluster"
-  shard_count    = 3
+  shard_count    = 1
   labels = {
     my_key = "my_val"
     other_key = "other_val" 
@@ -177,18 +178,19 @@ resource "google_compute_network" "consumer_net" {
   auto_create_subnetworks = false
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_ha&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_ha&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Ha
 
 
 ```hcl
 resource "google_redis_cluster" "cluster-ha" {
   name           = "ha-cluster"
-  shard_count    = 3
+  shard_count    = 1
   psc_configs {
     network = google_compute_network.consumer_net.id
   }
@@ -244,22 +246,24 @@ resource "google_compute_network" "consumer_net" {
   auto_create_subnetworks = false
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_ha_single_zone&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_ha_single_zone&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Ha Single Zone
 
 
 ```hcl
 resource "google_redis_cluster" "cluster-ha-single-zone" {
   name           = "ha-cluster-single-zone"
-  shard_count    = 3
+  shard_count    = 1
   psc_configs {
     network = google_compute_network.consumer_net.id
   }
   region = "us-east1"
+  node_type = "REDIS_SHARED_CORE_NANO"
   zone_distribution_config {
     mode = "SINGLE_ZONE"
     zone = "us-east1-b"
@@ -305,11 +309,12 @@ resource "google_compute_network" "consumer_net" {
   auto_create_subnetworks = false
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_secondary&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_secondary&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Secondary
 
 
@@ -327,11 +332,11 @@ resource "google_redis_cluster" "primary_cluster" {
   // Please see https://cloud.google.com/memorystore/docs/cluster/about-cross-region-replication#settings_copied_from_the_primary_during_instance_creation for the complete list of such settings.
   authorization_mode = "AUTH_MODE_DISABLED"
   transit_encryption_mode = "TRANSIT_ENCRYPTION_MODE_DISABLED"
-  shard_count   = 3
+  shard_count   = 1
   redis_configs = {
     maxmemory-policy = "volatile-ttl"
   }
-  node_type = "REDIS_HIGHMEM_MEDIUM"
+  node_type = "REDIS_SHARED_CORE_NANO"
   persistence_config {
     mode = "RDB"
     rdb_config {
@@ -378,11 +383,11 @@ resource "google_redis_cluster" "secondary_cluster" {
   // Please see https://cloud.google.com/memorystore/docs/cluster/about-cross-region-replication#settings_copied_from_the_primary_during_instance_creation for the complete list of such settings.
   authorization_mode = "AUTH_MODE_DISABLED"
   transit_encryption_mode = "TRANSIT_ENCRYPTION_MODE_DISABLED"
-  shard_count   = 3
+  shard_count   = 1
   redis_configs = {
     maxmemory-policy = "volatile-ttl"
   }
-  node_type = "REDIS_HIGHMEM_MEDIUM"
+  node_type = "REDIS_SHARED_CORE_NANO"
   persistence_config {
     mode = "RDB"
     rdb_config {
@@ -396,7 +401,7 @@ resource "google_redis_cluster" "secondary_cluster" {
   zone_distribution_config {
     mode = "MULTI_ZONE"
   }
-  replica_count = 2
+  replica_count = 1
   maintenance_policy {
     weekly_maintenance_window {
       day = "WEDNESDAY"
@@ -466,18 +471,19 @@ resource "google_compute_network" "consumer_net" {
   auto_create_subnetworks = false
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_rdb&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_rdb&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Rdb
 
 
 ```hcl
 resource "google_redis_cluster" "cluster-rdb" {
   name           = "rdb-cluster"
-  shard_count    = 3
+  shard_count    = 1
   psc_configs {
     network = google_compute_network.consumer_net.id
   }
@@ -540,18 +546,19 @@ resource "google_compute_network" "consumer_net" {
   auto_create_subnetworks = false
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_aof&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_aof&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Aof
 
 
 ```hcl
 resource "google_redis_cluster" "cluster-aof" {
   name           = "aof-cluster"
-  shard_count    = 3
+  shard_count    = 1
   psc_configs {
     network = google_compute_network.consumer_net.id
   }
@@ -612,23 +619,25 @@ resource "google_compute_network" "consumer_net" {
   auto_create_subnetworks = false
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_cmek&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_cmek&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Cmek
 
 
 ```hcl
 resource "google_redis_cluster" "cluster-cmek" {
   name           = "cmek-cluster"
-  shard_count    = 3
+  shard_count    = 1
   psc_configs {
     network = google_compute_network.consumer_net.id
   }
   kms_key = "my-key"
   region = "us-east1"
+  node_type = "REDIS_SHARED_CORE_NANO"
   deletion_protection_enabled = true
   depends_on = [
     google_network_connectivity_service_connection_policy.default
@@ -662,19 +671,21 @@ resource "google_compute_network" "consumer_net" {
   auto_create_subnetworks = false
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_flexible_ca&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=redis_cluster_flexible_ca&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Redis Cluster Flexible Ca
 
 
 ```hcl
 resource "google_redis_cluster" "test-cluster" {
   name           = "ca-cluster"
-  shard_count    = 3
+  shard_count    = 1
   region         = "us-east1"
+  node_type      = "REDIS_SHARED_CORE_NANO"
   
   psc_configs {
     network = google_compute_network.consumer_net.id

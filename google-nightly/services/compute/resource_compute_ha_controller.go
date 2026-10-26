@@ -55,6 +55,24 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
+import "os"
+
+const DefaultHaControllerAPIVersion = "2026-10-01-preview"
+const HaControllerAPIVersionEnvVar = "GOOGLE_COMPUTE_HA_CONTROLLER_API_VERSION"
+
+func HaControllerAPIVersion() string {
+	if v := os.Getenv(HaControllerAPIVersionEnvVar); v != "" {
+		return v
+	}
+	return DefaultHaControllerAPIVersion
+}
+
+func HaControllerPreviewURL(rawURL string) (string, error) {
+	u := strings.Replace(rawURL, "/compute/alpha/", "/compute/v1/", 1)
+	u = strings.Replace(u, "/compute/beta/", "/compute/v1/", 1)
+	return transport_tpg.AddQueryParams(u, map[string]string{"$apiVersion": HaControllerAPIVersion()})
+}
+
 var (
 	_ = bytes.Clone
 	_ = context.WithCancel
@@ -113,6 +131,7 @@ func ResourceComputeHaController() *schema.Resource {
 		},
 
 		CustomizeDiff: customdiff.All(
+			validateComputeHaControllerZoneConfiguration,
 			tpgresource.DefaultProviderProject,
 			tpgresource.DefaultProviderDeletionPolicy("DELETE"),
 		),
@@ -294,6 +313,47 @@ func computeHaControllerZoneConfigurationSchema() *schema.Resource {
 				ForceNew:    true,
 				Description: `The name of the zone. The zone must be unique for each block.`,
 			},
+			"instance_network_interface": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Description: `The network interface configuration of a VM instance in this zone.
+Maximum of 8 network interfaces can be specified.`,
+				MaxItems: 8,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ipv6_address": {
+							Type:             schema.TypeString,
+							Optional:         true,
+							ForceNew:         true,
+							DiffSuppressFunc: zoneNicIPv6DiffSuppress,
+							Description: `The internal IPv6 address to assign to the instance's network interface
+when the instance is in this zone. If you don't specify an address, then
+Google Cloud assigns an ephemeral IPv6 address based on the stack type of
+the network interface.`,
+						},
+						"name": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: verify.ValidateRegexp(`^nic[0-7]$`),
+							Description: `The name of the network interface. A VM network interface uses the 'nicN'
+naming format, where 'N' is a value between '0' and '7'. The default
+interface is 'nic0'.`,
+							Default: "nic0",
+						},
+						"network_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Description: `The internal IPv4 address to assign to the instance's network interface
+when the instance is in this zone. If you don't specify an address,
+then Google Cloud assigns an ephemeral IPv4 address based on the stack type
+of the network interface.`,
+						},
+					},
+				},
+			},
 			"node_affinities": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -466,6 +526,11 @@ func resourceComputeHaControllerCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	headers := make(http.Header)
+	url, err = HaControllerPreviewURL(url)
+	if err != nil {
+		return err
+	}
+	headers.Set("X-Goog-Api-Version", HaControllerAPIVersion())
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 		Config:    config,
 		Method:    "POST",
@@ -549,6 +614,11 @@ func resourceComputeHaControllerRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	headers := make(http.Header)
+	url, err = HaControllerPreviewURL(url)
+	if err != nil {
+		return err
+	}
+	headers.Set("X-Goog-Api-Version", HaControllerAPIVersion())
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 		Config:    config,
 		Method:    "GET",
@@ -651,6 +721,11 @@ func resourceComputeHaControllerDelete(d *schema.ResourceData, meta interface{})
 	}
 
 	headers := make(http.Header)
+	url, err = HaControllerPreviewURL(url)
+	if err != nil {
+		return err
+	}
+	headers.Set("X-Goog-Api-Version", HaControllerAPIVersion())
 
 	log.Printf("[DEBUG] Deleting HaController %q", d.Id())
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
@@ -743,10 +818,132 @@ func flattenComputeHaControllerZoneConfiguration(v interface{}, d *schema.Resour
 			}
 		}
 
+		if netIfacesRaw, ok := configMap["instanceNetworkInterfaces"]; ok {
+			if transformedNetIfaces := flattenComputeHaControllerZoneConfigurationInstanceNetworkInterfaces(zone, netIfacesRaw, original, d); len(transformedNetIfaces) > 0 {
+				item["instance_network_interface"] = transformedNetIfaces
+			}
+		}
+
 		transformed = append(transformed, item)
 	}
 
 	return transformed
+}
+
+func flattenComputeHaControllerZoneConfigurationInstanceNetworkInterfaces(zone string, raw interface{}, allZones map[string]interface{}, d *schema.ResourceData) []interface{} {
+	if raw == nil {
+		return nil
+	}
+	nicMap, ok := raw.(map[string]interface{})
+	if !ok || len(nicMap) == 0 {
+		return nil
+	}
+
+	nicNames := make([]string, 0, len(nicMap))
+	for nicName := range nicMap {
+		nicNames = append(nicNames, nicName)
+	}
+	sort.Strings(nicNames)
+
+	var transformed []interface{}
+	for _, nicName := range nicNames {
+		rawNic := nicMap[nicName]
+		if rawNic == nil {
+			continue
+		}
+		nic, ok := rawNic.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		transformedNic := make(map[string]interface{})
+		if val, ok := nic["networkIP"].(string); ok && val != "" && hasComputeHaControllerZoneConfigurationNicFieldInAllZones(allZones, nicName, "networkIP") {
+			transformedNic["network_ip"] = val
+		}
+		if val, ok := nic["ipv6Address"].(string); ok && val != "" && hasComputeHaControllerZoneConfigurationNicFieldInAllZones(allZones, nicName, "ipv6Address") {
+			if configuredIpv6 := getConfiguredComputeHaControllerZoneConfigurationNicIpv6(d, zone, nicName); configuredIpv6 != "" && ipv6RepresentationDiffSuppress("", configuredIpv6, val, d) {
+				transformedNic["ipv6_address"] = configuredIpv6
+			} else {
+				transformedNic["ipv6_address"] = val
+			}
+		}
+
+		if len(transformedNic) > 0 {
+			transformedNic["name"] = nicName
+			transformed = append(transformed, transformedNic)
+		}
+	}
+	return transformed
+}
+
+func hasComputeHaControllerZoneConfigurationNicFieldInAllZones(allZones map[string]interface{}, nicName, fieldName string) bool {
+	if len(allZones) == 0 {
+		return false
+	}
+	for _, rawZoneCfg := range allZones {
+		zoneCfg, ok := rawZoneCfg.(map[string]interface{})
+		if !ok {
+			return false
+		}
+		nics, ok := zoneCfg["instanceNetworkInterfaces"].(map[string]interface{})
+		if !ok {
+			return false
+		}
+		nic, ok := nics[nicName].(map[string]interface{})
+		if !ok {
+			return false
+		}
+		val, ok := nic[fieldName].(string)
+		if !ok || val == "" {
+			return false
+		}
+	}
+	return true
+}
+
+func getConfiguredComputeHaControllerZoneConfigurationNicIpv6(d *schema.ResourceData, zone, nicName string) string {
+	if d == nil {
+		return ""
+	}
+	rawZoneConfigs := d.Get("zone_configuration")
+	if rawZoneConfigs == nil {
+		return ""
+	}
+	var list []interface{}
+	if sdkSet, ok := rawZoneConfigs.(*schema.Set); ok {
+		list = sdkSet.List()
+	} else if slice, ok := rawZoneConfigs.([]interface{}); ok {
+		list = slice
+	}
+	for _, rawZc := range list {
+		zc, ok := rawZc.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		zcZone, _ := zc["zone"].(string)
+		if tpgresource.GetResourceNameFromSelfLink(zcZone) != tpgresource.GetResourceNameFromSelfLink(zone) {
+			continue
+		}
+		nics, ok := zc["instance_network_interface"].([]interface{})
+		if !ok {
+			continue
+		}
+		for _, rawNic := range nics {
+			nic, ok := rawNic.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			cfgName, _ := nic["name"].(string)
+			if cfgName == "" {
+				cfgName = "nic0"
+			}
+			if cfgName == nicName {
+				ipv6, _ := nic["ipv6_address"].(string)
+				return ipv6
+			}
+		}
+	}
+	return ""
 }
 
 func flattenComputeHaControllerZoneConfigurationNodeAffinities(raw interface{}) []interface{} {
@@ -871,7 +1068,7 @@ func expandComputeHaControllerZoneConfiguration(v interface{}, d tpgresource.Ter
 		if !ok || zoneVal == nil || zoneVal.(string) == "" {
 			continue
 		}
-		zone := zoneVal.(string)
+		zone := tpgresource.GetResourceNameFromSelfLink(zoneVal.(string))
 
 		transformedItem := make(map[string]interface{})
 
@@ -887,10 +1084,52 @@ func expandComputeHaControllerZoneConfiguration(v interface{}, d tpgresource.Ter
 			}
 		}
 
+		if netIfaces, ok := item["instance_network_interface"]; ok {
+			if expanded := expandComputeHaControllerZoneConfigurationInstanceNetworkInterfaces(netIfaces); len(expanded) > 0 {
+				transformedItem["instanceNetworkInterfaces"] = expanded
+			}
+		}
+
 		transformed[zone] = transformedItem
 	}
 
 	return transformed, nil
+}
+
+func expandComputeHaControllerZoneConfigurationInstanceNetworkInterfaces(raw interface{}) map[string]interface{} {
+	if raw == nil {
+		return nil
+	}
+	var list []interface{}
+	if sdkSet, ok := raw.(*schema.Set); ok {
+		list = sdkSet.List()
+	} else if slice, ok := raw.([]interface{}); ok {
+		list = slice
+	} else {
+		return nil
+	}
+
+	transformed := make(map[string]interface{})
+	for _, rawItem := range list {
+		if rawItem == nil {
+			continue
+		}
+		nic := rawItem.(map[string]interface{})
+		name := "nic0"
+		if val, ok := nic["name"]; ok && val != nil && val.(string) != "" {
+			name = val.(string)
+		}
+
+		transformedNic := make(map[string]interface{})
+		if val, ok := nic["network_ip"]; ok && val != nil && val.(string) != "" {
+			transformedNic["networkIP"] = val
+		}
+		if val, ok := nic["ipv6_address"]; ok && val != nil && val.(string) != "" {
+			transformedNic["ipv6Address"] = val
+		}
+		transformed[name] = transformedNic
+	}
+	return transformed
 }
 
 func expandComputeHaControllerZoneConfigurationReservationAffinity(raw interface{}) interface{} {
@@ -956,6 +1195,47 @@ func expandComputeHaControllerZoneConfigurationNodeAffinities(raw interface{}) [
 		transformed = append(transformed, transformedItem)
 	}
 	return transformed
+}
+
+func validateComputeHaControllerZoneConfiguration(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	return validateComputeHaControllerZoneConfigurationFunc(d)
+}
+
+func validateComputeHaControllerZoneConfigurationFunc(d tpgresource.TerraformResourceDiff) error {
+	zoneBlocks := extractZoneBlocksFromDiff(d, "zone_configuration", "instance_network_interface")
+	if len(zoneBlocks) < 2 {
+		return fmt.Errorf("zone_configuration must contain 2 elements")
+	}
+
+	seenZones := make(map[string]bool, len(zoneBlocks))
+	var firstZone string
+	var firstZoneNics map[string]zoneNicDiffSpec
+
+	for i, zBlock := range zoneBlocks {
+		if !zBlock.valid {
+			return fmt.Errorf("every element in zone_configuration must be a valid zone configuration block")
+		}
+		if zBlock.zone == "" {
+			return fmt.Errorf("every element in zone_configuration must specify a non-empty zone")
+		}
+		zone := tpgresource.GetResourceNameFromSelfLink(zBlock.zone)
+		if seenZones[zone] {
+			return fmt.Errorf("zone_configuration must contain distinct zones, found duplicate: %s", zone)
+		}
+		seenZones[zone] = true
+
+		currentZoneNics, err := validateZoneNicBlocks(zBlock.nics, zone, "instance_network_interface", -1)
+		if err != nil {
+			return err
+		}
+		if i == 0 {
+			firstZone = zone
+			firstZoneNics = currentZoneNics
+		} else if err := validateZoneNicsSymmetry(firstZone, firstZoneNics, zone, currentZoneNics, "zone_configuration", "instance_network_interface"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func expandComputeHaControllerNetworkingAutoConfiguration(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {

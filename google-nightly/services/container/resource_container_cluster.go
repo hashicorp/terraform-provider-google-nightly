@@ -540,6 +540,7 @@ func ResourceContainerCluster() *schema.Resource {
 							AtLeastOneOf: addonsConfigKeys,
 							MaxItems:     1,
 							Description:  `The status of the Parallelstore CSI driver addon, which allows the usage of Parallelstore instances as volumes. Defaults to disabled; set enabled = true to enable.`,
+							Deprecated:   "`addons_config.parallelstore_csi_driver_config` is deprecated and will be removed in a future major release. Use `addons_config.lustre_csi_driver_config` instead.",
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"enabled": {
@@ -982,7 +983,7 @@ func ResourceContainerCluster() *schema.Resource {
 													Optional:     true,
 													Computed:     true,
 													Description:  `Update strategy of the node pool.`,
-													ValidateFunc: validation.StringInSlice([]string{"NODE_POOL_UPDATE_STRATEGY_UNSPECIFIED", "BLUE_GREEN", "SURGE"}, false),
+													ValidateFunc: validation.StringInSlice([]string{"NODE_POOL_UPDATE_STRATEGY_UNSPECIFIED", "BLUE_GREEN", "SURGE", "SHORT_LIVED"}, false),
 												},
 												"blue_green_settings": {
 													Type:        schema.TypeList,
@@ -1240,10 +1241,11 @@ func ResourceContainerCluster() *schema.Resource {
 			},
 
 			"initial_node_count": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				ForceNew:    true,
-				Description: `The number of nodes to create in this cluster's default node pool. In regional or multi-zonal clusters, this is the number of nodes per zone. Must be set if node_pool is not set. If you're using google_container_node_pool objects with no default node pool, you'll need to set this to a value of at least 1, alongside setting remove_default_node_pool to true.`,
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: containerClusterInitialNodeCountDiffSuppress,
+				Description:      `The number of nodes to create in this cluster's default node pool. In regional or multi-zonal clusters, this is the number of nodes per zone. When omitted (or set to 0) with no node_config or node_pool blocks defined, the cluster is created without a default node pool. This requires a GKE version that supports clusters without a default node pool (1.36.4-gke.1469000+). For older GKE versions, if you're using google_container_node_pool objects with no default node pool, you'll need to set this to a value of at least 1, alongside setting remove_default_node_pool to true.`,
 			},
 
 			"logging_config": {
@@ -2252,7 +2254,8 @@ func ResourceContainerCluster() *schema.Resource {
 			"remove_default_node_pool": {
 				Type:          schema.TypeBool,
 				Optional:      true,
-				Description:   `If true, deletes the default node pool upon cluster creation. If you're using google_container_node_pool resources with no default node pool, this should be set to true, alongside setting initial_node_count to at least 1.`,
+				Deprecated:    "On newer cluster versions (1.36.4-gke.1469000+) omit initial_node_count and node_config (or set initial_node_count = 0) instead.",
+				Description:   `If true, deletes the default node pool upon cluster creation. On GKE versions that support clusters without a default node pool, you can instead omit initial_node_count and node_config (or set initial_node_count to 0) to skip creating the default node pool without setting this field. For older GKE versions, if you're using google_container_node_pool resources with no default node pool, this should be set to true, alongside setting initial_node_count to at least 1.`,
 				ConflictsWith: []string{"enable_autopilot"},
 			},
 
@@ -2357,7 +2360,7 @@ func ResourceContainerCluster() *schema.Resource {
 							ForceNew:     true,
 							AtLeastOneOf: privateClusterConfigKeys,
 							ValidateFunc: verify.OrEmpty(validation.IsCIDRNetwork(28, 28)),
-							Description:  `The IP range in CIDR notation to use for the hosted master network. This range will be used for assigning private IP addresses to the cluster master(s) and the ILB VIP. This range must not overlap with any other ranges in use within the cluster's network, and it must be a /28 subnet. See Private Cluster Limitations for more details. This field only applies to private clusters, when enable_private_nodes is true.`,
+							Description:  `The IP range in CIDR notation to use for the hosted master network. This range will be used for assigning private IP addresses to the cluster master(s) and the ILB VIP. This range must not overlap with any other ranges in use within the cluster's network, and it must be a /28 subnet. See Private Cluster Limitations for more details. This field only applies to private clusters, when enable_private_nodes is true. On GKE versions 1.29 and later, this field is optional when private_endpoint_subnetwork is specified. It is also optional for Autopilot clusters.`,
 						},
 						"peering_name": {
 							Type:        schema.TypeString,
@@ -3556,11 +3559,15 @@ func resourceContainerClusterCreate(d *schema.ResourceData, meta interface{}) er
 			},
 		})
 		if err != nil {
-			return errwrap.Wrapf("Error deleting default node pool: {{err}}", err)
-		}
-		err = ContainerOperationWait(config, op, project, location, "removing default node pool", userAgent, d.Timeout(schema.TimeoutCreate))
-		if err != nil {
-			return errwrap.Wrapf("Error while waiting to delete default node pool: {{err}}", err)
+			if !transport_tpg.IsGoogleApiErrorWithCode(err, 404) {
+				return errwrap.Wrapf("Error deleting default node pool: {{err}}", err)
+			}
+			log.Printf("[WARN] Container cluster %q default node pool already removed, no change", d.Id())
+		} else {
+			err = ContainerOperationWait(config, op, project, location, "removing default node pool", userAgent, d.Timeout(schema.TimeoutCreate))
+			if err != nil {
+				return errwrap.Wrapf("Error while waiting to delete default node pool: {{err}}", err)
+			}
 		}
 	}
 
@@ -6454,7 +6461,7 @@ func shouldInclude(d *schema.ResourceData, key string) bool {
 
 func expandAuthenticatorGroupsConfig(configured interface{}) *container.AuthenticatorGroupsConfig {
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
 	result := &container.AuthenticatorGroupsConfig{}
@@ -6548,7 +6555,7 @@ func flattenSecurityPostureConfig(spc *container.SecurityPostureConfig) []map[st
 
 func expandEnterpriseConfig(configured interface{}) *container.EnterpriseConfig {
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
 
@@ -6826,7 +6833,7 @@ func flattenManagedOpenTelemetryConfig(c *container.ManagedOpenTelemetryConfig) 
 func expandNetworkPolicy(configured interface{}) *container.NetworkPolicy {
 	result := &container.NetworkPolicy{}
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return result
 	}
 	config := l[0].(map[string]interface{})
@@ -6940,7 +6947,7 @@ func expandControlPlaneEndpointsConfig(d *schema.ResourceData) *container.Contro
 
 func expandVerticalPodAutoscaling(configured interface{}) *container.VerticalPodAutoscaling {
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
 	config := l[0].(map[string]interface{})
@@ -6951,7 +6958,7 @@ func expandVerticalPodAutoscaling(configured interface{}) *container.VerticalPod
 
 func expandServiceExternalIpsConfig(configured interface{}) *container.ServiceExternalIPsConfig {
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
 	config := l[0].(map[string]interface{})
@@ -6963,7 +6970,7 @@ func expandServiceExternalIpsConfig(configured interface{}) *container.ServiceEx
 
 func expandMeshCertificates(configured interface{}) *container.MeshCertificates {
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
 	config := l[0].(map[string]interface{})
@@ -6975,7 +6982,7 @@ func expandMeshCertificates(configured interface{}) *container.MeshCertificates 
 
 func expandDatabaseEncryption(configured interface{}) *container.DatabaseEncryption {
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
 	config := l[0].(map[string]interface{})
@@ -7064,6 +7071,9 @@ func expandWorkloadIdentityConfig(configured interface{}) *container.WorkloadIde
 func expandIdentityServiceConfig(configured interface{}) *container.IdentityServiceConfig {
 	l := configured.([]interface{})
 	v := &container.IdentityServiceConfig{}
+	if len(l) == 0 || l[0] == nil {
+		return v
+	}
 
 	config := l[0].(map[string]interface{})
 	v.Enabled = config["enabled"].(bool)
@@ -7179,7 +7189,7 @@ func expandDefaultMaxPodsConstraint(v interface{}) *container.MaxPodsConstraint 
 
 func expandCostManagementConfig(configured interface{}) *container.CostManagementConfig {
 	l := configured.([]interface{})
-	if len(l) == 0 {
+	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
 
@@ -9028,7 +9038,7 @@ func podSecurityPolicyCfgSuppress(k, old, new string, r *schema.ResourceData) bo
 	if k == "pod_security_policy_config.#" && old == "1" && new == "0" {
 		if v, ok := r.GetOk("pod_security_policy_config"); ok {
 			cfgList := v.([]interface{})
-			if len(cfgList) > 0 {
+			if len(cfgList) > 0 && cfgList[0] != nil {
 				d := cfgList[0].(map[string]interface{})
 				// Suppress if old value was {enabled == false}
 				return !d["enabled"].(bool)
@@ -9042,7 +9052,7 @@ func SecretManagerCfgSuppress(k, old, new string, r *schema.ResourceData) bool {
 	if k == "secret_manager_config.#" && old == "1" && new == "0" {
 		if v, ok := r.GetOk("secret_manager_config"); ok {
 			cfgList := v.([]interface{})
-			if len(cfgList) > 0 {
+			if len(cfgList) > 0 && cfgList[0] != nil {
 				d := cfgList[0].(map[string]interface{})
 				// Suppress if old value was {enabled == false}
 				return !d["enabled"].(bool)
@@ -9068,7 +9078,7 @@ func SecretSyncCfgSuppress(k, old, new string, r *schema.ResourceData) bool {
 	if k == "secret_sync_config.#" && old == "1" && new == "0" {
 		if v, ok := r.GetOk("secret_sync_config"); ok {
 			cfgList := v.([]interface{})
-			if len(cfgList) > 0 {
+			if len(cfgList) > 0 && cfgList[0] != nil {
 				d := cfgList[0].(map[string]interface{})
 				// Suppress if old value was {enabled == false}
 				return !d["enabled"].(bool)
@@ -9187,6 +9197,17 @@ func containerClusterSkipNodePoolRefreshCustomizeDiff(_ context.Context, diff *s
 		return fmt.Errorf("skip_node_pool_refresh cannot be true when inline node_pool blocks are defined; use google_container_node_pool resources instead, or unset skip_node_pool_refresh")
 	}
 	return nil
+}
+
+func containerClusterInitialNodeCountDiffSuppress(_, old, new string, d *schema.ResourceData) bool {
+	if d == nil || d.Id() == "" {
+		return false
+	}
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() || !rawConfig.Type().HasAttribute("initial_node_count") {
+		return false
+	}
+	return rawConfig.GetAttr("initial_node_count").IsNull()
 }
 
 func containerClusterNodeVersionCustomizeDiffFunc(diff tpgresource.TerraformResourceDiff) error {

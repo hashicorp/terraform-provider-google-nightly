@@ -25,11 +25,12 @@ A collection of virtual machines and connected resources forming a high-performa
 
 
 
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=hypercomputecluster_cluster_basic&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=hypercomputecluster_cluster_basic&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Hypercomputecluster Cluster Basic
 
 
@@ -286,6 +287,11 @@ The following arguments are supported:
   Specifies the time limit for created instances. Instances will be
   terminated at the end of this duration.
 
+* `network_tags` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  A list of network tags to attach to the VM instances.
+  A maximum of 64 network tags are allowed.
+
 * `zone` -
   (Required)
   Name of the zone in which VM instances should run, e.g., `us-central1-a`.
@@ -300,6 +306,11 @@ The following arguments are supported:
   type](https://cloud.google.com/compute/docs/machine-resource) to use, e.g.
   `n2-standard-2`.
 
+* `network_tags` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  A list of network tags to attach to the VM instances.
+  A maximum of 64 network tags are allowed.
+
 * `zone` -
   (Required)
   Name of the zone in which VM instances should run, e.g., `us-central1-a`.
@@ -307,6 +318,11 @@ The following arguments are supported:
   other resources specified in the cluster.
 
 <a name="nested_compute_resources_config_new_reserved_instances"></a>The `new_reserved_instances` block supports:
+
+* `network_tags` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  A list of network tags to attach to the VM instances.
+  A maximum of 64 network tags are allowed.
 
 * `reservation` -
   (Optional)
@@ -320,6 +336,11 @@ The following arguments are supported:
   Name of the Compute Engine [machine
   type](https://cloud.google.com/compute/docs/machine-resource) to use, e.g.
   `n2-standard-2`.
+
+* `network_tags` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  A list of network tags to attach to the VM instances.
+  A maximum of 64 network tags are allowed.
 
 * `termination_action` -
   (Optional)
@@ -423,6 +444,11 @@ The following arguments are supported:
   Name of the Compute Engine [machine
   type](https://cloud.google.com/compute/docs/machine-resource) to use for
   login nodes, e.g. `n2-standard-2`.
+
+* `network_tags` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  A list of network tags to attach to the VM instances.
+  A maximum of 64 network tags are allowed.
 
 * `startup_script` -
   (Optional)
@@ -631,6 +657,12 @@ The following arguments are supported:
   should be imported.
   Structure is [documented below](#nested_storage_resources_config_existing_lustre).
 
+* `existing_nfs` -
+  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  When set in a StorageResourceConfig, indicates that an existing NFS
+  share should be imported.
+  Structure is [documented below](#nested_storage_resources_config_existing_nfs).
+
 * `new_bucket` -
   (Optional)
   When set in a StorageResourceConfig, indicates that a new
@@ -671,6 +703,21 @@ The following arguments are supported:
   (Required)
   Name of the Managed Lustre instance to import, in the format
   `projects/{project}/locations/{location}/instances/{instance}`
+
+<a name="nested_storage_resources_config_existing_nfs"></a>The `existing_nfs` block supports:
+
+* `mount_options` -
+  (Optional)
+  Options to mount the NFS share, as expected by fs_mntops field in fstab(5),
+  for example: "rw,vers=4.1,nconnect=2,noatime".
+
+* `remote_mount` -
+  (Required)
+  Remote mount path of the NFS share.
+
+* `server_ip_address` -
+  (Required)
+  Server IP address of the NFS share.
 
 <a name="nested_storage_resources_config_new_bucket"></a>The `new_bucket` block supports:
 

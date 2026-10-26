@@ -25,11 +25,12 @@ Represents an HA Controller resource.
 
 
 
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_basic&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_basic&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Compute Ha Controller Basic
 
 
@@ -91,11 +92,12 @@ resource "google_compute_ha_controller" "default" {
   }
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_reservations&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_reservations&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Compute Ha Controller Reservations
 
 
@@ -222,11 +224,12 @@ resource "google_compute_ha_controller" "default" {
   }
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_sole_tenancy&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_sole_tenancy&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Compute Ha Controller Sole Tenancy
 
 
@@ -346,11 +349,12 @@ resource "google_compute_ha_controller" "default" {
   }
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_backend_service&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_backend_service&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Compute Ha Controller Backend Service
 
 
@@ -426,6 +430,163 @@ resource "google_compute_ha_controller" "default" {
   }
   zone_configuration {
     zone = local.zone2
+  }
+}
+```
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=compute_ha_controller_multi_nic_static_ip&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div>
+
+## Example Usage - Compute Ha Controller Multi Nic Static Ip
+
+
+```hcl
+locals {
+  region = "us-central1"
+  zone1  = "us-central1-a"
+  zone2  = "us-central1-b"
+}
+
+data "google_compute_image" "debian_12" {
+  family  = "debian-12"
+  project = "debian-cloud"
+}
+
+data "google_compute_network" "net_0" {
+  name = "hac-sip-net0"
+}
+
+resource "google_compute_subnetwork" "subnet_0" {
+  name          = "hac-sip-sub0"
+  ip_cidr_range = "10.0.1.0/24"
+  region        = local.region
+  network       = data.google_compute_network.net_0.id
+}
+
+data "google_compute_network" "net_1" {
+  name = "hac-sip-net1"
+}
+
+resource "google_compute_subnetwork" "subnet_1" {
+  name          = "hac-sip-sub1"
+  ip_cidr_range = "10.0.2.0/24"
+  region        = local.region
+  network       = data.google_compute_network.net_1.id
+}
+
+resource "google_compute_address" "ipv4_nic0_zone1" {
+  name         = "hac-sip-v4-n0-z1"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_0.id
+  address_type = "INTERNAL"
+  address      = "10.0.1.10"
+}
+
+resource "google_compute_address" "ipv4_nic0_zone2" {
+  name         = "hac-sip-v4-n0-z2"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_0.id
+  address_type = "INTERNAL"
+  address      = "10.0.1.11"
+}
+
+resource "google_compute_address" "ipv4_nic1_zone1" {
+  name         = "hac-sip-v4-n1-z1"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_1.id
+  address_type = "INTERNAL"
+  address      = "10.0.2.10"
+}
+
+resource "google_compute_address" "ipv4_nic1_zone2" {
+  name         = "hac-sip-v4-n1-z2"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_1.id
+  address_type = "INTERNAL"
+  address      = "10.0.2.11"
+}
+
+resource "google_compute_region_disk" "regional_disk" {
+  name                      = "hac-sip-rd"
+  physical_block_size_bytes = 4096
+  type                      = "pd-balanced"
+  region                    = local.region
+  replica_zones             = [local.zone1, local.zone2]
+  size                      = 10
+  image                     = data.google_compute_image.debian_12.self_link
+}
+
+resource "google_compute_instance" "vm" {
+  name         = "hac-sip-inst"
+  machine_type = "e2-micro"
+  zones {
+    zone = local.zone1
+    network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone1.address
+    }
+    network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone1.address
+    }
+  }
+  zones {
+    zone = local.zone2
+    network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone2.address
+    }
+    network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone2.address
+    }
+  }
+
+  boot_disk {
+    auto_delete = false
+    source      = google_compute_region_disk.regional_disk.self_link
+  }
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet_0.self_link
+  }
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet_1.self_link
+  }
+
+  allow_stopping_for_update = true
+}
+
+resource "google_compute_ha_controller" "default" {
+  name                = "hac-sip"
+  region              = local.region
+  instance_name       = google_compute_instance.vm.name
+  failover_initiation = "MANUAL_ONLY"
+
+  zone_configuration {
+    zone = local.zone1
+    instance_network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone1.address
+    }
+    instance_network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone1.address
+    }
+  }
+  zone_configuration {
+    zone = local.zone2
+    instance_network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone2.address
+    }
+    instance_network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone2.address
+    }
   }
 }
 ```
@@ -508,6 +669,12 @@ The following arguments are supported:
   as host systems.
   Structure is [documented below](#nested_zone_configuration_node_affinities).
 
+* `instance_network_interface` -
+  (Optional)
+  The network interface configuration of a VM instance in this zone.
+  Maximum of 8 network interfaces can be specified.
+  Structure is [documented below](#nested_zone_configuration_instance_network_interface).
+
 
 <a name="nested_zone_configuration_reservation_affinity"></a>The `reservation_affinity` block supports:
 
@@ -557,6 +724,28 @@ The following arguments are supported:
 * `values` -
   (Optional)
   Corresponds to the label values of Node resource.
+
+<a name="nested_zone_configuration_instance_network_interface"></a>The `instance_network_interface` block supports:
+
+* `name` -
+  (Optional)
+  The name of the network interface. A VM network interface uses the `nicN`
+  naming format, where `N` is a value between `0` and `7`. The default
+  interface is `nic0`.
+
+* `network_ip` -
+  (Optional)
+  The internal IPv4 address to assign to the instance's network interface
+  when the instance is in this zone. If you don't specify an address,
+  then Google Cloud assigns an ephemeral IPv4 address based on the stack type
+  of the network interface.
+
+* `ipv6_address` -
+  (Optional)
+  The internal IPv6 address to assign to the instance's network interface
+  when the instance is in this zone. If you don't specify an address, then
+  Google Cloud assigns an ephemeral IPv6 address based on the stack type of
+  the network interface.
 
 <a name="nested_networking_auto_configuration"></a>The `networking_auto_configuration` block supports:
 

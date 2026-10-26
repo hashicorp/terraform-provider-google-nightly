@@ -30,6 +30,7 @@ To get more information about EntryLink, see:
 * How-to Guides
     * [Official Documentation](https://cloud.google.com/dataplex/docs)
 
+
 ## Example Usage - Dataplex Entry Link Basic
 
 
@@ -79,6 +80,7 @@ resource "google_dataplex_entry_link" "basic_entry_link" {
   }
 }
 ```
+
 ## Example Usage - Dataplex Entry Link Full
 
 
@@ -138,6 +140,7 @@ resource "google_dataplex_entry_link" "full_entry_link" {
   depends_on = [time_sleep.wait-for-sync]
 }
 ```
+
 ## Example Usage - Dataplex Entry Link With Aspect
 
 
@@ -151,7 +154,7 @@ resource "google_bigquery_dataset" "bq_dataset" {
 resource "google_bigquery_table" "table1" {
   deletion_protection = false
   dataset_id = google_bigquery_dataset.bq_dataset.dataset_id
-  table_id   = "table1_%{random_suffix}"
+  table_id   = "tf_test_table1_%{random_suffix}"
   project    = "1111111111111"
   schema = jsonencode([
     {
@@ -166,7 +169,7 @@ resource "google_bigquery_table" "table1" {
 resource "google_bigquery_table" "table2" {
   deletion_protection = false
   dataset_id = google_bigquery_dataset.bq_dataset.dataset_id
-  table_id   = "table2_%{random_suffix}"
+  table_id   = "tf_test_table2_%{random_suffix}"
   project    = "1111111111111"
   schema = jsonencode([
     {

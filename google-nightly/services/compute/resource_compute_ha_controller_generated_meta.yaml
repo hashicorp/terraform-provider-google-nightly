@@ -17,6 +17,12 @@ fields:
     - api_field: networkingAutoConfiguration.internal.ipv6Address
     - api_field: networkingAutoConfiguration.internal.stackType
     - api_field: region
+    - api_field: zoneConfigurations.instanceNetworkInterfaces.ipv6Address
+      field: zone_configuration.instance_network_interface.ipv6_address
+    - api_field: zoneConfigurations.instanceNetworkInterfaces.name
+      field: zone_configuration.instance_network_interface.name
+    - api_field: zoneConfigurations.instanceNetworkInterfaces.networkIP
+      field: zone_configuration.instance_network_interface.network_ip
     - api_field: zoneConfigurations.nodeAffinities.key
       field: zone_configuration.node_affinities.key
     - api_field: zoneConfigurations.nodeAffinities.operator

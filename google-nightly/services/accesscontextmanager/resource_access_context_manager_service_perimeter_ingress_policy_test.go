@@ -45,7 +45,7 @@ func testAccAccessContextManagerServicePerimeterIngressPolicy_basicTest(t *testi
 	serviceAccount := iambeta.BootstrapServiceAccount(t, "acm-ingress-2", initialServiceAccount)
 
 	policyTitle := acctest.RandString(t, 10)
-	perimeterTitle := "perimeter"
+	perimeterTitle := "tf_test_perimeter"
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
@@ -149,7 +149,7 @@ resource "google_access_context_manager_service_perimeter_ingress_policy" "test-
 
 resource "google_access_context_manager_access_level" "test-access" {
   parent      = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
-  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/level"
+  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/tf_test_level"
   title       = "level"
   description = "hello"
   basic {
@@ -195,7 +195,7 @@ func testAccAccessContextManagerServicePerimeterIngressPolicy_updateTest(t *test
 	org := envvar.GetTestOrgFromEnv(t)
 
 	policyTitle := acctest.RandString(t, 10)
-	perimeterTitle := "perimeter"
+	perimeterTitle := "tf_test_perimeter"
 	projects := BootstrapServicePerimeterProjects(t, 2)
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -277,7 +277,7 @@ func testAccAccessContextManagerServicePerimeterIngressPolicy_ingressPolicyUpdat
 
 resource "google_access_context_manager_access_level" "update-test1" {
   parent      = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
-  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/updatetestlevel1"
+  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/tf_test_updatetestlevel1"
   title       = "updatetestlevel1"
   description = "Access level 1 for ingress update test"
   basic {
@@ -309,9 +309,15 @@ func testAccAccessContextManagerServicePerimeterIngressPolicy_ingressPolicyUpdat
 	return fmt.Sprintf(`
 %s
 
+resource "google_folder" "test-folder" {
+  parent              = "organizations/%s"
+  display_name        = "tf-test-%s"
+  deletion_protection = false
+}
+
 resource "google_access_context_manager_access_level" "update-test1" {
   parent      = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
-  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/updatetestlevel1"
+  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/tf_test_updatetestlevel1"
   title       = "updatetestlevel1"
   description = "Access level 1 for ingress update test"
   basic {
@@ -323,7 +329,7 @@ resource "google_access_context_manager_access_level" "update-test1" {
 
 resource "google_access_context_manager_access_level" "update-test2" {
   parent      = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
-  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/updatetestlevel2"
+  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/tf_test_updatetestlevel2"
   title       = "updatetestlevel2"
   description = "Access level 2 for ingress update test"
   basic {
@@ -344,13 +350,19 @@ resource "google_access_context_manager_service_perimeter_ingress_policy" "test-
     sources {
       resource = "projects/%d"
     }
+    sources {
+      resource = google_folder.test-folder.name
+    }
+    sources {
+      resource = "organizations/%s"
+    }
   }
   ingress_to {
     resources = ["*"]
     roles     = ["roles/bigquery.dataViewer"]
   }
 }
-`, testAccAccessContextManagerServicePerimeterIngressPolicy_destroy(org, policyTitle, perimeterTitleName), projectNumber)
+`, testAccAccessContextManagerServicePerimeterIngressPolicy_destroy(org, policyTitle, perimeterTitleName), org, policyTitle, projectNumber, org)
 }
 
 // step 4: update identities, update resource source and omit access_level source, update resources, omit roles and add updated operations
@@ -358,9 +370,15 @@ func testAccAccessContextManagerServicePerimeterIngressPolicy_ingressPolicyUpdat
 	return fmt.Sprintf(`
 %s
 
+resource "google_folder" "test-folder" {
+  parent              = "organizations/%s"
+  display_name        = "tf-test-%s"
+  deletion_protection = false
+}
+
 resource "google_access_context_manager_access_level" "update-test1" {
   parent      = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
-  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/updatetestlevel1"
+  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/tf_test_updatetestlevel1"
   title       = "updatetestlevel1"
   description = "Access level 1 for ingress update test"
   basic {
@@ -372,7 +390,7 @@ resource "google_access_context_manager_access_level" "update-test1" {
 
 resource "google_access_context_manager_access_level" "update-test2" {
   parent      = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}"
-  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/updatetestlevel2"
+  name        = "accessPolicies/${google_access_context_manager_access_policy.test-access.name}/accessLevels/tf_test_updatetestlevel2"
   title       = "updatetestlevel2"
   description = "Access level 2 for ingress update test"
   basic {
@@ -404,7 +422,7 @@ resource "google_access_context_manager_service_perimeter_ingress_policy" "test-
     }
   }
 }
-`, testAccAccessContextManagerServicePerimeterIngressPolicy_destroy(org, policyTitle, perimeterTitleName), projectNumber, projectNumber)
+`, testAccAccessContextManagerServicePerimeterIngressPolicy_destroy(org, policyTitle, perimeterTitleName), org, policyTitle, projectNumber, projectNumber)
 }
 
 func testAccAccessContextManagerServicePerimeterIngressPolicy_destroy(org, policyTitle, perimeterTitleName string) string {
@@ -438,7 +456,7 @@ func testAccAccessContextManagerServicePerimeterIngressPolicy_pscEndpointTest(t 
 	}
 
 	policyTitle := acctest.RandString(t, 10)
-	perimeterTitle := "perimeter"
+	perimeterTitle := "tf_test_perimeter"
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },

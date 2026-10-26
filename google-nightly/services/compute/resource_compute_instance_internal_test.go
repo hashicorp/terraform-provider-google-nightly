@@ -20,6 +20,7 @@ package compute
 import (
 	"testing"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 )
@@ -186,6 +187,7 @@ func TestComputeInstance_validateZones(t *testing.T) {
 
 	cases := map[string]struct {
 		Zones       []interface{}
+		ExtraAfter  map[string]interface{}
 		ExpectError bool
 	}{
 		"success - 2 distinct zones in same region": {
@@ -200,6 +202,42 @@ func TestComputeInstance_validateZones(t *testing.T) {
 				map[string]interface{}{"zone": "us-central1-a"},
 				map[string]interface{}{"zone": "us-central1-b"},
 				map[string]interface{}{"zone": "us-central1-c"},
+			},
+			ExpectError: false,
+		},
+		"success - 2 zones with symmetric multi-nic network_interface": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{
+							"name":         "nic0",
+							"network_ip":   "10.0.0.2",
+							"ipv6_address": "2001:db8::2",
+						},
+						map[string]interface{}{
+							"name":       "nic1",
+							"network_ip": "10.0.1.2",
+						},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{
+							"name":         "nic0",
+							"network_ip":   "10.0.0.3",
+							"ipv6_address": "2001:db8::3",
+						},
+						map[string]interface{}{
+							"name":       "nic1",
+							"network_ip": "10.0.1.3",
+						},
+					},
+				},
+			},
+			ExtraAfter: map[string]interface{}{
+				"network_interface.#": 2,
 			},
 			ExpectError: false,
 		},
@@ -231,14 +269,147 @@ func TestComputeInstance_validateZones(t *testing.T) {
 			},
 			ExpectError: true,
 		},
+		"failure - asymmetric network_interface across zones": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{
+							"name":       "nic0",
+							"network_ip": "10.0.0.2",
+						},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+				},
+			},
+			ExpectError: true,
+		},
+		"failure - asymmetric IP families in network_interface across zones": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{
+							"name":         "nic0",
+							"network_ip":   "10.0.0.2",
+							"ipv6_address": "2001:db8::2",
+						},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{
+							"name":       "nic0",
+							"network_ip": "10.0.0.3",
+						},
+					},
+				},
+			},
+			ExpectError: true,
+		},
+		"failure - duplicate nic name in same zone": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2"},
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.4"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.3"},
+					},
+				},
+			},
+			ExpectError: true,
+		},
+		"failure - empty network_ip and ipv6_address in zones network_interface": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0"},
+					},
+				},
+			},
+			ExpectError: true,
+		},
+		"failure - nic index out of bounds of top-level network_interface": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic1", "network_ip": "10.0.1.2"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic1", "network_ip": "10.0.1.3"},
+					},
+				},
+			},
+			ExtraAfter: map[string]interface{}{
+				"network_interface.#": 1,
+			},
+			ExpectError: true,
+		},
+		"failure - conflict with top-level network_interface network_ip when zones has network_interface": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.3"},
+					},
+				},
+			},
+			ExtraAfter: map[string]interface{}{
+				"network_interface.#":            1,
+				"network_interface.0.network_ip": "10.0.0.2",
+			},
+			ExpectError: true,
+		},
+		"failure - static IP on top-level network_interface when zones is configured without zone network_interface": {
+			Zones: []interface{}{
+				map[string]interface{}{"zone": "us-central1-a"},
+				map[string]interface{}{"zone": "us-central1-b"},
+			},
+			ExtraAfter: map[string]interface{}{
+				"network_interface.#":              2,
+				"network_interface.1.ipv6_address": "2001:db8::2",
+			},
+			ExpectError: true,
+		},
 	}
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
+			after := map[string]interface{}{
+				"zones": tc.Zones,
+			}
+			for k, v := range tc.ExtraAfter {
+				after[k] = v
+			}
 			d := &tpgresource.ResourceDiffMock{
-				After: map[string]interface{}{
-					"zones": tc.Zones,
-				},
+				Before: map[string]interface{}{},
+				After:  after,
 			}
 			err := validateZones(d)
 			if tc.ExpectError && err == nil {
@@ -258,6 +429,7 @@ func TestComputeInstance_customizeZonesDiffFunc(t *testing.T) {
 		RemoteZone     string
 		ConfigZone     string
 		Zones          []interface{}
+		ExtraBefore    map[string]interface{}
 		ExpectSetNew   bool
 		ExpectVal      interface{}
 		ExpectComputed bool
@@ -314,14 +486,90 @@ func TestComputeInstance_customizeZonesDiffFunc(t *testing.T) {
 			ExpectVal:      nil,
 			ExpectComputed: true,
 		},
+		"2 zones with network_interface matching state IP": {
+			RemoteZone: "us-central1-a",
+			ConfigZone: "",
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.3"},
+					},
+				},
+			},
+			ExtraBefore: map[string]interface{}{
+				"network_interface.0.network_ip": "10.0.0.2",
+			},
+			ExpectSetNew:   true,
+			ExpectVal:      "us-central1-a",
+			ExpectComputed: false,
+		},
+		"2 zones with network_interface differing from state IP forces replacement": {
+			RemoteZone: "us-central1-a",
+			ConfigZone: "",
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.9"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.3"},
+					},
+				},
+			},
+			ExtraBefore: map[string]interface{}{
+				"network_interface.0.network_ip": "10.0.0.2",
+			},
+			ExpectSetNew:   true,
+			ExpectVal:      "us-central1-a",
+			ExpectComputed: true,
+		},
+		"2 zones with ipv6_address added when state has no ipv6_address forces replacement": {
+			RemoteZone: "us-central1-a",
+			ConfigZone: "",
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2", "ipv6_address": "2001:db8::2"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.3", "ipv6_address": "2001:db8::3"},
+					},
+				},
+			},
+			ExtraBefore: map[string]interface{}{
+				"network_interface.0.network_ip": "10.0.0.2",
+			},
+			ExpectSetNew:   true,
+			ExpectVal:      "us-central1-a",
+			ExpectComputed: true,
+		},
 	}
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
+			before := map[string]interface{}{
+				"zone": tc.RemoteZone,
+			}
+			for k, v := range tc.ExtraBefore {
+				before[k] = v
+			}
 			d := &tpgresource.ResourceDiffMock{
-				Before: map[string]interface{}{
-					"zone": tc.RemoteZone,
-				},
+				Before: before,
 				After: map[string]interface{}{
 					"zone":  tc.ConfigZone,
 					"zones": tc.Zones,
@@ -338,5 +586,382 @@ func TestComputeInstance_customizeZonesDiffFunc(t *testing.T) {
 				t.Errorf("setNewComputed was %v, expected %v", setNewComputed, tc.ExpectComputed)
 			}
 		})
+	}
+}
+
+func TestComputeInstance_zonesHashAndApplyNetworkInterfaces(t *testing.T) {
+	t.Parallel()
+
+	const (
+		z1Nic0IPv4         = "10.0.0.2"
+		z1Nic0IPv6         = "2001:db8::2"
+		z1Nic0IPv6Expanded = "2001:db8:0:0:0:0:0:2"
+		z1Nic1IPv4         = "10.0.1.2"
+		z2Nic0IPv4         = "10.0.0.3"
+		z2Nic0IPv6         = "2001:db8::3"
+		z2Nic1IPv4         = "10.0.1.3"
+	)
+
+	z1 := map[string]interface{}{
+		"zone": "us-central1-a",
+		"network_interface": []interface{}{
+			map[string]interface{}{
+				"name":         "nic0",
+				"network_ip":   z1Nic0IPv4,
+				"ipv6_address": z1Nic0IPv6Expanded,
+			},
+		},
+	}
+	z1CompressedIpv6 := map[string]interface{}{
+		"zone": "us-central1-a",
+		"network_interface": []interface{}{
+			map[string]interface{}{
+				"name":         "nic0",
+				"network_ip":   z1Nic0IPv4,
+				"ipv6_address": z1Nic0IPv6,
+			},
+		},
+	}
+	z1DifferentIp := map[string]interface{}{
+		"zone": "us-central1-a",
+		"network_interface": []interface{}{
+			map[string]interface{}{
+				"name":         "nic0",
+				"network_ip":   "10.0.0.9",
+				"ipv6_address": z1Nic0IPv6,
+			},
+		},
+	}
+
+	if resourceComputeInstanceZonesHash(z1) != resourceComputeInstanceZonesHash(z1CompressedIpv6) {
+		t.Errorf("expected equivalent IPv6 representations to produce identical zones hash")
+	}
+	if resourceComputeInstanceZonesHash(z1) == resourceComputeInstanceZonesHash(z1DifferentIp) {
+		t.Errorf("expected different network_ip in zones to produce different zones hash")
+	}
+
+	r := ResourceComputeInstance()
+	d := r.TestResourceData()
+	if err := d.Set("zone", "us-central1-a"); err != nil {
+		t.Fatalf("failed to set zone: %v", err)
+	}
+	if err := d.Set("zones", []interface{}{
+		map[string]interface{}{
+			"zone": "us-central1-a",
+			"network_interface": []interface{}{
+				map[string]interface{}{
+					"name":         "nic0",
+					"network_ip":   z1Nic0IPv4,
+					"ipv6_address": z1Nic0IPv6,
+				},
+				map[string]interface{}{
+					"name":       "nic1",
+					"network_ip": z1Nic1IPv4,
+				},
+			},
+		},
+		map[string]interface{}{
+			"zone": "us-central1-b",
+			"network_interface": []interface{}{
+				map[string]interface{}{
+					"name":         "nic0",
+					"network_ip":   z2Nic0IPv4,
+					"ipv6_address": z2Nic0IPv6,
+				},
+				map[string]interface{}{
+					"name":       "nic1",
+					"network_ip": z2Nic1IPv4,
+				},
+			},
+		},
+	}); err != nil {
+		t.Fatalf("failed to set zones: %v", err)
+	}
+
+	instanceBody := map[string]interface{}{
+		"networkInterfaces": []interface{}{
+			map[string]interface{}{"name": "nic0", "networkIP": "10.99.0.1", "ipv6Address": "2001:db8::99"},
+			map[string]interface{}{"name": "nic1", "networkIP": "10.99.0.2", "ipv6Address": "2001:db8::98"},
+		},
+	}
+	if err := applyZoneNetworkInterfaces(d, instanceBody); err != nil {
+		t.Fatalf("unexpected error from applyZoneNetworkInterfaces: %v", err)
+	}
+	nics := instanceBody["networkInterfaces"].([]interface{})
+	nic0 := nics[0].(map[string]interface{})
+	nic1 := nics[1].(map[string]interface{})
+	if nic0["networkIP"] != z1Nic0IPv4 || nic0["ipv6Address"] != z1Nic0IPv6 {
+		t.Errorf("unexpected nic0 payload: %#v", nic0)
+	}
+	if nic1["networkIP"] != z1Nic1IPv4 || nic1["ipv6Address"] != nil {
+		t.Errorf("unexpected nic1 payload: %#v", nic1)
+	}
+}
+
+func TestComputeHaController_zoneConfigurationInstanceNetworkInterfaces(t *testing.T) {
+	t.Parallel()
+
+	const (
+		z1Nic0IPv4 = "10.0.0.2"
+		z1Nic0IPv6 = "2001:db8::2"
+		z1Nic1IPv4 = "10.0.1.2"
+		z2Nic0IPv4 = "10.0.0.3"
+		z2Nic0IPv6 = "2001:db8::3"
+		z2Nic1IPv4 = "10.0.1.3"
+	)
+
+	input := []interface{}{
+		map[string]interface{}{
+			"zone": "us-central1-a",
+			"instance_network_interface": []interface{}{
+				map[string]interface{}{
+					"name":         "nic0",
+					"network_ip":   z1Nic0IPv4,
+					"ipv6_address": z1Nic0IPv6,
+				},
+				map[string]interface{}{
+					"name":       "nic1",
+					"network_ip": z1Nic1IPv4,
+				},
+			},
+		},
+		map[string]interface{}{
+			"zone": "us-central1-b",
+			"instance_network_interface": []interface{}{
+				map[string]interface{}{
+					"name":         "nic0",
+					"network_ip":   z2Nic0IPv4,
+					"ipv6_address": z2Nic0IPv6,
+				},
+				map[string]interface{}{
+					"name":       "nic1",
+					"network_ip": z2Nic1IPv4,
+				},
+			},
+		},
+	}
+
+	expandedRaw, err := expandComputeHaControllerZoneConfiguration(input, nil, nil)
+	if err != nil {
+		t.Fatalf("expand failed: %v", err)
+	}
+	expanded := expandedRaw.(map[string]interface{})
+	z1 := expanded["us-central1-a"].(map[string]interface{})
+	z1Nics := z1["instanceNetworkInterfaces"].(map[string]interface{})
+	if z1Nics["nic0"].(map[string]interface{})["networkIP"] != z1Nic0IPv4 || z1Nics["nic0"].(map[string]interface{})["ipv6Address"] != z1Nic0IPv6 {
+		t.Errorf("unexpected expanded nic0 in us-central1-a: %#v", z1Nics["nic0"])
+	}
+	if z1Nics["nic1"].(map[string]interface{})["networkIP"] != z1Nic1IPv4 {
+		t.Errorf("unexpected expanded nic1 in us-central1-a: %#v", z1Nics["nic1"])
+	}
+
+	// Simulate backend auto-backfilling ephemeral IPv6 on nic1 and ephemeral nic2 in primary zone ONLY:
+	z1Nics["nic1"].(map[string]interface{})["ipv6Address"] = "2001:db8::99"
+	z1Nics["nic2"] = map[string]interface{}{"networkIP": "10.0.2.2"}
+
+	flattened := flattenComputeHaControllerZoneConfiguration(expanded, nil, nil).([]interface{})
+	if len(flattened) != 2 {
+		t.Fatalf("expected 2 flattened zones, got %d", len(flattened))
+	}
+	for _, rawZone := range flattened {
+		zm := rawZone.(map[string]interface{})
+		nics := zm["instance_network_interface"].([]interface{})
+		if len(nics) != 2 {
+			t.Fatalf("expected 2 flattened nics in zone %v (excluding primary-only nic2), got %#v", zm["zone"], nics)
+		}
+		nic1 := nics[1].(map[string]interface{})
+		if _, hasIpv6 := nic1["ipv6_address"]; hasIpv6 {
+			t.Errorf("expected primary-only backfilled ipv6_address on nic1 to be filtered out, got %#v", nic1)
+		}
+	}
+}
+
+func TestComputeHaController_validateZoneConfiguration(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		Zones       []interface{}
+		ExpectError bool
+	}{
+		"success - 2 zones with symmetric unique nics": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2", "ipv6_address": "2001:db8::2"},
+						map[string]interface{}{"name": "nic1", "network_ip": "10.0.1.2"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.3", "ipv6_address": "2001:db8::3"},
+						map[string]interface{}{"name": "nic1", "network_ip": "10.0.1.3"},
+					},
+				},
+			},
+			ExpectError: false,
+		},
+		"failure - duplicate nic in same zone": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2"},
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.4"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.3"},
+					},
+				},
+			},
+			ExpectError: true,
+		},
+		"failure - different nics across zones": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic1", "network_ip": "10.0.1.3"},
+					},
+				},
+			},
+			ExpectError: true,
+		},
+		"failure - different IP families for same nic across zones": {
+			Zones: []interface{}{
+				map[string]interface{}{
+					"zone": "us-central1-a",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "network_ip": "10.0.0.2"},
+					},
+				},
+				map[string]interface{}{
+					"zone": "us-central1-b",
+					"instance_network_interface": []interface{}{
+						map[string]interface{}{"name": "nic0", "ipv6_address": "2001:db8::3"},
+					},
+				},
+			},
+			ExpectError: true,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			d := &tpgresource.ResourceDiffMock{
+				Before: map[string]interface{}{},
+				After: map[string]interface{}{
+					"zone_configuration": tc.Zones,
+				},
+			}
+			err := validateComputeHaControllerZoneConfigurationFunc(d)
+			if tc.ExpectError && err == nil {
+				t.Fatalf("expected error, but got nil")
+			}
+			if !tc.ExpectError && err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestComputeInstance_zoneNicIPv6DiffSuppress(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		old, new string
+		want     bool
+	}{
+		{name: "both empty strings are not suppressed", old: "", new: "", want: false},
+		{name: "old empty new set is not suppressed", old: "", new: "2001:db8::1", want: false},
+		{name: "old set new empty is not suppressed", old: "2001:db8::1", new: "", want: false},
+		{name: "equivalent IPv6 representations are suppressed", old: "2001:db8:0:0:0:0:0:1", new: "2001:db8::1", want: true},
+		{name: "different IPv6 addresses are not suppressed", old: "2001:db8::1", new: "2001:db8::2", want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := zoneNicIPv6DiffSuppress("ipv6_address", tc.old, tc.new, nil); got != tc.want {
+				t.Errorf("zoneNicIPv6DiffSuppress(%q, %q) = %v, want %v", tc.old, tc.new, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestComputeHaController_validateZoneConfiguration_rawConfigWithNilDiffElements(t *testing.T) {
+	t.Parallel()
+
+	rawConfig := cty.ObjectVal(map[string]cty.Value{
+		"zone_configuration": cty.SetVal([]cty.Value{
+			cty.ObjectVal(map[string]cty.Value{
+				"zone": cty.StringVal("us-central1-a"),
+				"instance_network_interface": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"name":         cty.StringVal("nic0"),
+						"network_ip":   cty.StringVal("10.0.0.2"),
+						"ipv6_address": cty.NullVal(cty.String),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"name":         cty.StringVal("nic1"),
+						"network_ip":   cty.StringVal("10.0.1.2"),
+						"ipv6_address": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"zone": cty.StringVal("us-central1-b"),
+				"instance_network_interface": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"name":         cty.StringVal("nic0"),
+						"network_ip":   cty.StringVal("10.0.0.3"),
+						"ipv6_address": cty.NullVal(cty.String),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"name":         cty.StringVal("nic1"),
+						"network_ip":   cty.StringVal("10.0.1.3"),
+						"ipv6_address": cty.NullVal(cty.String),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"name":         cty.StringVal("nic1"),
+						"network_ip":   cty.StringVal("10.0.1.3"),
+						"ipv6_address": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+		}),
+	})
+
+	// Simulate DiffFieldReader bug where d.Get("zone_configuration") returns nil elements
+	// in nested TypeList slices inside a TypeSet block during terraform plan.
+	d := &tpgresource.ResourceDiffMock{
+		Before: map[string]interface{}{},
+		After: map[string]interface{}{
+			"zone_configuration": []interface{}{
+				map[string]interface{}{
+					"zone":                       "us-central1-a",
+					"instance_network_interface": []interface{}{nil, nil},
+				},
+				map[string]interface{}{
+					"zone":                       "us-central1-b",
+					"instance_network_interface": []interface{}{nil, nil, nil},
+				},
+			},
+		},
+		RawConfig: rawConfig,
+	}
+
+	if err := validateComputeHaControllerZoneConfigurationFunc(d); err == nil {
+		t.Fatalf("expected duplicate nic1 error when reading from RawConfig, got nil")
 	}
 }

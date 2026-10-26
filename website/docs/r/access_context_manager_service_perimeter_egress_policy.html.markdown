@@ -26,7 +26,7 @@ EgressPolicies match requests based on egressFrom and egressTo stanzas.
 For an EgressPolicy to match, both egressFrom and egressTo stanzas must be matched.
 If an EgressPolicy matches a request, the request is allowed to span the ServicePerimeter
 boundary. For example, an EgressPolicy can be used to allow VMs on networks
-within the ServicePerimeter to access a defined set of projects outside the
+within the ServicePerimeter to access a defined set of resources (projects, folders, or organizations) outside the
 perimeter in certain contexts (e.g. to read data from a Cloud Storage bucket
 or query against a BigQuery dataset).
 
@@ -40,6 +40,7 @@ To get more information about ServicePerimeterEgressPolicy, see:
 * [API documentation](https://cloud.google.com/access-context-manager/docs/reference/rest/v1/accessPolicies.servicePerimeters#egresspolicy)
 * How-to Guides
     * [Guide to Ingress and Egress Rules](https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules)
+
 
 ## Example Usage - Access Context Manager Service Perimeter Egress Policy
 
@@ -83,6 +84,7 @@ resource "google_access_context_manager_access_policy" "access-policy" {
   title  = "Storage Policy"
 }
 ```
+
 ## Example Usage - Access Context Manager Service Perimeter Egress Policy Granular Controls
 
 

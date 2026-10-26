@@ -362,6 +362,12 @@ func ResourceColabNotebookExecution() *schema.Resource {
 				},
 				ExactlyOneOf: []string{"dataform_repository_source", "direct_notebook_source", "gcs_notebook_source"},
 			},
+			"kernel_name": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: `The name of the kernel to use during notebook execution. If unset, the default kernel is used.`,
+			},
 			"notebook_execution_job_id": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -391,9 +397,34 @@ func ResourceColabNotebookExecution() *schema.Resource {
 				MaxItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"custom_container_image": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							ForceNew:    true,
+							Description: `Use a container image to start the workbench instance.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"repository": {
+										Type:     schema.TypeString,
+										Required: true,
+										ForceNew: true,
+										Description: `The path to the container image repository.
+For example: gcr.io/{project_id}/{imageName}`,
+									},
+									"tag": {
+										Type:        schema.TypeString,
+										Optional:    true,
+										ForceNew:    true,
+										Description: `The tag of the container image. If not specified, this defaults to the latest tag.`,
+									},
+								},
+							},
+							ExactlyOneOf: []string{"workbench_runtime.0.custom_container_image", "workbench_runtime.0.vm_image"},
+						},
 						"vm_image": {
 							Type:        schema.TypeList,
-							Required:    true,
+							Optional:    true,
 							ForceNew:    true,
 							Description: `Custom Compute Engine VM image for the Workbench instance.`,
 							MaxItems:    1,
@@ -421,6 +452,7 @@ func ResourceColabNotebookExecution() *schema.Resource {
 									},
 								},
 							},
+							ExactlyOneOf: []string{"workbench_runtime.0.custom_container_image", "workbench_runtime.0.vm_image"},
 						},
 					},
 				},
@@ -504,6 +536,12 @@ func resourceColabNotebookExecutionCreate(d *schema.ResourceData, meta interface
 	} else if v, ok := d.GetOkExists("workbench_runtime"); !tpgresource.IsEmptyValue(reflect.ValueOf(workbenchRuntimeProp)) && (ok || !reflect.DeepEqual(v, workbenchRuntimeProp)) {
 		obj["workbenchRuntime"] = workbenchRuntimeProp
 	}
+	kernelNameProp, err := expandColabNotebookExecutionKernelName(d.Get("kernel_name"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("kernel_name"); !tpgresource.IsEmptyValue(reflect.ValueOf(kernelNameProp)) && (ok || !reflect.DeepEqual(v, kernelNameProp)) {
+		obj["kernelName"] = kernelNameProp
+	}
 	gcsOutputUriProp, err := expandColabNotebookExecutionGcsOutputUri(d.Get("gcs_output_uri"), d, config)
 	if err != nil {
 		return err
@@ -546,39 +584,52 @@ func resourceColabNotebookExecutionCreate(d *schema.ResourceData, meta interface
 	}
 
 	headers := make(http.Header)
-	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-		Config:    config,
-		Method:    "POST",
-		Project:   billingProject,
-		RawURL:    url,
-		UserAgent: userAgent,
-		Body:      obj,
-		Timeout:   d.Timeout(schema.TimeoutCreate),
-		Headers:   headers,
+	var res map[string]interface{}
+	err = transport_tpg.Retry(transport_tpg.RetryOptions{
+		RetryFunc: func() error {
+			var err error
+			res, err = transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+				Config:               config,
+				Method:               "POST",
+				Project:              billingProject,
+				RawURL:               url,
+				UserAgent:            userAgent,
+				Body:                 obj,
+				Timeout:              d.Timeout(schema.TimeoutCreate),
+				Headers:              headers,
+				ErrorRetryPredicates: []transport_tpg.RetryErrorPredicateFunc{transport_tpg.IsSubnetworkNotReadyLROError},
+			})
+			if err != nil {
+				return fmt.Errorf("Error creating NotebookExecution: %s", err)
+			}
+
+			// Store the ID now
+			id, err := tpgresource.ReplaceVars(d, config, "projects/{{project}}/locations/{{location}}/notebookExecutionJobs/{{notebook_execution_job_id}}")
+			if err != nil {
+				return fmt.Errorf("Error constructing id: %s", err)
+			}
+			d.SetId(id)
+
+			// Derive location for use in REP endpoints
+			endpointLocation := tpgresource.LocationFromId(d.Id())
+			err = ColabOperationWaitTime(
+				config, res, project, endpointLocation, "Creating NotebookExecution", userAgent,
+				d.Timeout(schema.TimeoutCreate))
+
+			if err != nil {
+				// The resource didn't actually create
+				d.SetId("")
+				return fmt.Errorf("Error waiting to create NotebookExecution: %s", err)
+			}
+
+			return nil
+		},
+		Timeout:              d.Timeout(schema.TimeoutCreate),
+		ErrorRetryPredicates: []transport_tpg.RetryErrorPredicateFunc{transport_tpg.IsSubnetworkNotReadyLROError},
 	})
 	if err != nil {
-		return fmt.Errorf("Error creating NotebookExecution: %s", err)
+		return err
 	}
-
-	// Store the ID now
-	id, err := tpgresource.ReplaceVars(d, config, "projects/{{project}}/locations/{{location}}/notebookExecutionJobs/{{notebook_execution_job_id}}")
-	if err != nil {
-		return fmt.Errorf("Error constructing id: %s", err)
-	}
-	d.SetId(id)
-
-	// Derive location for use in REP endpoints
-	endpointLocation := tpgresource.LocationFromId(d.Id())
-	err = ColabOperationWaitTime(
-		config, res, project, endpointLocation, "Creating NotebookExecution", userAgent,
-		d.Timeout(schema.TimeoutCreate))
-
-	if err != nil {
-		// The resource didn't actually create
-		d.SetId("")
-		return fmt.Errorf("Error waiting to create NotebookExecution: %s", err)
-	}
-
 	// The operation for this resource contains the generated name that we need
 	// in order to perform a READ.
 
@@ -652,12 +703,13 @@ func resourceColabNotebookExecutionRead(d *schema.ResourceData, meta interface{}
 
 	headers := make(http.Header)
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-		Config:    config,
-		Method:    "GET",
-		Project:   billingProject,
-		RawURL:    url,
-		UserAgent: userAgent,
-		Headers:   headers,
+		Config:               config,
+		Method:               "GET",
+		Project:              billingProject,
+		RawURL:               url,
+		UserAgent:            userAgent,
+		Headers:              headers,
+		ErrorRetryPredicates: []transport_tpg.RetryErrorPredicateFunc{transport_tpg.IsSubnetworkNotReadyLROError},
 	})
 	if err != nil {
 		return transport_tpg.HandleNotFoundError(err, d, fmt.Sprintf("ColabNotebookExecution %q", d.Id()))
@@ -771,14 +823,15 @@ func resourceColabNotebookExecutionDelete(d *schema.ResourceData, meta interface
 
 	log.Printf("[DEBUG] Deleting NotebookExecution %q", d.Id())
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-		Config:    config,
-		Method:    "DELETE",
-		Project:   billingProject,
-		RawURL:    url,
-		UserAgent: userAgent,
-		Body:      obj,
-		Timeout:   d.Timeout(schema.TimeoutDelete),
-		Headers:   headers,
+		Config:               config,
+		Method:               "DELETE",
+		Project:              billingProject,
+		RawURL:               url,
+		UserAgent:            userAgent,
+		Body:                 obj,
+		Timeout:              d.Timeout(schema.TimeoutDelete),
+		Headers:              headers,
+		ErrorRetryPredicates: []transport_tpg.RetryErrorPredicateFunc{transport_tpg.IsSubnetworkNotReadyLROError},
 	})
 	if err != nil {
 		return transport_tpg.HandleNotFoundError(err, d, "NotebookExecution")
@@ -1018,6 +1071,10 @@ func flattenColabNotebookExecutionCustomEnvironmentSpecShieldedInstanceConfigEna
 }
 
 func flattenColabNotebookExecutionCustomEnvironmentSpecShieldedInstanceConfigEnableVtpm(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenColabNotebookExecutionKernelName(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1388,6 +1445,13 @@ func expandColabNotebookExecutionWorkbenchRuntime(v interface{}, d tpgresource.T
 		transformed["vmImage"] = transformedVmImage
 	}
 
+	transformedCustomContainerImage, err := expandColabNotebookExecutionWorkbenchRuntimeCustomContainerImage(original["custom_container_image"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedCustomContainerImage); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["customContainerImage"] = transformedCustomContainerImage
+	}
+
 	return transformed, nil
 }
 
@@ -1439,6 +1503,47 @@ func expandColabNotebookExecutionWorkbenchRuntimeVmImageProject(v interface{}, d
 	return v, nil
 }
 
+func expandColabNotebookExecutionWorkbenchRuntimeCustomContainerImage(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedRepository, err := expandColabNotebookExecutionWorkbenchRuntimeCustomContainerImageRepository(original["repository"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedRepository); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["repository"] = transformedRepository
+	}
+
+	transformedTag, err := expandColabNotebookExecutionWorkbenchRuntimeCustomContainerImageTag(original["tag"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedTag); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["tag"] = transformedTag
+	}
+
+	return transformed, nil
+}
+
+func expandColabNotebookExecutionWorkbenchRuntimeCustomContainerImageRepository(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandColabNotebookExecutionWorkbenchRuntimeCustomContainerImageTag(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandColabNotebookExecutionKernelName(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandColabNotebookExecutionGcsOutputUri(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
@@ -1480,6 +1585,9 @@ func ResourceColabNotebookExecutionFlatten(d *schema.ResourceData, meta interfac
 		return fmt.Errorf("Error reading NotebookExecution: %s", err)
 	}
 	if err = d.Set("custom_environment_spec", flattenColabNotebookExecutionCustomEnvironmentSpec(res["customEnvironmentSpec"], d, config)); err != nil {
+		return fmt.Errorf("Error reading NotebookExecution: %s", err)
+	}
+	if err = d.Set("kernel_name", flattenColabNotebookExecutionKernelName(res["kernelName"], d, config)); err != nil {
 		return fmt.Errorf("Error reading NotebookExecution: %s", err)
 	}
 	if err = d.Set("gcs_output_uri", flattenColabNotebookExecutionGcsOutputUri(res["gcsOutputUri"], d, config)); err != nil {

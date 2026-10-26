@@ -20,8 +20,10 @@ description: |-
 ---
 
 # google_parallelstore_instance
+~> **Warning:** `google_parallelstore_instance` is deprecated and will be removed in a future major release. Use `google_lustre_instance` instead.
 
 A Parallelstore Instance.
+
 
 
 
@@ -70,6 +72,7 @@ resource "google_service_networking_connection" "default" {
   reserved_peering_ranges = [google_compute_global_address.private_ip_alloc.name]
 }
 ```
+
 ## Example Usage - Parallelstore Instance Basic
 
 

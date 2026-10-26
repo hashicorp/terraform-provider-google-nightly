@@ -360,18 +360,17 @@ is desired, you will need to modify your state file manually using
 * `provisioned_iops` - (Optional) Indicates how many IOPS to provision for the disk.
     This sets the number of I/O operations per second that the disk can handle.
     For more details,see the [Hyperdisk documentation](https://cloud.google.com/compute/docs/disks/hyperdisks).
-    Note: Updating currently is only supported for hyperdisk skus via disk update
-    api/gcloud without the need to delete and recreate the disk, hyperdisk allows
-    for an update of IOPS every 4 hours. To update your hyperdisk more frequently,
-    you'll need to manually delete and recreate it.
+    Note: Updating in place is only supported for hyperdisk skus; changing this
+    value on other disk types (e.g. pd-extreme) will force recreation of the instance.
+    Hyperdisk allows for an update of IOPS every 4 hours; to update more
+    frequently than that, you'll need to manually delete and recreate the disk.
 
 * `provisioned_throughput` - (Optional) Indicates how much throughput to provision for the disk.
     This sets the number of throughput mb per second that the disk can handle.
     For more details,see the [Hyperdisk documentation](https://cloud.google.com/compute/docs/disks/hyperdisks).
-    Note: Updating currently is only supported for hyperdisk skus via disk update
-    api/gcloud without the need to delete and recreate the disk, hyperdisk allows
-    for an update of throughput every 4 hours. To update your hyperdisk more
-    frequently, you'll need to manually delete and recreate it.
+    Note: This is only supported for hyperdisk skus, and can be updated in place.
+    Hyperdisk allows for an update of throughput every 4 hours; to update more
+    frequently than that, you'll need to manually delete and recreate the disk.
 
 * `enable_confidential_compute` - (Optional) Whether this disk is using confidential compute mode.
     Note: Only supported on hyperdisk skus, disk_encryption_key is required when setting to true.
@@ -764,6 +763,16 @@ specified, then this instance will have no external IPv6 Internet access. Struct
 <a name="nested_zones"></a>The `zones` block supports:
 
 * `zone` - (Required) The zone in which you want to create the instance.
+
+* `network_interface` - (Optional) Network interface configurations for the instance when it's created in this zone. You can specify up to 8 network interfaces. Structure is [documented below](#nested_zones_network_interface).
+
+<a name="nested_zones_network_interface"></a>The `network_interface` block within `zones` supports:
+
+* `name` - (Optional) The name of the network interface (for example, `nic0`). This name must match a `network_interface` block defined at the top level of the resource. Defaults to `nic0`.
+
+* `network_ip` - (Optional) The internal IPv4 address to assign to this network interface when the instance is in this zone.
+
+* `ipv6_address` - (Optional) The internal IPv6 address to assign to this network interface when the instance is in this zone.
 
 ## Attributes Reference
 
