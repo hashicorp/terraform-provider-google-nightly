@@ -30,6 +30,7 @@ To get more information about DiscoveryConfig, see:
 * How-to Guides
     * [Schedule inspection scan](https://cloud.google.com/dlp/docs/schedule-inspection-scan)
 
+
 ## Example Usage - Dlp Discovery Config Basic
 
 
@@ -61,6 +62,7 @@ resource "google_data_loss_prevention_inspect_template" "basic" {
     }
 }
 ```
+
 ## Example Usage - Dlp Discovery Config Actions
 
 
@@ -165,6 +167,7 @@ resource "google_project_iam_member" "tag_role" {
   member  = "serviceAccount:service-${data.google_project.project.number}@dlp-api.iam.gserviceaccount.com"
 }
 ```
+
 ## Example Usage - Dlp Discovery Config Org Running
 
 
@@ -202,6 +205,7 @@ resource "google_data_loss_prevention_inspect_template" "basic" {
     }
 }
 ```
+
 ## Example Usage - Dlp Discovery Config Org Folder Paused
 
 
@@ -220,7 +224,7 @@ resource "google_data_loss_prevention_discovery_config" "org_folder_paused" {
     org_config {
         project_id = "my-project-name"
         location {
-            folder_id = 123
+            folder_id = google_folder.basic.folder_id
         }
     }
     inspect_templates = ["projects/%{project}/inspectTemplates/${google_data_loss_prevention_inspect_template.basic.name}"]
@@ -238,7 +242,14 @@ resource "google_data_loss_prevention_inspect_template" "basic" {
 		}
     }
 }
+
+resource "google_folder" "basic" {
+	parent = "organizations/123456789"
+	display_name = "my-folder"
+	deletion_protection = false
+}
 ```
+
 ## Example Usage - Dlp Discovery Config Conditions Cadence
 
 
@@ -287,6 +298,7 @@ resource "google_data_loss_prevention_inspect_template" "basic" {
     }
 }
 ```
+
 ## Example Usage - Dlp Discovery Config Filter Regexes And Conditions
 
 
@@ -343,6 +355,7 @@ resource "google_data_loss_prevention_inspect_template" "basic" {
     }
 }
 ```
+
 ## Example Usage - Dlp Discovery Config Cloud Sql
 
 
@@ -426,6 +439,7 @@ resource "google_data_loss_prevention_inspect_template" "basic" {
     }
 }
 ```
+
 ## Example Usage - Dlp Discovery Config Cloud Storage
 
 
@@ -702,7 +716,7 @@ The following arguments are supported:
 * `detail_of_message` -
   (Optional)
   How much data to include in the pub/sub message.
-  Possible values are: `TABLE_PROFILE`, `RESOURCE_NAME`.
+  Possible values are: `TABLE_PROFILE`, `RESOURCE_NAME`, `FILE_STORE_PROFILE`.
 
 
 <a name="nested_actions_pub_sub_notification_pubsub_condition"></a>The `pubsub_condition` block supports:

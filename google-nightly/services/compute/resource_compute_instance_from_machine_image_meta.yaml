@@ -271,6 +271,12 @@ fields:
   - api_field: 'workloadIdentityConfig.identity'
   - api_field: 'workloadIdentityConfig.identityCertificateEnabled'
   - api_field: 'zone'
+  - field: 'zones.network_interface.ipv6_address'
+    provider_only: true
+  - field: 'zones.network_interface.name'
+    provider_only: true
+  - field: 'zones.network_interface.network_ip'
+    provider_only: true
   - field: 'zones.zone'
     provider_only: true
   - api_field: 'eraseWindowsVssSignature'

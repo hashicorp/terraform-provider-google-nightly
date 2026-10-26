@@ -30,11 +30,12 @@ To get more information about Instance, see:
 * How-to Guides
     * [Official Documentation](https://cloud.google.com/memorystore/docs/valkey/create-instances)
 
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_basic&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_basic&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Memorystore Instance Basic
 
 
@@ -46,7 +47,8 @@ resource "google_memorystore_instance" "instance-basic" {
     network    = google_compute_network.producer_net.id
     project_id = data.google_project.project.project_id
   }
-  location                    = "us-west1"
+  location                    = "us-east4"
+  node_type                   = "SHARED_CORE_NANO"
   deletion_protection_enabled = false
   maintenance_policy {
     weekly_maintenance_window {
@@ -70,7 +72,7 @@ resource "google_memorystore_instance" "instance-basic" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name          = "my-policy"
-  location      = "us-west1"
+  location      = "us-east4"
   service_class = "gcp-memorystore"
   description   = "my basic service connection policy"
   network       = google_compute_network.producer_net.id
@@ -82,7 +84,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "my-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-west1"
+  region        = "us-east4"
   network       = google_compute_network.producer_net.id
 }
 
@@ -94,11 +96,12 @@ resource "google_compute_network" "producer_net" {
 data "google_project" "project" {
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_full&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_full&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Memorystore Instance Full
 
 
@@ -110,7 +113,7 @@ resource "google_memorystore_instance" "instance-full" {
     network                    = google_compute_network.producer_net.id
     project_id                 = data.google_project.project.project_id
   }     
-  location                     = "us-west1"
+  location                     = "us-east4"
   replica_count                = 1
   node_type                    = "SHARED_CORE_NANO"
   transit_encryption_mode      = "TRANSIT_ENCRYPTION_DISABLED"
@@ -121,7 +124,7 @@ resource "google_memorystore_instance" "instance-full" {
   }
   zone_distribution_config {
     mode                       = "SINGLE_ZONE"
-    zone                       = "us-west1-b"
+    zone                       = "us-east4-a"
   }
   maintenance_policy {
     weekly_maintenance_window {
@@ -158,7 +161,7 @@ resource "google_memorystore_instance" "instance-full" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name          = "my-policy"
-  location      = "us-west1"
+  location      = "us-east4"
   service_class = "gcp-memorystore"
   description   = "my basic service connection policy"
   network       = google_compute_network.producer_net.id
@@ -170,7 +173,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "my-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-west1"
+  region        = "us-east4"
   network       = google_compute_network.producer_net.id
 }
 
@@ -182,11 +185,12 @@ resource "google_compute_network" "producer_net" {
 data "google_project" "project" {
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_persistence_aof&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_persistence_aof&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Memorystore Instance Persistence Aof
 
 
@@ -198,7 +202,8 @@ resource "google_memorystore_instance" "instance-persistence-aof" {
     network    = google_compute_network.producer_net.id
     project_id = data.google_project.project.project_id
   }
-  location = "us-west1"
+  location = "us-east4"
+  node_type = "SHARED_CORE_NANO"
   persistence_config {
     mode = "AOF"
     aof_config {
@@ -216,7 +221,7 @@ resource "google_memorystore_instance" "instance-persistence-aof" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name          = "my-policy"
-  location      = "us-west1"
+  location      = "us-east4"
   service_class = "gcp-memorystore"
   description   = "my basic service connection policy"
   network       = google_compute_network.producer_net.id
@@ -228,7 +233,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "my-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-west1"
+  region        = "us-east4"
   network       = google_compute_network.producer_net.id
 }
 
@@ -240,11 +245,12 @@ resource "google_compute_network" "producer_net" {
 data "google_project" "project" {
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_secondary_instance&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_secondary_instance&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Memorystore Instance Secondary Instance
 
 
@@ -381,11 +387,12 @@ resource "google_compute_network" "secondary_producer_net" {
 data "google_project" "project" {
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_flexible_ca&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_flexible_ca&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Memorystore Instance Flexible Ca
 
 
@@ -394,8 +401,9 @@ data "google_project" "project" {}
 
 resource "google_memorystore_instance" "test-instance" {
   instance_id  = "ca-instance"
-  shard_count = 3
-  location     = "us-west1"
+  shard_count = 1
+  location     = "us-east4"
+  node_type    = "SHARED_CORE_NANO"
   
   desired_auto_created_endpoints {
     network    = google_compute_network.producer_net.id
@@ -418,7 +426,7 @@ resource "google_memorystore_instance" "test-instance" {
 
 resource "google_privateca_ca_pool" "default" {
   name     = "ca-pool"
-  location = "us-west1"
+  location = "us-east4"
   tier     = "ENTERPRISE"
 }
 
@@ -431,7 +439,7 @@ resource "google_privateca_ca_pool_iam_member" "memorystore_p4sa_requester" {
 resource "google_privateca_certificate_authority" "default" {
   pool                     = google_privateca_ca_pool.default.name
   certificate_authority_id = "ca-auth"
-  location                 = "us-west1"
+  location                 = "us-east4"
   config {
     subject_config {
       subject {
@@ -465,7 +473,7 @@ resource "google_privateca_certificate_authority" "default" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name           = "ca-policy"
-  location       = "us-west1"
+  location       = "us-east4"
   service_class  = "gcp-memorystore"
   network        = google_compute_network.producer_net.id
   psc_config {
@@ -476,7 +484,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "ca-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-west1"
+  region        = "us-east4"
   network       = google_compute_network.producer_net.id
 }
 

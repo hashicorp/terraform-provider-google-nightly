@@ -444,7 +444,7 @@ func resourceComputeFirewallPolicyAssociationUpdate(d *schema.ResourceData, meta
 	d.SetId(id)
 
 	//following the swapover briefly both associations exist and this can cause operations to fail
-	time.Sleep(60 * time.Second)
+	time.Sleep(60 * config.SleepUnit)
 	//end `custom_update` changed zone
 
 	return resourceComputeFirewallPolicyAssociationRead(d, meta)
@@ -502,8 +502,6 @@ func resourceComputeFirewallPolicyAssociationDelete(d *schema.ResourceData, meta
 		d.Timeout(schema.TimeoutCreate))
 
 	if err != nil {
-		// The resource didn't actually create
-		d.SetId("")
 		return fmt.Errorf("Error waiting to delete FirewallPolicyAssociation: %s", err)
 	}
 

@@ -53,7 +53,7 @@ func TestAccDataLossPreventionDiscoveryConfig_Update(t *testing.T) {
 		// yet, we don't have a race condition
 		// see https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		tc := tc
-		t.Run(name, func(t *testing.T) {
+		acctest.RunVcrSubtest(t, name, func(t *testing.T) {
 			tc(t)
 		})
 	}
@@ -842,6 +842,12 @@ resource "google_data_loss_prevention_inspect_template" "basic" {
 	}
 }
 
+resource "google_folder" "basic" {
+	parent = "organizations/%{organization}"
+	display_name = "tf-test-my-folder-%{random_suffix}"
+	deletion_protection = false
+}
+
 resource "google_data_loss_prevention_discovery_config" "basic" {
 	parent = "organizations/%{organization}/locations/%{location}"
 	location = "%{location}"
@@ -856,7 +862,7 @@ resource "google_data_loss_prevention_discovery_config" "basic" {
 	org_config {
 		project_id = "%{project}"
 		location {
-			folder_id = 123
+			folder_id = google_folder.basic.folder_id
 		}
 	}
     actions {

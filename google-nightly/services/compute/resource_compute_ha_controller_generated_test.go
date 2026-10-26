@@ -575,6 +575,193 @@ resource "google_compute_ha_controller" "default" {
 `, context)
 }
 
+func TestAccComputeHaController_computeHaControllerMultiNicStaticIpExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"hac_name":       "tf-test-hac-sip" + randomSuffix,
+		"network_0_name": compute.BootstrapSharedTestNetwork(t, "hac-sip-net0"),
+		"network_1_name": compute.BootstrapSharedTestNetwork(t, "hac-sip-net1"),
+		"random_suffix":  randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckComputeHaControllerDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComputeHaController_computeHaControllerMultiNicStaticIpExample(context),
+			},
+			{
+				ResourceName:            "google_compute_ha_controller.default",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"region"},
+			},
+			{
+				ResourceName:       "google_compute_ha_controller.default",
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccComputeHaController_computeHaControllerMultiNicStaticIpExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+locals {
+  region = "us-central1"
+  zone1  = "us-central1-a"
+  zone2  = "us-central1-b"
+}
+
+data "google_compute_image" "debian_12" {
+  family  = "debian-12"
+  project = "debian-cloud"
+}
+
+data "google_compute_network" "net_0" {
+  name = "%{network_0_name}"
+}
+
+resource "google_compute_subnetwork" "subnet_0" {
+  name          = "%{hac_name}-sub0"
+  ip_cidr_range = "10.0.1.0/24"
+  region        = local.region
+  network       = data.google_compute_network.net_0.id
+}
+
+data "google_compute_network" "net_1" {
+  name = "%{network_1_name}"
+}
+
+resource "google_compute_subnetwork" "subnet_1" {
+  name          = "%{hac_name}-sub1"
+  ip_cidr_range = "10.0.2.0/24"
+  region        = local.region
+  network       = data.google_compute_network.net_1.id
+}
+
+resource "google_compute_address" "ipv4_nic0_zone1" {
+  name         = "%{hac_name}-v4-n0-z1"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_0.id
+  address_type = "INTERNAL"
+  address      = "10.0.1.10"
+}
+
+resource "google_compute_address" "ipv4_nic0_zone2" {
+  name         = "%{hac_name}-v4-n0-z2"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_0.id
+  address_type = "INTERNAL"
+  address      = "10.0.1.11"
+}
+
+resource "google_compute_address" "ipv4_nic1_zone1" {
+  name         = "%{hac_name}-v4-n1-z1"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_1.id
+  address_type = "INTERNAL"
+  address      = "10.0.2.10"
+}
+
+resource "google_compute_address" "ipv4_nic1_zone2" {
+  name         = "%{hac_name}-v4-n1-z2"
+  region       = local.region
+  subnetwork   = google_compute_subnetwork.subnet_1.id
+  address_type = "INTERNAL"
+  address      = "10.0.2.11"
+}
+
+resource "google_compute_region_disk" "regional_disk" {
+  name                      = "%{hac_name}-rd"
+  physical_block_size_bytes = 4096
+  type                      = "pd-balanced"
+  region                    = local.region
+  replica_zones             = [local.zone1, local.zone2]
+  size                      = 10
+  image                     = data.google_compute_image.debian_12.self_link
+}
+
+resource "google_compute_instance" "vm" {
+  name         = "%{hac_name}-inst"
+  machine_type = "e2-micro"
+  zones {
+    zone = local.zone1
+    network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone1.address
+    }
+    network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone1.address
+    }
+  }
+  zones {
+    zone = local.zone2
+    network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone2.address
+    }
+    network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone2.address
+    }
+  }
+
+  boot_disk {
+    auto_delete = false
+    source      = google_compute_region_disk.regional_disk.self_link
+  }
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet_0.self_link
+  }
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet_1.self_link
+  }
+
+  allow_stopping_for_update = true
+}
+
+resource "google_compute_ha_controller" "default" {
+  name                = "%{hac_name}"
+  region              = local.region
+  instance_name       = google_compute_instance.vm.name
+  failover_initiation = "MANUAL_ONLY"
+
+  zone_configuration {
+    zone = local.zone1
+    instance_network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone1.address
+    }
+    instance_network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone1.address
+    }
+  }
+  zone_configuration {
+    zone = local.zone2
+    instance_network_interface {
+      name       = "nic0"
+      network_ip = google_compute_address.ipv4_nic0_zone2.address
+    }
+    instance_network_interface {
+      name       = "nic1"
+      network_ip = google_compute_address.ipv4_nic1_zone2.address
+    }
+  }
+}
+`, context)
+}
+
 func testAccCheckComputeHaControllerDestroyProducer(t *testing.T) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
 		for name, rs := range s.RootModule().Resources {
@@ -587,6 +774,10 @@ func testAccCheckComputeHaControllerDestroyProducer(t *testing.T) func(s *terraf
 
 			config := acctest.GoogleProviderConfig(t)
 			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(compute.Product, config)+"projects/{{project}}/regions/{{region}}/haControllers/{{name}}")
+			if err != nil {
+				return err
+			}
+			url, err = compute.HaControllerPreviewURL(url)
 			if err != nil {
 				return err
 			}

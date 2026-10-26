@@ -34,18 +34,19 @@ If you remove a connections item from the resource, the corresponding forwarding
 If the corresponding forwarding rule is represented in your terraform configuration it is recommended to delete that
 `google_compute_forwarding_rule` resource at the same time.
 
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_desired_user_created_endpoints&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_desired_user_created_endpoints&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Memorystore Instance Desired User Created Endpoints
 
 
 ```hcl
 resource "google_memorystore_instance_desired_user_created_endpoints" "instance-user-conn" {
   name                        = "instance-user-conn"
-  region                      = "us-west1"
+  region                      = "us-east4"
   desired_user_created_endpoints {
     connections {
       psc_connection {
@@ -90,7 +91,7 @@ resource "google_memorystore_instance_desired_user_created_endpoints" "instance-
 
 resource "google_compute_forwarding_rule" "forwarding_rule1_network1" {
   name                        = "fwd1-net1"
-  region                      = "us-west1"
+  region                      = "us-east4"
   ip_address                  = google_compute_address.ip1_network1.id
   load_balancing_scheme       = ""
   network                     = google_compute_network.network1.id
@@ -99,7 +100,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule1_network1" {
 
 resource "google_compute_forwarding_rule" "forwarding_rule2_network1" {
   name                        = "fwd2-net1"
-  region                      = "us-west1"
+  region                      = "us-east4"
   ip_address                  = google_compute_address.ip2_network1.id
   load_balancing_scheme       = ""
   network                     = google_compute_network.network1.id
@@ -108,7 +109,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule2_network1" {
 
 resource "google_compute_address" "ip1_network1" {
   name                        = "ip1-net1"
-  region                      = "us-west1"
+  region                      = "us-east4"
   subnetwork                  = google_compute_subnetwork.subnet_network1.id
   address_type                = "INTERNAL"
   purpose                     = "GCE_ENDPOINT"
@@ -116,7 +117,7 @@ resource "google_compute_address" "ip1_network1" {
 
 resource "google_compute_address" "ip2_network1" {
   name                        = "ip2-net1"
-  region                      = "us-west1"
+  region                      = "us-east4"
   subnetwork                  = google_compute_subnetwork.subnet_network1.id
   address_type                = "INTERNAL"
   purpose                     = "GCE_ENDPOINT"
@@ -125,7 +126,7 @@ resource "google_compute_address" "ip2_network1" {
 resource "google_compute_subnetwork" "subnet_network1" {
   name                        = "subnet-net1"
   ip_cidr_range               = "10.0.0.248/29"
-  region                      = "us-west1"
+  region                      = "us-east4"
   network                     = google_compute_network.network1.id
 }
 
@@ -136,7 +137,7 @@ resource "google_compute_network" "network1" {
 
 resource "google_compute_forwarding_rule" "forwarding_rule1_network2" {
   name                        = "fwd1-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   ip_address                  = google_compute_address.ip1_network2.id
   load_balancing_scheme       = ""
   network                     = google_compute_network.network2.id
@@ -145,7 +146,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule1_network2" {
 
 resource "google_compute_forwarding_rule" "forwarding_rule2_network2" {
   name                        = "fwd2-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   ip_address                  = google_compute_address.ip2_network2.id
   load_balancing_scheme       = ""
   network                     = google_compute_network.network2.id
@@ -154,7 +155,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule2_network2" {
 
 resource "google_compute_address" "ip1_network2" {
   name                        = "ip1-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   subnetwork                  = google_compute_subnetwork.subnet_network2.id
   address_type                = "INTERNAL"
   purpose                     = "GCE_ENDPOINT"
@@ -162,7 +163,7 @@ resource "google_compute_address" "ip1_network2" {
 
 resource "google_compute_address" "ip2_network2" {
   name                        = "ip2-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   subnetwork                  = google_compute_subnetwork.subnet_network2.id
   address_type                = "INTERNAL"
   purpose                     = "GCE_ENDPOINT"
@@ -172,14 +173,15 @@ resource "google_compute_address" "ip2_network2" {
 resource "google_memorystore_instance" "instance-user-conn" {
   instance_id                 =  "instance-user-conn"
   shard_count                 = 1
-  location                    = "us-west1"
+  location                    = "us-east4"
+  node_type                   = "SHARED_CORE_NANO"
   deletion_protection_enabled = false
 }
 
 resource "google_compute_subnetwork" "subnet_network2" {
   name                        = "subnet-net2"
   ip_cidr_range               = "10.0.0.248/29"
-  region                      = "us-west1"
+  region                      = "us-east4"
   network                     = google_compute_network.network2.id
 }
 
@@ -192,18 +194,19 @@ resource "google_compute_network" "network2" {
 data "google_project" "project" {
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_desired_user_and_auto_created_endpoints&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=memorystore_instance_desired_user_and_auto_created_endpoints&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - Memorystore Instance Desired User And Auto Created Endpoints
 
 
 ```hcl
 resource "google_memorystore_instance_desired_user_created_endpoints" "instance-user-auto-conn" {
   name                        = "instance-user-auto-conn"
-  region                      = "us-west1"
+  region                      = "us-east4"
   desired_user_created_endpoints {
     connections {
       psc_connection {
@@ -228,7 +231,7 @@ resource "google_memorystore_instance_desired_user_created_endpoints" "instance-
 
 resource "google_compute_forwarding_rule" "forwarding_rule1_network2" {
   name                        = "fwd1-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   ip_address                  = google_compute_address.ip1_network2.id
   load_balancing_scheme       = ""
   network                     = google_compute_network.network2.id
@@ -237,7 +240,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule1_network2" {
 
 resource "google_compute_forwarding_rule" "forwarding_rule2_network2" {
   name                        = "fwd2-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   ip_address                  = google_compute_address.ip2_network2.id
   load_balancing_scheme       = ""
   network                     = google_compute_network.network2.id
@@ -246,7 +249,7 @@ resource "google_compute_forwarding_rule" "forwarding_rule2_network2" {
 
 resource "google_compute_address" "ip1_network2" {
   name                        = "ip1-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   subnetwork                  = google_compute_subnetwork.subnet_network2.id
   address_type                = "INTERNAL"  
   purpose                     = "GCE_ENDPOINT"
@@ -254,7 +257,7 @@ resource "google_compute_address" "ip1_network2" {
 
 resource "google_compute_address" "ip2_network2" {
   name                        = "ip2-net2"
-  region                      = "us-west1"
+  region                      = "us-east4"
   subnetwork                  = google_compute_subnetwork.subnet_network2.id
   address_type                = "INTERNAL"
   purpose                     = "GCE_ENDPOINT"
@@ -263,7 +266,7 @@ resource "google_compute_address" "ip2_network2" {
 resource "google_compute_subnetwork" "subnet_network2" {
   name                        = "subnet-net2"
   ip_cidr_range               = "10.0.0.248/29"
-  region                      = "us-west1"
+  region                      = "us-east4"
   network                     = google_compute_network.network2.id
 }
 
@@ -280,7 +283,8 @@ resource "google_memorystore_instance" "instance-user-auto-conn" {
     network                   = google_compute_network.network1.id
     project_id                = data.google_project.project.project_id
   }
-  location                    = "us-west1"
+  location                    = "us-east4"
+  node_type                   = "SHARED_CORE_NANO"
   deletion_protection_enabled = false
   depends_on                  = [google_network_connectivity_service_connection_policy.default]
 
@@ -288,7 +292,7 @@ resource "google_memorystore_instance" "instance-user-auto-conn" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name                        = "scpolicy"
-  location                    = "us-west1"
+  location                    = "us-east4"
   service_class               = "gcp-memorystore"
   description                 = "my basic service connection policy"
   network                     = google_compute_network.network1.id
@@ -300,7 +304,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "subnet_network1" {
   name                       = "subnet-net1"
   ip_cidr_range              = "10.0.0.248/29"
-  region                     = "us-west1"
+  region                     = "us-east4"
   network                    = google_compute_network.network1.id
 }
 

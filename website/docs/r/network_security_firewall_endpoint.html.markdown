@@ -41,6 +41,7 @@ in the provider configuration. Otherwise the ACM API will return a 403 error.
 Your account must have the `serviceusage.services.use` permission on the
 `billing_project_id` you defined.
 
+
 ## Example Usage - Network Security Firewall Endpoint Basic
 
 
@@ -56,6 +57,7 @@ resource "google_network_security_firewall_endpoint" "default" {
   }
 }
 ```
+
 ## Example Usage - Network Security Firewall Endpoint Project
 
 
@@ -110,7 +112,7 @@ The following arguments are supported:
   Structure is [documented below](#nested_endpoint_settings).
 
 * `wildfire_settings` -
-  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  (Optional)
   Settings for WildFire analysis on the firewall endpoint.
   Structure is [documented below](#nested_wildfire_settings).
 
@@ -129,14 +131,14 @@ The following arguments are supported:
   Indicates whether Jumbo Frames are enabled for the firewall endpoint.
 
 * `content_cloud_region` -
-  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  (Optional)
   The Palo Alto Networks content cloud region of the firewall endpoint,
   for example `US_CENTRAL` or `CANADA`. See
   [API docs](https://docs.cloud.google.com/firewall/docs/reference/network-security/rest/v1beta1/organizations.locations.firewallEndpoints#contentcloudregion)
   for the list of supported regions.
 
 * `http_partial_response_blocked` -
-  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  (Optional)
   Whether to block HTTP partial responses for the firewall endpoint.
   When `true`, resumption of blocked malicious HTTP file downloads is
   blocked by the firewall. `false` provides maximum availability, `true`

@@ -31,6 +31,7 @@ To get more information about SecurityProfileGroup, see:
     * [Create and manage security profile groups](https://cloud.google.com/firewall/docs/configure-security-profile-groups)
     * [Security profile groups overview](https://cloud.google.com/firewall/docs/about-security-profile-groups)
 
+
 ## Example Usage - Network Security Security Profile Group Basic
 
 
@@ -53,6 +54,7 @@ resource "google_network_security_security_profile" "security_profile" {
     location    = "global"
 }
 ```
+
 ## Example Usage - Network Security Security Profile Group Mirroring
 
 
@@ -97,6 +99,7 @@ resource "google_network_security_security_profile_group" "default" {
   custom_mirroring_profile = google_network_security_security_profile.default.id
 }
 ```
+
 ## Example Usage - Network Security Security Profile Group Intercept
 
 
@@ -141,6 +144,7 @@ resource "google_network_security_security_profile_group" "default" {
   custom_intercept_profile = google_network_security_security_profile.default.id
 }
 ```
+
 ## Example Usage - Network Security Security Profile Group Url Filtering
 
 
@@ -171,12 +175,12 @@ resource "google_network_security_security_profile" "security_profile" {
   parent = "organizations/123456789"
 }
 ```
+
 ## Example Usage - Network Security Security Profile Group Wildfire
 
 
 ```hcl
 resource "google_network_security_security_profile_group" "default" {
-  provider                  = google-beta
   name                      = "sec-profile-group"
   parent                    = "projects/my-project-name"
   description               = "my description"
@@ -189,7 +193,6 @@ resource "google_network_security_security_profile_group" "default" {
 }
 
 resource "google_network_security_security_profile" "threat_prevention_profile" {
-  provider = google-beta
   name     = "tp-sec-profile"
   type     = "THREAT_PREVENTION"
   parent   = "projects/my-project-name"
@@ -197,7 +200,6 @@ resource "google_network_security_security_profile" "threat_prevention_profile" 
 }
 
 resource "google_network_security_security_profile" "wildfire_profile" {
-  provider = google-beta
   name     = "wf-sec-profile"
   type     = "WILDFIRE_ANALYSIS"
   parent   = "projects/my-project-name"
@@ -252,7 +254,7 @@ The following arguments are supported:
   Reference to a SecurityProfile with the CustomIntercept configuration.
 
 * `wildfire_analysis_profile` -
-  (Optional, [Beta](../guides/provider_versions.html.markdown))
+  (Optional)
   Reference to a SecurityProfile with the WildFire configuration for the SecurityProfileGroup.
 
 * `location` -

@@ -38,13 +38,19 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 	zone1 := "us-central1-a"
 	zone2 := "us-central1-b"
 	region := "us-central1"
+	nic0 := "nic0"
+	nic1 := "nic1"
 
 	hacName := fmt.Sprintf("tf-test-%s", acctest.RandString(t, 10))
 	context := map[string]any{
-		"hac_name": hacName,
-		"zone1":    zone1,
-		"zone2":    zone2,
-		"region":   region,
+		"hac_name":       hacName,
+		"zone1":          zone1,
+		"zone2":          zone2,
+		"region":         region,
+		"nic0":           nic0,
+		"nic1":           nic1,
+		"network_0_name": tpgcompute.BootstrapSharedTestNetwork(t, "hac-failover-sip-net0"),
+		"network_1_name": tpgcompute.BootstrapSharedTestNetwork(t, "hac-failover-sip-net1"),
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -58,8 +64,11 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 				PreConfig: func() {
 					config := acctest.GoogleProviderConfig(t)
 
-					url := fmt.Sprintf("%sprojects/%s/regions/%s/haControllers/%s",
-						transport_tpg.BaseUrl(tpgcompute.Product, config), config.Project, region, hacName)
+					url, err := tpgcompute.HaControllerPreviewURL(fmt.Sprintf("%sprojects/%s/regions/%s/haControllers/%s",
+						transport_tpg.BaseUrl(tpgcompute.Product, config), config.Project, region, hacName))
+					if err != nil {
+						t.Fatalf("Failed to build HaController URL: %v", err)
+					}
 
 					res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 						Config:    config,
@@ -90,8 +99,11 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 						"failoverToZone": targetZone,
 					}
 
-					failoverURL := fmt.Sprintf("%sprojects/%s/regions/%s/haControllers/%s/failover",
-						transport_tpg.BaseUrl(tpgcompute.Product, config), config.Project, region, hacName)
+					failoverURL, err := tpgcompute.HaControllerPreviewURL(fmt.Sprintf("%sprojects/%s/regions/%s/haControllers/%s/failover",
+						transport_tpg.BaseUrl(tpgcompute.Product, config), config.Project, region, hacName))
+					if err != nil {
+						t.Fatalf("Failed to build HaController failover URL: %v", err)
+					}
 
 					op, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 						Config:    config,
@@ -125,44 +137,7 @@ func TestAccComputeHaController_failoverThenDelete_noDiff(t *testing.T) {
 }
 
 func testAccHaControllerBasic(context map[string]any) string {
-	return acctest.Nprintf(`
-data "google_compute_image" "debian_12" {
-  family   = "debian-12"
-  project  = "debian-cloud"
-}
-
-resource "google_compute_region_disk" "regional_disk" {
-  name                      = "%{hac_name}-rd"
-  physical_block_size_bytes = 4096
-  type                      = "pd-balanced"
-  region                    = "%{region}"
-  replica_zones             = ["%{zone1}", "%{zone2}"]
-  size                      = 15
-  image                     = data.google_compute_image.debian_12.self_link
-}
-
-resource "google_compute_instance" "vm" {
-  name         = "%{hac_name}-inst"
-  machine_type = "e2-micro"
-  zones {
-    zone = "%{zone1}"
-  }
-  zones {
-    zone = "%{zone2}"
-  }
-
-  boot_disk {
-    auto_delete = false
-    source      = google_compute_region_disk.regional_disk.self_link
-  }
-
-  network_interface {
-    network = "default"
-  }
-
-  allow_stopping_for_update = true
-}
-
+	return testAccHaControllerNoHac(context) + acctest.Nprintf(`
 resource "google_compute_ha_controller" "foobar" {
   name                = "%{hac_name}"
   region              = "%{region}"
@@ -171,9 +146,25 @@ resource "google_compute_ha_controller" "foobar" {
 
   zone_configuration {
     zone = "%{zone1}"
+    instance_network_interface {
+      name       = "%{nic0}"
+      network_ip = google_compute_address.ipv4_nic0_zone1.address
+    }
+    instance_network_interface {
+      name       = "%{nic1}"
+      network_ip = google_compute_address.ipv4_nic1_zone1.address
+    }
   }
   zone_configuration {
     zone = "%{zone2}"
+    instance_network_interface {
+      name       = "%{nic0}"
+      network_ip = google_compute_address.ipv4_nic0_zone2.address
+    }
+    instance_network_interface {
+      name       = "%{nic1}"
+      network_ip = google_compute_address.ipv4_nic1_zone2.address
+    }
   }
 }
 `, context)
@@ -182,8 +173,62 @@ resource "google_compute_ha_controller" "foobar" {
 func testAccHaControllerNoHac(context map[string]any) string {
 	return acctest.Nprintf(`
 data "google_compute_image" "debian_12" {
-  family   = "debian-12"
-  project  = "debian-cloud"
+  family  = "debian-12"
+  project = "debian-cloud"
+}
+
+data "google_compute_network" "net_0" {
+  name = "%{network_0_name}"
+}
+
+resource "google_compute_subnetwork" "subnet_0" {
+  name          = "%{hac_name}-sub0"
+  ip_cidr_range = "10.0.1.0/24"
+  region        = "%{region}"
+  network       = data.google_compute_network.net_0.id
+}
+
+data "google_compute_network" "net_1" {
+  name = "%{network_1_name}"
+}
+
+resource "google_compute_subnetwork" "subnet_1" {
+  name          = "%{hac_name}-sub1"
+  ip_cidr_range = "10.0.2.0/24"
+  region        = "%{region}"
+  network       = data.google_compute_network.net_1.id
+}
+
+resource "google_compute_address" "ipv4_nic0_zone1" {
+  name         = "%{hac_name}-v4-n0-z1"
+  region       = "%{region}"
+  subnetwork   = google_compute_subnetwork.subnet_0.id
+  address_type = "INTERNAL"
+  address      = "10.0.1.10"
+}
+
+resource "google_compute_address" "ipv4_nic0_zone2" {
+  name         = "%{hac_name}-v4-n0-z2"
+  region       = "%{region}"
+  subnetwork   = google_compute_subnetwork.subnet_0.id
+  address_type = "INTERNAL"
+  address      = "10.0.1.11"
+}
+
+resource "google_compute_address" "ipv4_nic1_zone1" {
+  name         = "%{hac_name}-v4-n1-z1"
+  region       = "%{region}"
+  subnetwork   = google_compute_subnetwork.subnet_1.id
+  address_type = "INTERNAL"
+  address      = "10.0.2.10"
+}
+
+resource "google_compute_address" "ipv4_nic1_zone2" {
+  name         = "%{hac_name}-v4-n1-z2"
+  region       = "%{region}"
+  subnetwork   = google_compute_subnetwork.subnet_1.id
+  address_type = "INTERNAL"
+  address      = "10.0.2.11"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
@@ -201,9 +246,25 @@ resource "google_compute_instance" "vm" {
   machine_type = "e2-micro"
   zones {
     zone = "%{zone1}"
+    network_interface {
+      name       = "%{nic0}"
+      network_ip = google_compute_address.ipv4_nic0_zone1.address
+    }
+    network_interface {
+      name       = "%{nic1}"
+      network_ip = google_compute_address.ipv4_nic1_zone1.address
+    }
   }
   zones {
     zone = "%{zone2}"
+    network_interface {
+      name       = "%{nic0}"
+      network_ip = google_compute_address.ipv4_nic0_zone2.address
+    }
+    network_interface {
+      name       = "%{nic1}"
+      network_ip = google_compute_address.ipv4_nic1_zone2.address
+    }
   }
 
   boot_disk {
@@ -212,7 +273,11 @@ resource "google_compute_instance" "vm" {
   }
 
   network_interface {
-    network = "default"
+    subnetwork = google_compute_subnetwork.subnet_0.self_link
+  }
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet_1.self_link
   }
 
   allow_stopping_for_update = true

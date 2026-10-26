@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"log"
 	mrand "math/rand"
+	"net"
 	"net/http"
 	"os"
 	"slices"
@@ -194,6 +195,9 @@ func forceNewIfNetworkIPNotUpdatable(ctx context.Context, d *schema.ResourceDiff
 }
 
 func forceNewIfNetworkIPNotUpdatableFunc(d tpgresource.TerraformResourceDiff) error {
+	if hasZoneNetworkInterfaces(d.Get("zones")) {
+		return nil
+	}
 	oldCount, newCount := d.GetChange("network_interface.#")
 	if oldCount.(int) != newCount.(int) {
 		return nil
@@ -553,7 +557,6 @@ func ResourceComputeInstance() *schema.Resource {
 										Optional:     true,
 										AtLeastOneOf: initializeParamsKeys,
 										Computed:     true,
-										ForceNew:     true,
 										Description:  `Indicates how many IOPS to provision for the disk. This sets the number of I/O operations per second that the disk can handle.`,
 									},
 
@@ -562,7 +565,6 @@ func ResourceComputeInstance() *schema.Resource {
 										Optional:     true,
 										AtLeastOneOf: initializeParamsKeys,
 										Computed:     true,
-										ForceNew:     true,
 										Description:  `Indicates how much throughput to provision for the disk. This sets the number of throughput mb per second that the disk can handle.`,
 									},
 
@@ -1609,19 +1611,41 @@ be from 0 to 999,999,999 inclusive.`,
 				Optional:      true,
 				ForceNew:      false,
 				ConflictsWith: []string{"zone"},
-				Set: func(v interface{}) int {
-					m := v.(map[string]interface{})
-					if z, ok := m["zone"].(string); ok && z != "" {
-						return tpgresource.SelfLinkNameHash(z)
-					}
-					return 0
-				},
+				Set:           resourceComputeInstanceZonesHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"zone": {
 							Type:        schema.TypeString,
 							Required:    true,
 							Description: `The zone in which you want to create the instance.`,
+						},
+						"network_interface": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							MaxItems:    8,
+							Description: `Network interface configurations for the instance in this zone. Maximum of 8 network interfaces can be specified.`,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Default:      "nic0",
+										ValidateFunc: verify.ValidateRegexp(`^nic[0-7]$`),
+										Description:  `The name of the network interface. Defaults to "nic0".`,
+									},
+									"network_ip": {
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `An IPv4 internal network address to assign to the instance for this network interface in this zone.`,
+									},
+									"ipv6_address": {
+										Type:             schema.TypeString,
+										Optional:         true,
+										DiffSuppressFunc: zoneNicIPv6DiffSuppress,
+										Description:      `An IPv6 internal network address for this network interface in this zone.`,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -1843,6 +1867,10 @@ be from 0 to 999,999,999 inclusive.`,
 			customdiff.ForceNewIf("metadata_startup_script", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 				return isGracefulMetadataStartupSwitch(d)
 			}),
+			// Only hyperdisk supports updating provisioned IOPS in place (e.g. pd-extreme does not).
+			customdiff.ForceNewIf("boot_disk.0.initialize_params.0.provisioned_iops", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
+				return d.HasChange("boot_disk.0.initialize_params.0.provisioned_iops") && !strings.Contains(d.Get("boot_disk.0.initialize_params.0.type").(string), "hyperdisk")
+			}),
 			validateSubnetworkProject,
 			forceNewIfNetworkIPNotUpdatable,
 			tpgresource.SetLabelsDiff,
@@ -1851,20 +1879,56 @@ be from 0 to 999,999,999 inclusive.`,
 	}
 }
 
+func resourceComputeInstanceZonesHash(v interface{}) int {
+	m, ok := v.(map[string]interface{})
+	if !ok {
+		return 0
+	}
+	z, _ := m["zone"].(string)
+	nics := asInterfaceSlice(m["network_interface"])
+	if len(nics) == 0 {
+		if z != "" {
+			return tpgresource.SelfLinkNameHash(z)
+		}
+		return 0
+	}
+
+	var buf strings.Builder
+	buf.WriteString(tpgresource.GetResourceNameFromSelfLink(z))
+	buf.WriteString("-")
+	for _, rawNic := range nics {
+		nicMap, ok := rawNic.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		nic := parseZoneNicFromMap(nicMap)
+		if nic.ipv6Address != "" {
+			if parsed := net.ParseIP(nic.ipv6Address); parsed != nil {
+				nic.ipv6Address = parsed.String()
+			}
+		}
+		buf.WriteString(fmt.Sprintf("%s:%s:%s;", nic.name, nic.networkIP, nic.ipv6Address))
+	}
+	return tpgresource.Hashcode(buf.String())
+}
+
+func hasZoneNetworkInterfaces(v interface{}) bool {
+	for _, item := range asInterfaceSlice(v) {
+		if m, ok := item.(map[string]interface{}); ok {
+			if len(asInterfaceSlice(m["network_interface"])) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func parseZones(v interface{}) []string {
 	var zones []string
-	var list []interface{}
-	if s, ok := v.(*schema.Set); ok {
-		list = s.List()
-	} else if l, ok := v.([]interface{}); ok {
-		list = l
-	}
-	for _, item := range list {
-		if item != nil {
-			if m, ok := item.(map[string]interface{}); ok {
-				if z, ok := m["zone"].(string); ok && z != "" {
-					zones = append(zones, tpgresource.GetResourceNameFromSelfLink(z))
-				}
+	for _, item := range asInterfaceSlice(v) {
+		if m, ok := item.(map[string]interface{}); ok {
+			if z, ok := m["zone"].(string); ok && z != "" {
+				zones = append(zones, tpgresource.GetResourceNameFromSelfLink(z))
 			}
 		}
 	}
@@ -1898,37 +1962,46 @@ func compareZonesDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
 	return false
 }
 
+func validateNoRootStaticIPsWithZones(d tpgresource.TerraformResourceDiff, topLevelNicCount int) error {
+	for nicIdx := 0; nicIdx < topLevelNicCount; nicIdx++ {
+		if isRootNicIPConfigured(d, nicIdx, "network_ip") {
+			return fmt.Errorf("network_interface.%d.network_ip cannot be set when zones is configured; all static IPs must be configured within zones", nicIdx)
+		}
+		if isRootNicIPConfigured(d, nicIdx, "ipv6_address") {
+			return fmt.Errorf("network_interface.%d.ipv6_address cannot be set when zones is configured; all static IPs must be configured within zones", nicIdx)
+		}
+	}
+	return nil
+}
+
 func validateZonesArgument(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	return validateZones(d)
 }
 
 func validateZones(d tpgresource.TerraformResourceDiff) error {
-	var zones []interface{}
-	if s, ok := d.Get("zones").(*schema.Set); ok {
-		zones = s.List()
-	} else if l, ok := d.Get("zones").([]interface{}); ok {
-		zones = l
-	}
+	zones := extractZoneBlocksFromDiff(d, "zones", "network_interface")
 	if len(zones) < 2 {
 		return fmt.Errorf("zones argument must be an array of at least 2 elements")
 	}
 
-	seenZones := make(map[string]bool)
-	var firstRegion string
+	maxNicCount := -1
+	if topLevelNicCount, ok := d.Get("network_interface.#").(int); ok {
+		if err := validateNoRootStaticIPsWithZones(d, topLevelNicCount); err != nil {
+			return err
+		}
+		maxNicCount = topLevelNicCount
+	}
 
-	for _, zVal := range zones {
-		if zVal == nil {
+	seenZones := make(map[string]bool, len(zones))
+	var firstRegion string
+	var firstZone string
+	var firstZoneNics map[string]zoneNicDiffSpec
+
+	for i, zBlock := range zones {
+		if !zBlock.valid || zBlock.zone == "" {
 			return fmt.Errorf("every element in zones must be a valid zone string")
 		}
-		zoneMap, ok := zVal.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("every element in zones must be a valid zone map")
-		}
-		zone, ok := zoneMap["zone"].(string)
-		if !ok || zone == "" {
-			return fmt.Errorf("every element in zones must be a valid zone string")
-		}
-		zone = tpgresource.GetResourceNameFromSelfLink(zone)
+		zone := tpgresource.GetResourceNameFromSelfLink(zBlock.zone)
 		if seenZones[zone] {
 			return fmt.Errorf("zones argument must contain distinct zones, found duplicate: %s", zone)
 		}
@@ -1943,15 +2016,66 @@ func validateZones(d tpgresource.TerraformResourceDiff) error {
 		} else if region != firstRegion {
 			return fmt.Errorf("zones must belong to the same region, found %s and %s", firstRegion, region)
 		}
+
+		currentZoneNics, err := validateZoneNicBlocks(zBlock.nics, zone, "network_interface", maxNicCount)
+		if err != nil {
+			return err
+		}
+		if i == 0 {
+			firstZone = zone
+			firstZoneNics = currentZoneNics
+		} else if err := validateZoneNicsSymmetry(firstZone, firstZoneNics, zone, currentZoneNics, "zones", "network_interface"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
+func zoneNicMatchesState(d tpgresource.TerraformResourceDiff, nic zoneNicDiffSpec) bool {
+	nicIndex, ok := parseZoneNicIndex(nic.name)
+	if !ok {
+		return true
+	}
+	if nic.hasIPv4 {
+		stateIPVal, _ := d.GetChange(fmt.Sprintf("network_interface.%d.network_ip", nicIndex))
+		stateIP, _ := stateIPVal.(string)
+		if nic.networkIP == "" || stateIP != nic.networkIP {
+			return false
+		}
+	}
+	if nic.hasIPv6 {
+		stateIPv6Val, _ := d.GetChange(fmt.Sprintf("network_interface.%d.ipv6_address", nicIndex))
+		stateIPv6, _ := stateIPv6Val.(string)
+		if nic.ipv6Address == "" || !ipv6RepresentationDiffSuppress("", stateIPv6, nic.ipv6Address, nil) {
+			return false
+		}
+	}
+	return true
+}
+
+func zoneNetworkInterfacesMatchState(d tpgresource.TerraformResourceDiff, activeZone string) bool {
+	if activeZone == "" {
+		return true
+	}
+	for _, zBlock := range extractZoneBlocksFromDiff(d, "zones", "network_interface") {
+		if !zBlock.valid || tpgresource.GetResourceNameFromSelfLink(zBlock.zone) != activeZone {
+			continue
+		}
+		for _, nic := range zBlock.nics {
+			if !zoneNicMatchesState(d, nic) {
+				return false
+			}
+		}
+		return true
+	}
+	return true
+}
+
 func customizeZonesDiffFunc(d tpgresource.TerraformResourceDiff) (bool, interface{}, bool) {
 	remoteZoneVal, configZoneVal := d.GetChange("zone")
-	remoteZone := remoteZoneVal.(string)
+	remoteZone, _ := remoteZoneVal.(string)
 	remoteZone = tpgresource.GetResourceNameFromSelfLink(remoteZone)
-	configZone := configZoneVal.(string)
+	configZone, _ := configZoneVal.(string)
 	configZone = tpgresource.GetResourceNameFromSelfLink(configZone)
 	configZones := parseZones(d.Get("zones"))
 
@@ -1968,7 +2092,7 @@ func customizeZonesDiffFunc(d tpgresource.TerraformResourceDiff) (bool, interfac
 
 		inNewZones := slices.Contains(configZones, configZone)
 
-		if !inNewZones {
+		if !inNewZones || !zoneNetworkInterfacesMatchState(d, configZone) {
 			setNewComputed = true
 		}
 	}
@@ -1995,29 +2119,29 @@ func getInstanceFromZones(config *transport_tpg.Config, d *schema.ResourceData, 
 	log.Printf("[DEBUG] Checking instance existence concurrently for %s across zones: %v", name, zones)
 
 	for i, z := range zones {
+		url, err := tpgresource.ReplaceVars(d, config, fmt.Sprintf("{{ComputeBasePath}}projects/{{project}}/zones/%s/instances/{{name}}", z))
+		if err != nil {
+			results[i] = instanceFetchResult{zone: z, instance: nil, err: err}
+			continue
+		}
+		url, err = transport_tpg.AddQueryParams(url, map[string]string{"view": "FULL"})
+		if err != nil {
+			results[i] = instanceFetchResult{zone: z, instance: nil, err: err}
+			continue
+		}
 		wg.Add(1)
-		go func(index int, zoneName string) {
+		go func(index int, zoneName, rawURL string) {
 			defer wg.Done()
 			log.Printf("[DEBUG] Querying instance %s in zone %s", name, zoneName)
-			url, err := tpgresource.ReplaceVars(d, config, fmt.Sprintf("{{ComputeBasePath}}projects/{{project}}/zones/%s/instances/{{name}}", zoneName))
-			if err != nil {
-				results[index] = instanceFetchResult{zone: zoneName, instance: nil, err: err}
-				return
-			}
-			url, err = transport_tpg.AddQueryParams(url, map[string]string{"view": "FULL"})
-			if err != nil {
-				results[index] = instanceFetchResult{zone: zoneName, instance: nil, err: err}
-				return
-			}
 			res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 				Config:    config,
 				Method:    "GET",
 				Project:   project,
-				RawURL:    url,
+				RawURL:    rawURL,
 				UserAgent: userAgent,
 			})
 			results[index] = instanceFetchResult{zone: zoneName, instance: res, err: err}
-		}(i, z)
+		}(i, z, url)
 	}
 	wg.Wait()
 
@@ -2405,7 +2529,70 @@ func buildRegularInsertPayload(d *schema.ResourceData, meta interface{}, config 
 		instanceBody["partnerMetadata"] = partnerMetadataConverted
 	}
 
+	if err := applyZoneNetworkInterfaces(d, instanceBody); err != nil {
+		return nil, err
+	}
+
 	return instanceBody, nil
+}
+
+func clearInstanceNicIPs(instNics []interface{}) {
+	for _, rawInstNic := range instNics {
+		if instNic, ok := rawInstNic.(map[string]interface{}); ok {
+			delete(instNic, "networkIP")
+			delete(instNic, "ipv6Address")
+		}
+	}
+}
+
+func findTargetZoneNics(zonesList []interface{}, targetZone string) []interface{} {
+	for _, rawZone := range zonesList {
+		zoneMap, ok := rawZone.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		z, _ := zoneMap["zone"].(string)
+		if tpgresource.GetResourceNameFromSelfLink(z) == targetZone {
+			return asInterfaceSlice(zoneMap["network_interface"])
+		}
+	}
+	return nil
+}
+
+func applyZoneNetworkInterfaces(d *schema.ResourceData, instanceBody map[string]interface{}) error {
+	targetZone := tpgresource.GetResourceNameFromSelfLink(d.Get("zone").(string))
+	zonesList := asInterfaceSlice(d.Get("zones"))
+	if targetZone == "" || len(zonesList) == 0 {
+		return nil
+	}
+
+	instNics, _ := instanceBody["networkInterfaces"].([]interface{})
+	if hasZoneNetworkInterfaces(zonesList) {
+		clearInstanceNicIPs(instNics)
+	}
+
+	for _, rawNic := range findTargetZoneNics(zonesList, targetZone) {
+		nicMap, ok := rawNic.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		nic := parseZoneNicFromMap(nicMap)
+		nicIndex, ok := parseZoneNicIndex(nic.name)
+		if !ok || nicIndex >= len(instNics) {
+			return fmt.Errorf("zones network_interface %q in zone %s does not correspond to any configured network_interface block", nic.name, targetZone)
+		}
+		instNic, ok := instNics[nicIndex].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if nic.hasIPv4 {
+			instNic["networkIP"] = nic.networkIP
+		}
+		if nic.hasIPv6 {
+			instNic["ipv6Address"] = nic.ipv6Address
+		}
+	}
+	return nil
 }
 
 func normalizeForBulkInsert(instanceBody map[string]interface{}) map[string]interface{} {
@@ -2446,7 +2633,21 @@ func buildBulkInsertPayload(d *schema.ResourceData, meta interface{}, config *tr
 	instanceProperties := normalizeForBulkInsert(payload)
 
 	denyMap := make(map[string]interface{})
-	zoneList, err := DEPRECATED_LegacyApiaryClient(config, userAgent).Zones.List(project).Filter(fmt.Sprintf("region eq .*%s", region)).Do()
+	zonesUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones")
+	if err != nil {
+		return nil, fmt.Errorf("Error generating zones URL: %s", err)
+	}
+	zonesUrl, err = transport_tpg.AddQueryParams(zonesUrl, map[string]string{"filter": fmt.Sprintf("region eq .*%s", region)})
+	if err != nil {
+		return nil, err
+	}
+	zoneList, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+		Config:    config,
+		Method:    "GET",
+		Project:   project,
+		RawURL:    zonesUrl,
+		UserAgent: userAgent,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("Error listing zones for region %s: %s", region, err)
 	}
@@ -2454,10 +2655,17 @@ func buildBulkInsertPayload(d *schema.ResourceData, meta interface{}, config *tr
 	for _, z := range zones {
 		allowedZonesMap[z] = true
 	}
-	for _, zObj := range zoneList.Items {
-		if !allowedZonesMap[zObj.Name] {
-			denyMap[fmt.Sprintf("zones/%s", zObj.Name)] = map[string]interface{}{
-				"preference": "DENY",
+	if rawItems, ok := zoneList["items"].([]interface{}); ok {
+		for _, raw := range rawItems {
+			zObj, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			zName, _ := zObj["name"].(string)
+			if zName != "" && !allowedZonesMap[zName] {
+				denyMap[fmt.Sprintf("zones/%s", zName)] = map[string]interface{}{
+					"preference": "DENY",
+				}
 			}
 		}
 	}
@@ -2578,7 +2786,21 @@ func bulkInsert(d *schema.ResourceData, meta interface{}, config *transport_tpg.
 	var createdZone string
 	for _, z := range zones {
 		log.Printf("[DEBUG] Checking if instance %s was created in zone %s", d.Get("name").(string), z)
-		inst, err := DEPRECATED_LegacyApiaryClient(config, userAgent).Instances.Get(project, z, d.Get("name").(string)).View("FULL").Do()
+		instUrl, err := tpgresource.ReplaceVars(d, config, fmt.Sprintf("{{ComputeBasePath}}projects/{{project}}/zones/%s/instances/{{name}}", z))
+		if err != nil {
+			return fmt.Errorf("Error generating instance URL: %s", err)
+		}
+		instUrl, err = transport_tpg.AddQueryParams(instUrl, map[string]string{"view": "FULL"})
+		if err != nil {
+			return err
+		}
+		inst, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+			Config:    config,
+			Method:    "GET",
+			Project:   project,
+			RawURL:    instUrl,
+			UserAgent: userAgent,
+		})
 		if err == nil && inst != nil {
 			createdZone = z
 			break
@@ -2611,7 +2833,7 @@ func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) err
 	staticZone := d.Get("zone").(string)
 	if staticZone != "" {
 		err = regularInsert(d, meta, config, project, staticZone, userAgent)
-	} else if d.Get("scheduling.0.node_affinities.#").(int) > 0 {
+	} else if d.Get("scheduling.0.node_affinities.#").(int) > 0 || hasZoneNetworkInterfaces(d.Get("zones")) {
 		err = randomInsert(d, meta, config, project, userAgent)
 	} else {
 		err = bulkInsert(d, meta, config, project, userAgent)
@@ -3819,7 +4041,7 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 			}
 		}
 
-		if !updateDuringStop && d.HasChange(prefix+".ipv6_address") {
+		if !updateDuringStop && !hasZoneNetworkInterfaces(d.Get("zones")) && d.HasChange(prefix+".ipv6_address") {
 
 			niBody := map[string]interface{}{
 				"ipv6Address": d.Get(prefix + ".ipv6_address").(string),
@@ -3890,22 +4112,11 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 			if air, ok := networkInterface["aliasIpRanges"].([]interface{}); ok && len(air) > 0 {
 				niPatchMap["aliasIpRanges"] = air
 			}
-			if air6, ok := networkInterface["aliasIpv6Ranges"].([]interface{}); ok && len(air6) > 0 {
-				niPatchMap["aliasIpv6Ranges"] = air6
-			}
 
 			// network_ip can be inferred if not declared. Let's only patch if it's being changed by user
 			// otherwise this could fail if the network ip is not compatible with the new Subnetwork/Network.
-			if d.HasChange(prefix + ".network_ip") {
+			if !hasZoneNetworkInterfaces(d.Get("zones")) && d.HasChange(prefix+".network_ip") {
 				niPatchMap["networkIP"] = networkInterface["networkIP"]
-			}
-
-			if d.HasChange(prefix + ".internal_ipv6_prefix_length") {
-				niPatchMap["ipv6Address"] = networkInterface["ipv6Address"]
-			}
-
-			if d.HasChange(prefix + ".ipv6_address") {
-				niPatchMap["ipv6Address"] = networkInterface["ipv6Address"]
 			}
 
 			// Access config can run into some issues since we can't tell the difference between
@@ -3947,7 +4158,7 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 
 			if d.HasChange("boot_disk.0.initialize_params.0.size") {
 				obj["sizeGb"] = d.Get("boot_disk.0.initialize_params.0.size").(int)
-				err := updateDisk(d, config, userAgent, project, urlBase+"/resize", obj)
+				err := updateDisk(d, config, userAgent, project, "POST", urlBase+"/resize", obj)
 				if err != nil {
 					return err
 				}
@@ -3955,7 +4166,29 @@ func resourceComputeInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 			if d.HasChange("boot_disk.0.initialize_params.0.labels") {
 				obj["labels"] = tpgresource.ConvertStringMap(d.Get("boot_disk.0.initialize_params.0.labels").(map[string]interface{}))
 				obj["labelFingerprint"] = disk["labelFingerprint"]
-				err := updateDisk(d, config, userAgent, project, urlBase+"/setLabels", obj)
+				err := updateDisk(d, config, userAgent, project, "POST", urlBase+"/setLabels", obj)
+				if err != nil {
+					return err
+				}
+			}
+
+			if d.HasChange("boot_disk.0.initialize_params.0.provisioned_iops") || d.HasChange("boot_disk.0.initialize_params.0.provisioned_throughput") {
+				perfObj := make(map[string]interface{})
+				var paths []string
+				if d.HasChange("boot_disk.0.initialize_params.0.provisioned_iops") {
+					perfObj["provisionedIops"] = d.Get("boot_disk.0.initialize_params.0.provisioned_iops").(int)
+					paths = append(paths, "provisionedIops")
+				}
+				if d.HasChange("boot_disk.0.initialize_params.0.provisioned_throughput") {
+					perfObj["provisionedThroughput"] = d.Get("boot_disk.0.initialize_params.0.provisioned_throughput").(int)
+					paths = append(paths, "provisionedThroughput")
+				}
+				// The API requires the disk name in the body when patching a hyperdisk's performance fields.
+				if diskType, _ := disk["type"].(string); strings.Contains(diskType, "hyperdisk") {
+					perfObj["name"] = diskName
+				}
+				patchUrl := fmt.Sprintf("%s?paths=%s", urlBase, strings.Join(paths, "&paths="))
+				err := updateDisk(d, config, userAgent, project, "PATCH", patchUrl, perfObj)
 				if err != nil {
 					return err
 				}
@@ -5464,20 +5697,20 @@ func CheckForCommonAliasIpv6(old, new map[string]interface{}) []interface{} {
 	return resultAliasIpRanges
 }
 
-func updateDisk(d *schema.ResourceData, config *transport_tpg.Config, userAgent, project, patchUrl string, obj map[string]interface{}) error {
+func updateDisk(d *schema.ResourceData, config *transport_tpg.Config, userAgent, project, method, patchUrl string, obj map[string]interface{}) error {
 	billingProject := project
 	url, err := tpgresource.ReplaceVars(d, config, patchUrl)
 	if err != nil {
 		return err
 	}
 	headers := make(http.Header)
-	if bp, err := tpgresource.GetBillingProject(d, config); err != nil {
+	if bp, err := tpgresource.GetBillingProject(d, config); err == nil {
 		billingProject = bp
 	}
 
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 		Config:    config,
-		Method:    "POST",
+		Method:    method,
 		Project:   billingProject,
 		RawURL:    url,
 		UserAgent: userAgent,

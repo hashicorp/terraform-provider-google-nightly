@@ -33,6 +33,7 @@ To get more information about StandardAppVersion, see:
 * How-to Guides
     * [Official Documentation](https://cloud.google.com/appengine/docs/standard)
 
+
 ## Example Usage - App Engine Standard App Version
 
 
@@ -56,7 +57,7 @@ resource "google_project_iam_member" "storage_viewer" {
 
 resource "google_app_engine_standard_app_version" "myapp_v1" {
   version_id = "v1"
-  service    = "myapp"
+  service    = "ae-service"
   runtime    = "nodejs22"
 
   entrypoint {
@@ -93,7 +94,7 @@ resource "google_app_engine_standard_app_version" "myapp_v1" {
 
 resource "google_app_engine_standard_app_version" "myapp_v2" {
   version_id      = "v2"
-  service         = "myapp"
+  service         = "ae-service"
   runtime         = "nodejs22"
   app_engine_apis = true
 
@@ -130,11 +131,12 @@ resource "google_storage_bucket_object" "object" {
   source = "./test-fixtures/hello-world.zip"
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=app_engine_standard_app_version_bundled_services&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=app_engine_standard_app_version_bundled_services&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - App Engine Standard App Version Bundled Services
 
 
@@ -176,7 +178,7 @@ resource "google_storage_bucket_object" "main" {
 resource "google_app_engine_standard_app_version" "gae-std-app-ver-bundled" {
   version_id   = "v1"
   service      = "bundled-service"
-  runtime      = "python310"
+  runtime      = "python312"
 
   deployment {
     files {
@@ -205,11 +207,12 @@ resource "google_app_engine_standard_app_version" "gae-std-app-ver-bundled" {
   ]
 }
 ```
-<div class = "oics-button" style="float: right; margin: 0 0 -15px">
-  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=app_engine_standard_app_version_vpc_access&open_in_editor=main.tf" target="_blank">
-    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=app_engine_standard_app_version_vpc_access&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div>
+
 ## Example Usage - App Engine Standard App Version Vpc Access
 
 
@@ -273,10 +276,10 @@ resource "google_app_engine_standard_app_version" "gae-std-app-ver-vpc-access" {
   provider     = google-beta
   version_id   = "v1"
   service      = "vpc-service"
-  runtime      = "python310"
+  runtime      = "python312"
 
   vpc_access {
-    egress_setting = "ALL_TRAFFIC"
+    vpc_egress = "ALL_TRAFFIC"
     network_interfaces {
       network    = google_compute_network.custom.name
       subnetwork = google_compute_subnetwork.custom.name
@@ -574,8 +577,15 @@ The following arguments are supported:
 <a name="nested_vpc_access"></a>The `vpc_access` block supports:
 
 * `egress_setting` -
-  (Optional)
+  (Optional, Deprecated)
   The egress setting for the VPC Access, controlling what traffic is diverted through it.
+
+  ~> **Warning:** `egress_setting` is deprecated and will be removed in a future major release. Use `vpc_egress` instead.
+
+* `vpc_egress` -
+  (Optional)
+  The traffic egress setting for the VPC network interface, controlling what traffic is diverted through it.
+  Possible values are: `ALL_TRAFFIC`, `PRIVATE_IP_RANGES`.
 
 * `network_interfaces` -
   (Optional)
@@ -587,11 +597,11 @@ The following arguments are supported:
 
 * `network` -
   (Optional)
-  The name of the VPC network to which the version connects (e.g. `projects/my-project/global/networks/default`).
+  The VPC network that the App Engine resource will be able to send traffic to. At least one of network or subnetwork must be specified. If both network and subnetwork are specified, the given VPC subnetwork must belong to the given VPC network. If network is not specified, it will be looked up from the subnetwork. Could be either a short name or a full path (e.g. `default` or `projects/my-project/global/networks/default`).
 
 * `subnetwork` -
   (Optional)
-  The name of the subnetwork to which the version connects (e.g. `projects/my-project/regions/us-central1/subnetworks/default`).
+  The VPC subnetwork that the App Engine resource will get IPs from. At least one of network or subnetwork must be specified. If both network and subnetwork are specified, the given VPC subnetwork must belong to the given VPC network. If subnetwork is not specified, the subnetwork with the same name with the network will be used. Could be either a short name or a full path (e.g. `default` or `projects/my-project/regions/us-central1/subnetworks/default`).
 
 * `tags` -
   (Optional)

@@ -42,6 +42,7 @@ To get more information about ServicePerimeterIngressPolicy, see:
 * How-to Guides
     * [Guide to Ingress and Egress Rules](https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules)
 
+
 ## Example Usage - Access Context Manager Service Perimeter Ingress Policy
 
 
@@ -87,6 +88,7 @@ resource "google_access_context_manager_access_policy" "access-policy" {
   title  = "Storage Policy"
 }
 ```
+
 ## Example Usage - Access Context Manager Service Perimeter Ingress Policy Granular Controls
 
 
@@ -205,9 +207,9 @@ The following arguments are supported:
   A Google Cloud resource that is allowed to ingress the perimeter.
   Requests from these resources will be allowed to access perimeter data.
   Projects, folders, organizations, and VPC networks are allowed.
-  Project format: `projects/{projectNumber}`
-  Folder format: `folders/{folderNumber}`
-  Organization format: `organizations/{organizationNumber}`
+  Project format: `projects/{project_number}`
+  Folder format: `folders/{folder_number}`
+  Organization format: `organizations/{organization_number}`
   VPC network format:
   `//compute.googleapis.com/projects/{PROJECT_ID}/global/networks/{NAME}`.
   The resource may be in any Google Cloud organization, not just the
