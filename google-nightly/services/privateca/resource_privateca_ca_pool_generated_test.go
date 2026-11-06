@@ -82,7 +82,7 @@ func TestAccPrivatecaCaPool_privatecaCapoolBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_privateca_ca_pool.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -134,7 +134,7 @@ func TestAccPrivatecaCaPool_privatecaCapoolAllFieldsExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_privateca_ca_pool.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -196,6 +196,12 @@ resource "google_privateca_ca_pool" "default" {
       cel_expression {
         expression = "subject_alt_names.all(san, san.type == DNS || san.type == EMAIL )"
         title = "My title"
+      }
+    }
+    passthrough_extensions {
+      known_extensions = ["EXTENDED_KEY_USAGE", "BASE_KEY_USAGE"]
+      additional_extensions {
+        object_id_path = [1, 5]
       }
     }
     baseline_values {

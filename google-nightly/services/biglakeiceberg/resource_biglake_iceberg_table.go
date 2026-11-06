@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -128,7 +127,7 @@ func expandIcebergTableSortOrderForCommit(v interface{}) map[string]interface{} 
 // looked up at request time. Catalogs in the default end-user mode reject the
 // header, so it is only added when vending is actually enabled.
 func addIcebergTableAccessDelegationHeader(d *schema.ResourceData, config *transport_tpg.Config, billingProject, userAgent string, headers http.Header) error {
-	url, err := tpgresource.ReplaceVars(d, config, "{{BiglakeIcebergBasePath}}iceberg/v1/restcatalog/extensions/projects/{{project}}/catalogs/{{catalog}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"iceberg/v1/restcatalog/extensions/projects/{{project}}/catalogs/{{catalog}}")
 	if err != nil {
 		return err
 	}
@@ -165,7 +164,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -288,9 +286,13 @@ func ResourceBiglakeIcebergIcebergTable() *schema.Resource {
 										Description: `Whether the field is required.`,
 									},
 									"type": {
-										Type:        schema.TypeString,
-										Required:    true,
-										Description: `The type of the field.`,
+										Type:      schema.TypeString,
+										Required:  true,
+										StateFunc: func(v interface{}) string { s, _ := structure.NormalizeJsonString(v); return s },
+										Description: `The type of the field. Primitive types are plain names such as 'long'. List, map and
+struct types are JSON objects as defined by the
+[Iceberg spec](https://iceberg.apache.org/spec/#appendix-c-json-serialization),
+typically written with 'jsonencode'.`,
 									},
 									"doc": {
 										Type:        schema.TypeString,
@@ -1129,7 +1131,15 @@ func flattenBiglakeIcebergIcebergTableSchemaFieldsName(v interface{}, d *schema.
 }
 
 func flattenBiglakeIcebergIcebergTableSchemaFieldsType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
-	return v
+	// List, map and struct types are JSON objects; primitive types are plain strings.
+	if _, ok := v.(map[string]interface{}); !ok {
+		return v
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		log.Printf("[ERROR] failed to marshal field type to JSON: %v", err)
+	}
+	return string(b)
 }
 
 func flattenBiglakeIcebergIcebergTableSchemaFieldsRequired(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -1448,7 +1458,16 @@ func expandBiglakeIcebergIcebergTableSchemaFieldsName(v interface{}, d tpgresour
 }
 
 func expandBiglakeIcebergIcebergTableSchemaFieldsType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
-	return v, nil
+	// List, map and struct types are JSON objects; primitive types are plain strings.
+	s := v.(string)
+	if !strings.HasPrefix(s, "{") {
+		return s, nil
+	}
+	var j interface{}
+	if err := json.Unmarshal([]byte(s), &j); err != nil {
+		return nil, err
+	}
+	return j, nil
 }
 
 func expandBiglakeIcebergIcebergTableSchemaFieldsRequired(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {

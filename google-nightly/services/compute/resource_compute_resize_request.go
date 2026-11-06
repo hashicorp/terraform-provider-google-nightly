@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -802,7 +800,7 @@ func resourceComputeResizeRequestDelete(d *schema.ResourceData, meta interface{}
 
 	// Get cancel url
 	var cancelUrl string
-	cancelUrl, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/resizeRequests/{{name}}/cancel")
+	cancelUrl, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/resizeRequests/{{name}}/cancel")
 
 	if err != nil {
 		return err
@@ -810,7 +808,7 @@ func resourceComputeResizeRequestDelete(d *schema.ResourceData, meta interface{}
 
 	// Get delete url
 	var deleteUrl string
-	deleteUrl, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/resizeRequests/{{name}}")
+	deleteUrl, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/resizeRequests/{{name}}")
 	if err != nil {
 		return err
 	}

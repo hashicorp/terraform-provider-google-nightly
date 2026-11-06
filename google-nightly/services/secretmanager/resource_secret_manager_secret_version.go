@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -60,7 +59,7 @@ func setEnabled(v interface{}, d tpgresource.TerraformResourceData, config *tran
 		return nil
 	}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{SecretManagerBasePath}}{{name}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}")
 	if err != nil {
 		return err
 	}
@@ -103,7 +102,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -323,7 +321,7 @@ func resourceSecretManagerSecretVersionCreate(d *schema.ResourceData, meta inter
 		}
 
 		// Override the url after updating the secret
-		url, err = tpgresource.ReplaceVars(d, config, "{{SecretManagerBasePath}}{{secret}}:addVersion")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{secret}}:addVersion")
 		if err != nil {
 			return err
 		}
@@ -369,9 +367,11 @@ func resourceSecretManagerSecretVersionCreate(d *schema.ResourceData, meta inter
 	}
 	d.SetId(name.(string))
 
-	err = setEnabled(d.Get("enabled"), d, config)
-	if err != nil {
-		return err
+	if !d.Get("enabled").(bool) {
+		err = setEnabled(false, d, config)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Printf("[DEBUG] Finished creating SecretVersion %q: %#v", d.Id(), res)
@@ -560,7 +560,7 @@ func resourceSecretManagerSecretVersionDelete(d *schema.ResourceData, meta inter
 	headers := make(http.Header)
 	deletionPolicy := d.Get("deletion_policy")
 	if deletionPolicy == "DISABLE" {
-		url, err = tpgresource.ReplaceVars(d, config, "{{SecretManagerBasePath}}{{name}}:disable")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}:disable")
 		if err != nil {
 			return err
 		}
@@ -587,9 +587,37 @@ func resourceSecretManagerSecretVersionDelete(d *schema.ResourceData, meta inter
 
 func resourceSecretManagerSecretVersionImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	config := meta.(*transport_tpg.Config)
-	_ = config
 
 	name := d.Id()
+	if name == "" {
+		identity, err := d.Identity()
+		if err != nil {
+			return nil, fmt.Errorf("Error getting identity: %s", err)
+		}
+		secretVal, _ := identity.GetOk("secret")
+		versionVal, _ := identity.GetOk("version")
+		projectVal, _ := identity.GetOk("project")
+		secretStr, _ := secretVal.(string)
+		versionStr, _ := versionVal.(string)
+		projectStr, _ := projectVal.(string)
+		if projectStr != "" {
+			if err := d.Set("project", projectStr); err != nil {
+				return nil, fmt.Errorf("Error setting project: %s", err)
+			}
+		}
+		if strings.HasPrefix(secretStr, "projects/") {
+			name = fmt.Sprintf("%s/versions/%s", secretStr, versionStr)
+		} else {
+			if projectStr == "" {
+				projectStr, err = tpgresource.GetProject(d, config)
+				if err != nil {
+					return nil, err
+				}
+			}
+			name = fmt.Sprintf("projects/%s/secrets/%s/versions/%s", projectStr, secretStr, versionStr)
+		}
+		d.SetId(name)
+	}
 	if err := d.Set("name", name); err != nil {
 		return nil, fmt.Errorf("Error setting name: %s", err)
 	}
@@ -616,9 +644,9 @@ func resourceSecretManagerSecretVersionImport(d *schema.ResourceData, meta inter
 	}
 
 	if err := tpgresource.SetResourceIdentityAttributes(d, map[string]interface{}{
-		"project": parts[1],
-		"secret":  parts[2],
-		"version": parts[3],
+		"project": d.Get("project"),
+		"secret":  d.Get("secret"),
+		"version": d.Get("version"),
 	}); err != nil {
 		return nil, err
 	}
@@ -683,7 +711,7 @@ func flattenSecretManagerSecretVersionPayload(v interface{}, d *schema.ResourceD
 	}
 
 	// build access URL; if it fails, preserve state
-	url, err := tpgresource.ReplaceVars(d, config, "{{SecretManagerBasePath}}{{name}}:access")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}:access")
 	if err != nil {
 		log.Printf("[ERROR] Failed to build secret access URL: %v", err)
 		return safeTransformed(d.Get("secret_data"))

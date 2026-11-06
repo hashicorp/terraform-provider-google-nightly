@@ -686,8 +686,9 @@ API (for read pools, effective_availability_type may differ from availability_ty
 										Description:  `Whether Google Cloud services such as BigQuery are allowed to access data in this Cloud SQL instance over a private IP connection. SQLSERVER database type is not supported.`,
 									},
 									"psc_config": {
-										Type:        schema.TypeSet,
+										Type:        schema.TypeList,
 										Optional:    true,
+										MaxItems:    1,
 										Description: `PSC settings for a Cloud SQL instance.`,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
@@ -1268,6 +1269,13 @@ API (for read pools, effective_availability_type may differ from availability_ty
 				Required:         true,
 				Description:      `The MySQL, PostgreSQL or SQL Server version to use. Supported values include MYSQL_5_6, MYSQL_5_7, MYSQL_8_0, MYSQL_8_4, POSTGRES_9_6, POSTGRES_10, POSTGRES_11, POSTGRES_12, POSTGRES_13, POSTGRES_14, POSTGRES_15, POSTGRES_16, POSTGRES_17, POSTGRES_18, SQLSERVER_2022_STANDARD, SQLSERVER_2022_ENTERPRISE, SQLSERVER_2022_EXPRESS, SQLSERVER_2022_WEB, SQLSERVER_2025_STANDARD, SQLSERVER_2025_ENTERPRISE, SQLSERVER_2025_EXPRESS, SQLSERVER_2025_WEB. Database Version Policies includes an up-to-date reference of supported versions.`,
 				DiffSuppressFunc: databaseVersionDiffSuppress,
+			},
+			"database_center_integration": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: databaseCenterIntegrationDiffSuppress,
+				ValidateFunc:     validation.StringInSlice([]string{"ENABLED", "DISABLED"}, false),
+				Description:      `The Database Center integration control.`,
 			},
 			"switch_transaction_logs_to_cloud_storage_enabled": {
 				Type:        schema.TypeBool,
@@ -1929,11 +1937,12 @@ func resourceSqlDatabaseInstanceCreate(d *schema.ResourceData, meta interface{})
 	databaseVersion := d.Get("database_version").(string)
 
 	instance := &sqladmin.DatabaseInstance{
-		Name:                 name,
-		Region:               region,
-		DatabaseVersion:      databaseVersion,
-		MasterInstanceName:   d.Get("master_instance_name").(string),
-		ReplicaConfiguration: expandReplicaConfiguration(d.Get("replica_configuration").([]interface{})),
+		Name:                      name,
+		Region:                    region,
+		DatabaseVersion:           databaseVersion,
+		DatabaseCenterIntegration: d.Get("database_center_integration").(string),
+		MasterInstanceName:        d.Get("master_instance_name").(string),
+		ReplicaConfiguration:      expandReplicaConfiguration(d.Get("replica_configuration").([]interface{})),
 	}
 
 	if d.Get("enforce_new_sql_network_architecture").(bool) {
@@ -2116,7 +2125,8 @@ func resourceSqlDatabaseInstanceCreate(d *schema.ResourceData, meta interface{})
 	// If we've created an instance as a clone or pitr, we need to update it to set any user defined settings
 	if len(s.([]interface{})) != 0 && (cloneContext != nil || pointInTimeRestoreContext != nil) && desiredSettings != nil {
 		instanceUpdate := &sqladmin.DatabaseInstance{
-			Settings: desiredSettings,
+			Settings:                  desiredSettings,
+			DatabaseCenterIntegration: d.Get("database_center_integration").(string),
 		}
 		_settings := s.([]interface{})[0].(map[string]interface{})
 		instanceUpdate.Settings.SettingsVersion = int64(_settings["version"].(int))
@@ -2159,6 +2169,7 @@ func resourceSqlDatabaseInstanceCreate(d *schema.ResourceData, meta interface{})
 			return err
 		}
 	}
+
 	if d.HasChange("blue_green_deployment") {
 		if err := handleBlueGreenDeploymentUpdate(d, config, project, region, d.Timeout(schema.TimeoutCreate), userAgent); err != nil {
 			return err
@@ -2338,7 +2349,7 @@ func expandIpConfiguration(configured []interface{}, databaseVersion string) *sq
 		EnablePrivatePathForGoogleCloudServices: _ipConfiguration["enable_private_path_for_google_cloud_services"].(bool),
 		ForceSendFields:                         forceSendFields,
 		NullFields:                              nullFields,
-		PscConfig:                               expandPscConfig(_ipConfiguration["psc_config"].(*schema.Set).List()),
+		PscConfig:                               expandPscConfig(_ipConfiguration["psc_config"].([]interface{})),
 		SslMode:                                 _ipConfiguration["ssl_mode"].(string),
 		ServerCaMode:                            _ipConfiguration["server_ca_mode"].(string),
 		ServerCaPool:                            _ipConfiguration["server_ca_pool"].(string),
@@ -2365,21 +2376,21 @@ func expandPscAutoConnectionConfig(configured []interface{}) []*sqladmin.PscAuto
 }
 
 func expandPscConfig(configured []interface{}) *sqladmin.PscConfig {
-	for _, _pscConfig := range configured {
-		_entry := _pscConfig.(map[string]interface{})
-		return &sqladmin.PscConfig{
-			PscEnabled:                     _entry["psc_enabled"].(bool),
-			PscAutoDnsEnabled:              _entry["psc_auto_dns_enabled"].(bool),
-			PscWriteEndpointDnsEnabled:     _entry["psc_write_endpoint_dns_enabled"].(bool),
-			PscAutoConnectionPolicyEnabled: _entry["psc_auto_connection_policy_enabled"].(bool),
-			AllowedConsumerProjects:        tpgresource.ConvertStringArr(_entry["allowed_consumer_projects"].(*schema.Set).List()),
-			NetworkAttachmentUri:           _entry["network_attachment_uri"].(string),
-			PscAutoConnections:             expandPscAutoConnectionConfig(_entry["psc_auto_connections"].([]interface{})),
-			ForceSendFields:                []string{"AllowedConsumerProjects"},
-		}
+	if len(configured) == 0 || configured[0] == nil {
+		return nil
 	}
 
-	return nil
+	_entry := configured[0].(map[string]interface{})
+	return &sqladmin.PscConfig{
+		PscEnabled:                     _entry["psc_enabled"].(bool),
+		PscAutoDnsEnabled:              _entry["psc_auto_dns_enabled"].(bool),
+		PscWriteEndpointDnsEnabled:     _entry["psc_write_endpoint_dns_enabled"].(bool),
+		PscAutoConnectionPolicyEnabled: _entry["psc_auto_connection_policy_enabled"].(bool),
+		AllowedConsumerProjects:        tpgresource.ConvertStringArr(_entry["allowed_consumer_projects"].(*schema.Set).List()),
+		NetworkAttachmentUri:           _entry["network_attachment_uri"].(string),
+		PscAutoConnections:             expandPscAutoConnectionConfig(_entry["psc_auto_connections"].([]interface{})),
+		ForceSendFields:                []string{"AllowedConsumerProjects"},
+	}
 }
 
 func expandFlags(configured []interface{}) []*sqladmin.ConnectionPoolFlags {
@@ -2722,6 +2733,9 @@ func resourceSqlDatabaseInstanceRead(d *schema.ResourceData, meta interface{}) e
 	if err := d.Set("database_version", instance.DatabaseVersion); err != nil {
 		return fmt.Errorf("Error setting database_version: %s", err)
 	}
+	if err := d.Set("database_center_integration", instance.DatabaseCenterIntegration); err != nil {
+		return fmt.Errorf("Error setting database_center_integration: %s", err)
+	}
 	if err := d.Set("connection_name", instance.ConnectionName); err != nil {
 		return fmt.Errorf("Error setting connection_name: %s", err)
 	}
@@ -2879,6 +2893,17 @@ func resourceSqlDatabaseInstanceUpdate(d *schema.ResourceData, meta interface{})
 			}
 		}
 	}
+
+	// Cloud SQL rejects some instance updates, such as major version upgrades, while a
+	// Blue-Green Deployment exists. Delete a removed deployment first so those updates can
+	// be applied in the same apply.
+	if isBlueGreenDelete(d) {
+		if err := handleBlueGreenDeploymentDelete(d, config, project, d.Get("region").(string), d.Timeout(schema.TimeoutUpdate), userAgent); err != nil {
+			_ = resourceSqlDatabaseInstanceRead(d, meta)
+			return err
+		}
+	}
+
 	if !isBlueGreenSwitchover(d) {
 		var op *sqladmin.Operation
 		var instance *sqladmin.DatabaseInstance
@@ -3157,7 +3182,8 @@ func resourceSqlDatabaseInstanceUpdate(d *schema.ResourceData, meta interface{})
 
 		desiredSetting := d.Get("settings")
 		instance = &sqladmin.DatabaseInstance{
-			Settings: expandSqlDatabaseInstanceSettings(desiredSetting.([]interface{}), databaseVersion),
+			Settings:                  expandSqlDatabaseInstanceSettings(desiredSetting.([]interface{}), databaseVersion),
+			DatabaseCenterIntegration: d.Get("database_center_integration").(string),
 		}
 
 		// A disk_size decrease is a storage shrink, which is carried out by the dedicated
@@ -3340,7 +3366,7 @@ func resourceSqlDatabaseInstanceUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	if d.HasChange("blue_green_deployment") {
+	if d.HasChange("blue_green_deployment") && !isBlueGreenDelete(d) {
 		if err := handleBlueGreenDeploymentUpdate(d, config, project, d.Get("region").(string), d.Timeout(schema.TimeoutUpdate), userAgent); err != nil {
 			_ = resourceSqlDatabaseInstanceRead(d, meta)
 			return err
@@ -3428,6 +3454,15 @@ func serverCertificateRotationModeDiffSuppress(_, oldMode, newMode string, _ *sc
 	return false
 }
 
+func databaseCenterIntegrationDiffSuppress(_, old, new string, d *schema.ResourceData) bool {
+	// Replicas inherit database_center_integration from their primary instance.
+	// When unset in configuration on a replica, suppress the diff against the inherited state.
+	if !sqlDatabaseIsMaster(d) && new == "" {
+		return true
+	}
+	return false
+}
+
 func parseDenyMaintenancePeriodDate(date string) (int, int, int, bool) {
 	date = strings.TrimPrefix(date, "0-")
 	parts := strings.Split(date, "-")
@@ -3488,6 +3523,7 @@ func resourceSqlDatabaseInstanceDelete(d *schema.ResourceData, meta interface{})
 	if d.Get("deletion_protection").(bool) {
 		return fmt.Errorf("Error, failed to delete instance because deletion_protection is set to true. Set it to false to proceed with instance deletion")
 	}
+
 	if bgdStateMap := getExistingBgdStateMap(d); bgdStateMap != nil {
 		deploymentName, _ := bgdStateMap["deployment_name"].(string)
 		deleteOldSourceCfg, _ := bgdStateMap["delete_old_source_on_destroy"].(bool)
@@ -4380,6 +4416,7 @@ func normalizeDRReplicaName(drReplicaName, project string) string {
 	}
 	return fmt.Sprintf("%s:%s", project, drReplicaName)
 }
+
 func blueGreenDeploymentCustomizeDiff(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	if d.Id() != "" && d.HasChange("database_version") {
 		if _, n := d.GetChange("blue_green_deployment"); len(n.([]interface{})) > 0 && n.([]interface{})[0] != nil {
@@ -4477,6 +4514,19 @@ func isBlueGreenSwitchover(d *schema.ResourceData) bool {
 	oldEnv, _ := oldMap["active_environment"].(string)
 	newEnv, _ := newMap["active_environment"].(string)
 	return oldEnv == "SOURCE" && newEnv == "TARGET"
+}
+
+func isBlueGreenDelete(d *schema.ResourceData) bool {
+	if !d.HasChange("blue_green_deployment") {
+		return false
+	}
+	oldVal, newVal := d.GetChange("blue_green_deployment")
+	oldList, ok := oldVal.([]interface{})
+	if !ok || len(oldList) == 0 || oldList[0] == nil {
+		return false
+	}
+	newList, _ := newVal.([]interface{})
+	return len(newList) == 0 || newList[0] == nil
 }
 
 var skipGreenComparisonFields = map[string]bool{
@@ -4748,6 +4798,52 @@ func readBlueGreenDeployment(d *schema.ResourceData, config *transport_tpg.Confi
 	return nil
 }
 
+func handleBlueGreenDeploymentDelete(d *schema.ResourceData, config *transport_tpg.Config, project, region string, timeout time.Duration, userAgent string) error {
+	oldVal, _ := d.GetChange("blue_green_deployment")
+	oldList, ok := oldVal.([]interface{})
+	if !ok || len(oldList) == 0 || oldList[0] == nil {
+		return nil
+	}
+	oldMap := oldList[0].(map[string]interface{})
+	deploymentName, _ := oldMap["deployment_name"].(string)
+	deleteOldSourceCfg, _ := oldMap["delete_old_source_on_destroy"].(bool)
+
+	if err := deleteBlueGreenDeployment(d, config, project, d.Get("name").(string), region, deploymentName, deleteOldSourceCfg, timeout, userAgent); err != nil {
+		return err
+	}
+
+	// Deleting the deployment updates the instance and increments its settings version.
+	// Refresh the version so the instance update that follows isn't rejected as stale (412).
+	return refreshSqlDatabaseInstanceSettingsVersion(d, config, project, timeout, userAgent)
+}
+
+// refreshSqlDatabaseInstanceSettingsVersion updates only settings.0.version from the API,
+// leaving the rest of the planned settings unchanged.
+func refreshSqlDatabaseInstanceSettingsVersion(d *schema.ResourceData, config *transport_tpg.Config, project string, timeout time.Duration, userAgent string) error {
+	instanceName := d.Get("name").(string)
+	var instance *sqladmin.DatabaseInstance
+	err := transport_tpg.Retry(transport_tpg.RetryOptions{
+		RetryFunc: func() (rerr error) {
+			instance, rerr = NewClient(config, userAgent).Instances.Get(project, instanceName).Do()
+			return rerr
+		},
+		Timeout:              timeout,
+		ErrorRetryPredicates: []transport_tpg.RetryErrorPredicateFunc{transport_tpg.IsSqlOperationInProgressError},
+	})
+	if err != nil {
+		return fmt.Errorf("Error reading instance %q to refresh settings version: %s", instanceName, err)
+	}
+	if instance.Settings == nil {
+		return nil
+	}
+	settings, ok := d.Get("settings").([]interface{})
+	if !ok || len(settings) == 0 || settings[0] == nil {
+		return nil
+	}
+	settings[0].(map[string]interface{})["version"] = int(instance.Settings.SettingsVersion)
+	return d.Set("settings", settings)
+}
+
 func handleBlueGreenDeploymentUpdate(d *schema.ResourceData, config *transport_tpg.Config, project, region string, timeout time.Duration, userAgent string) error {
 	oldVal, newVal := d.GetChange("blue_green_deployment")
 	oldList := oldVal.([]interface{})
@@ -4764,16 +4860,10 @@ func handleBlueGreenDeploymentUpdate(d *schema.ResourceData, config *transport_t
 		return createBlueGreenDeployment(d, config, project, instanceName, region, deploymentName, targetDbVersion, timeout, userAgent)
 	}
 
-	// Case 2: Removing an existing blue_green_deployment block (or deleting out-of-band BGD in Scenario A)
-	if len(oldList) > 0 && len(newList) == 0 && oldList[0] != nil {
-		oldMap := oldList[0].(map[string]interface{})
-		deploymentName, _ := oldMap["deployment_name"].(string)
-		deleteOldSourceCfg, _ := oldMap["delete_old_source_on_destroy"].(bool)
+	// Removing a blue_green_deployment block is handled by handleBlueGreenDeploymentDelete at
+	// the start of resourceSqlDatabaseInstanceUpdate.
 
-		return deleteBlueGreenDeployment(d, config, project, instanceName, region, deploymentName, deleteOldSourceCfg, d.Timeout(schema.TimeoutUpdate), userAgent)
-	}
-
-	// Case 3: Modifying an existing blue_green_deployment block
+	// Case 2: Modifying an existing blue_green_deployment block
 	if len(oldList) > 0 && len(newList) > 0 && oldList[0] != nil && newList[0] != nil {
 		oldMap := oldList[0].(map[string]interface{})
 		newMap := newList[0].(map[string]interface{})

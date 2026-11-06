@@ -24,7 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"google.golang.org/api/cloudresourcemanager/v1"
 
@@ -37,7 +36,6 @@ import (
 var (
 	_ = regexp.Match
 	_ = strings.Trim
-	_ = errwrap.Wrap
 	_ = schema.Noop
 )
 
@@ -266,7 +264,7 @@ func (u *ApiGatewayApiConfigIamUpdater) SetResourceIamPolicy(policy *cloudresour
 }
 
 func (u *ApiGatewayApiConfigIamUpdater) qualifyApiConfigUrl(methodIdentifier string) (string, error) {
-	urlTemplate := fmt.Sprintf("{{ApiGatewayBasePath}}%s:%s", fmt.Sprintf("projects/%s/locations/global/apis/%s/configs/%s", u.project, u.api, u.apiConfig), methodIdentifier)
+	urlTemplate := fmt.Sprintf(transport_tpg.BaseUrl(Product, u.Config)+"%s:%s", fmt.Sprintf("projects/%s/locations/global/apis/%s/configs/%s", u.project, u.api, u.apiConfig), methodIdentifier)
 	url, err := tpgresource.ReplaceVars(u.d, u.Config, urlTemplate)
 	if err != nil {
 		return "", err

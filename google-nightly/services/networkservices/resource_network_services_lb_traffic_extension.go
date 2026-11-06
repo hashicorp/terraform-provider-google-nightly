@@ -36,7 +36,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -70,7 +69,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -159,7 +157,7 @@ Further information can be found at https://cloud.google.com/service-extensions/
 							Description: `A set of extensions to execute for the matching request.
 At least one extension is required. Up to 3 extensions can be defined for each extension chain for
 LbTrafficExtension resource. LbRouteExtension chains are limited to 1 extension per extension chain.
-Further documentation to be found at https://cloud.google.com/service-extensions/docs/reference/rest/v1/ExtensionChain#Extension`,
+Further documentation can be found at https://cloud.google.com/service-extensions/docs/reference/rest/v1/ExtensionChain#Extension`,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
@@ -225,6 +223,16 @@ You can set up key value pairs for metadata as you like and need.
 f.e. {"key": "value", "key2": "value2"}.`,
 										Elem: &schema.Schema{Type: schema.TypeString},
 									},
+									"observability_mode": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Description: `When set to 'TRUE', enables 'observability_mode' on the 'ext_proc' filter.
+This makes 'ext_proc' calls asynchronous. Envoy doesn't check for the response from 'ext_proc' calls.
+For more information about the filter, see: https://www.envoyproxy.io/docs/envoy/v1.32.3/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto
+This field is helpful when you want to try out the extension in async log-only mode.
+Supported by regional 'LbTrafficExtension' and 'LbRouteExtension' resources.
+Only 'STREAMED' (default) body processing mode is supported.`,
+									},
 									"supported_events": {
 										Type:     schema.TypeList,
 										Optional: true,
@@ -268,7 +276,7 @@ A duration in seconds with up to nine fractional digits, ending with 's'. Exampl
 							Description: `The name for this extension chain. The name is logged as part of the HTTP request logs.
 The name must conform with RFC-1034, is restricted to lower-cased letters, numbers and hyphens,
 and can have a maximum length of 63 characters. Additionally, the first character must be a letter
-and the last a letter or a number.`,
+and the last character must be a letter or a number.`,
 						},
 					},
 				},
@@ -908,6 +916,7 @@ func flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensions(v interfa
 			"forward_attributes": flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensionsForwardAttributes(original["forwardAttributes"], d, config),
 			"supported_events":   flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensionsSupportedEvents(original["supportedEvents"], d, config),
 			"metadata":           flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensionsMetadata(original["metadata"], d, config),
+			"observability_mode": flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensionsObservabilityMode(original["observabilityMode"], d, config),
 		})
 	}
 	return transformed
@@ -945,6 +954,10 @@ func flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensionsSupportedE
 }
 
 func flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensionsMetadata(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenNetworkServicesLbTrafficExtensionExtensionChainsExtensionsObservabilityMode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1141,6 +1154,13 @@ func expandNetworkServicesLbTrafficExtensionExtensionChainsExtensions(v interfac
 			transformed["metadata"] = transformedMetadata
 		}
 
+		transformedObservabilityMode, err := expandNetworkServicesLbTrafficExtensionExtensionChainsExtensionsObservabilityMode(original["observability_mode"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedObservabilityMode); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["observabilityMode"] = transformedObservabilityMode
+		}
+
 		req = append(req, transformed)
 	}
 	return req, nil
@@ -1187,6 +1207,10 @@ func expandNetworkServicesLbTrafficExtensionExtensionChainsExtensionsMetadata(v 
 		m[k] = val.(string)
 	}
 	return m, nil
+}
+
+func expandNetworkServicesLbTrafficExtensionExtensionChainsExtensionsObservabilityMode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
 }
 
 func expandNetworkServicesLbTrafficExtensionLoadBalancingScheme(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {

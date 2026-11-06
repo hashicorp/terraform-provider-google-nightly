@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -711,6 +709,17 @@ and all its CryptoKeyVersions will be destroyed, but it will still be present in
 func resourceKMSCryptoKeyImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 
 	config := meta.(*transport_tpg.Config)
+
+	if d.Id() == "" {
+		if err := tpgresource.ParseImportId([]string{"(?P<key_ring>.+)/cryptoKeys/(?P<name>[^/]+)"}, d, config); err != nil {
+			return nil, err
+		}
+		id, err := tpgresource.ReplaceVars(d, config, "{{key_ring}}/cryptoKeys/{{name}}")
+		if err != nil {
+			return nil, fmt.Errorf("Error constructing id: %s", err)
+		}
+		d.SetId(id)
+	}
 
 	cryptoKeyId, err := ParseKmsCryptoKeyId(d.Id(), config)
 	if err != nil {

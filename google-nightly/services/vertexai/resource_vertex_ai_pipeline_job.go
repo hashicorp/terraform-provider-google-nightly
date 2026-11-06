@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -97,7 +96,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -1060,7 +1058,7 @@ func resourceVertexAIPipelineJobDelete(d *schema.ResourceData, meta interface{})
 				default:
 					return transport_tpg.PendingStatusPollResult(currState)
 				}
-			}, "Cancelling PipelineJob", d.Timeout(schema.TimeoutDelete), 1)
+			}, "Cancelling PipelineJob", d.Timeout(schema.TimeoutDelete), 1, config.SleepUnit)
 			if err != nil {
 				return fmt.Errorf("Error waiting for PipelineJob %q to reach terminal state before deletion: %s", d.Id(), err)
 			}

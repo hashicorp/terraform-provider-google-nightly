@@ -61,6 +61,7 @@ func TestAccComputeResourcePolicy_resourcePolicyBasicExample(t *testing.T) {
 
 	context := map[string]interface{}{
 		"name":          "tf-test-gce-policy" + randomSuffix,
+		"start_time":    "04:00",
 		"random_suffix": randomSuffix,
 	}
 
@@ -80,7 +81,7 @@ func TestAccComputeResourcePolicy_resourcePolicyBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.foo",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -97,7 +98,7 @@ resource "google_compute_resource_policy" "foo" {
     schedule {
       daily_schedule {
         days_in_cycle = 1
-        start_time    = "04:00"
+        start_time    = "%{start_time}"
       }
     }
   }
@@ -112,6 +113,7 @@ func TestAccComputeResourcePolicy_resourcePolicyHourlyFormatExample(t *testing.T
 
 	context := map[string]interface{}{
 		"name":          "tf-test-gce-policy" + randomSuffix,
+		"start_time":    "4:00",
 		"random_suffix": randomSuffix,
 	}
 
@@ -131,7 +133,7 @@ func TestAccComputeResourcePolicy_resourcePolicyHourlyFormatExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.foo",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -148,7 +150,7 @@ resource "google_compute_resource_policy" "foo" {
     schedule {
       daily_schedule {
         days_in_cycle = 1
-        start_time    = "4:00"
+        start_time    = "%{start_time}"
       }
     }
   }
@@ -182,7 +184,7 @@ func TestAccComputeResourcePolicy_resourcePolicyFullExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.bar",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -244,7 +246,7 @@ func TestAccComputeResourcePolicy_resourcePolicyPlacementPolicyExample(t *testin
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.baz",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -291,7 +293,7 @@ func TestAccComputeResourcePolicy_resourcePolicyPlacementPolicyMaxDistanceExampl
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.baz",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -340,7 +342,7 @@ func TestAccComputeResourcePolicy_resourcePolicyInstanceSchedulePolicyExample(t 
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.hourly",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -393,7 +395,7 @@ func TestAccComputeResourcePolicy_resourcePolicySnapshotScheduleChainNameExample
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.hourly",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -457,7 +459,7 @@ func TestAccComputeResourcePolicy_resourcePolicyConsistencyGroupExample(t *testi
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.cgroup",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -503,7 +505,7 @@ func TestAccComputeResourcePolicy_resourcePolicyWorkloadPolicyExample(t *testing
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.bar",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -549,7 +551,7 @@ func TestAccComputeResourcePolicy_resourcePolicyWorkloadPolicyAcceleratorTopolog
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.bar",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -596,7 +598,7 @@ func TestAccComputeResourcePolicy_resourcePolicyWorkloadPolicyAcceleratorTopolog
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.bar",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -645,7 +647,7 @@ func TestAccComputeResourcePolicy_resourcePolicyWorkloadPolicyMaxTopologyDistanc
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.bar",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -692,7 +694,7 @@ func TestAccComputeResourcePolicy_resourcePolicyPlacementPolicyGpuTopologyExampl
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.baz",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -739,7 +741,7 @@ func TestAccComputeResourcePolicy_resourcePolicyPlacementPolicyTpuTopologyExampl
 			},
 			{
 				ResourceName:       "google_compute_resource_policy.baz",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

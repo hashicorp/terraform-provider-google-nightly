@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -377,6 +375,43 @@ DARK`,
 					},
 				},
 			},
+			"modality": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: verify.ValidateEnum([]string{"MODALITY_TEXT", "MODALITY_VOICE", "MODALITY_VIDEO", ""}),
+				Description:  `The modality of the deployment. Possible values: ["MODALITY_TEXT", "MODALITY_VOICE", "MODALITY_VIDEO"]`,
+			},
+			"model_settings": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Description: `Model settings for the deployment.
+Overrides model settings configured at the app/agent levels.`,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"model": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Description: `The LLM model that the agent should use.
+If not set, the agent will inherit the model from its parent agent.`,
+						},
+						"temperature": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Description: `If set, this temperature will be used for the LLM model. Temperature
+controls the randomness of the model's responses. Lower temperatures
+produce responses that are more predictable. Higher temperatures produce
+responses that are more creative.`,
+						},
+						"thinking_level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: verify.ValidateEnum([]string{"DEFAULT", "LOW", "MEDIUM", "HIGH", ""}),
+							Description:  `The thinking level of the model. Possible values: ["DEFAULT", "LOW", "MEDIUM", "HIGH"]`,
+						},
+					},
+				},
+			},
 			"whatsapp_credentials": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -527,6 +562,18 @@ func resourceCESDeploymentCreate(d *schema.ResourceData, meta interface{}) error
 		return err
 	} else if v, ok := d.GetOkExists("instagram_credentials"); !tpgresource.IsEmptyValue(reflect.ValueOf(instagramCredentialsProp)) && (ok || !reflect.DeepEqual(v, instagramCredentialsProp)) {
 		obj["instagramCredentials"] = instagramCredentialsProp
+	}
+	modalityProp, err := expandCESDeploymentModality(d.Get("modality"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("modality"); !tpgresource.IsEmptyValue(reflect.ValueOf(modalityProp)) && (ok || !reflect.DeepEqual(v, modalityProp)) {
+		obj["modality"] = modalityProp
+	}
+	modelSettingsProp, err := expandCESDeploymentModelSettings(d.Get("model_settings"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("model_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(modelSettingsProp)) && (ok || !reflect.DeepEqual(v, modelSettingsProp)) {
+		obj["modelSettings"] = modelSettingsProp
 	}
 	whatsappCredentialsProp, err := expandCESDeploymentWhatsappCredentials(d.Get("whatsapp_credentials"), d, config)
 	if err != nil {
@@ -786,6 +833,18 @@ func resourceCESDeploymentUpdate(d *schema.ResourceData, meta interface{}) error
 	} else if v, ok := d.GetOkExists("instagram_credentials"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, instagramCredentialsProp)) {
 		obj["instagramCredentials"] = instagramCredentialsProp
 	}
+	modalityProp, err := expandCESDeploymentModality(d.Get("modality"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("modality"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, modalityProp)) {
+		obj["modality"] = modalityProp
+	}
+	modelSettingsProp, err := expandCESDeploymentModelSettings(d.Get("model_settings"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("model_settings"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, modelSettingsProp)) {
+		obj["modelSettings"] = modelSettingsProp
+	}
 	whatsappCredentialsProp, err := expandCESDeploymentWhatsappCredentials(d.Get("whatsapp_credentials"), d, config)
 	if err != nil {
 		return err
@@ -816,6 +875,14 @@ func resourceCESDeploymentUpdate(d *schema.ResourceData, meta interface{}) error
 
 	if d.HasChange("instagram_credentials") {
 		updateMask = append(updateMask, "instagramCredentials")
+	}
+
+	if d.HasChange("modality") {
+		updateMask = append(updateMask, "modality")
+	}
+
+	if d.HasChange("model_settings") {
+		updateMask = append(updateMask, "modelSettings")
 	}
 
 	if d.HasChange("whatsapp_credentials") {
@@ -1115,6 +1182,39 @@ func flattenCESDeploymentDisplayName(v interface{}, d *schema.ResourceData, conf
 }
 
 func flattenCESDeploymentEtag(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESDeploymentModality(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESDeploymentModelSettings(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["model"] =
+		flattenCESDeploymentModelSettingsModel(original["model"], d, config)
+	transformed["temperature"] =
+		flattenCESDeploymentModelSettingsTemperature(original["temperature"], d, config)
+	transformed["thinking_level"] =
+		flattenCESDeploymentModelSettingsThinkingLevel(original["thinkingLevel"], d, config)
+	return []interface{}{transformed}
+}
+func flattenCESDeploymentModelSettingsModel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESDeploymentModelSettingsTemperature(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCESDeploymentModelSettingsThinkingLevel(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1490,6 +1590,58 @@ func expandCESDeploymentInstagramCredentialsAuthCodeWoVersion(v interface{}, d t
 	return v, nil
 }
 
+func expandCESDeploymentModality(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESDeploymentModelSettings(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedModel, err := expandCESDeploymentModelSettingsModel(original["model"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedModel); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["model"] = transformedModel
+	}
+
+	transformedTemperature, err := expandCESDeploymentModelSettingsTemperature(original["temperature"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedTemperature); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["temperature"] = transformedTemperature
+	}
+
+	transformedThinkingLevel, err := expandCESDeploymentModelSettingsThinkingLevel(original["thinking_level"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedThinkingLevel); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["thinkingLevel"] = transformedThinkingLevel
+	}
+
+	return transformed, nil
+}
+
+func expandCESDeploymentModelSettingsModel(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESDeploymentModelSettingsTemperature(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCESDeploymentModelSettingsThinkingLevel(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandCESDeploymentWhatsappCredentials(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -1622,6 +1774,12 @@ func ResourceCESDeploymentFlatten(d *schema.ResourceData, meta interface{}, res 
 		return fmt.Errorf("Error reading Deployment: %s", err)
 	}
 	if err = d.Set("etag", flattenCESDeploymentEtag(res["etag"], d, config)); err != nil {
+		return fmt.Errorf("Error reading Deployment: %s", err)
+	}
+	if err = d.Set("modality", flattenCESDeploymentModality(res["modality"], d, config)); err != nil {
+		return fmt.Errorf("Error reading Deployment: %s", err)
+	}
+	if err = d.Set("model_settings", flattenCESDeploymentModelSettings(res["modelSettings"], d, config)); err != nil {
 		return fmt.Errorf("Error reading Deployment: %s", err)
 	}
 	if err = d.Set("name", flattenCESDeploymentName(res["name"], d, config)); err != nil {

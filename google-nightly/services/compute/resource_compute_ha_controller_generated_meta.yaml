@@ -9,6 +9,7 @@ api_version: beta
 api_resource_type_kind: HaController
 fields:
     - api_field: backendServices
+    - api_field: creationTimestamp
     - api_field: description
     - api_field: failoverInitiation
     - api_field: instanceName
@@ -17,6 +18,18 @@ fields:
     - api_field: networkingAutoConfiguration.internal.ipv6Address
     - api_field: networkingAutoConfiguration.internal.stackType
     - api_field: region
+    - api_field: selfLinkWithId
+    - api_field: state
+    - api_field: status.ongoingFailover
+    - api_field: status.primaryInstance
+    - api_field: status.primaryZone
+    - api_field: status.readyForFailover
+    - api_field: status.zoneStatus.key
+      field: status.zone_status.zone
+    - api_field: status.zoneStatus.value.isPrimary
+      field: status.zone_status.is_primary
+    - api_field: status.zoneStatus.value.isZoneReady
+      field: status.zone_status.is_zone_ready
     - api_field: zoneConfigurations.instanceNetworkInterfaces.ipv6Address
       field: zone_configuration.instance_network_interface.ipv6_address
     - api_field: zoneConfigurations.instanceNetworkInterfaces.name

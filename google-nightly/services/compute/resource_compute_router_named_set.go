@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -274,6 +272,13 @@ func resourceComputeRouterNamedSetCreate(d *schema.ResourceData, meta interface{
 	} else if v, ok := d.GetOkExists("name"); !tpgresource.IsEmptyValue(reflect.ValueOf(nameProp)) && (ok || !reflect.DeepEqual(v, nameProp)) {
 		obj["name"] = nameProp
 	}
+
+	lockName, err := tpgresource.ReplaceVars(d, config, "router/{{region}}/{{router}}")
+	if err != nil {
+		return err
+	}
+	transport_tpg.MutexStore.Lock(lockName)
+	defer transport_tpg.MutexStore.Unlock(lockName)
 
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/routers/{{router}}/updateNamedSet")
 	if err != nil {
@@ -549,6 +554,13 @@ func resourceComputeRouterNamedSetUpdate(d *schema.ResourceData, meta interface{
 		obj["name"] = nameProp
 	}
 
+	lockName, err := tpgresource.ReplaceVars(d, config, "router/{{region}}/{{router}}")
+	if err != nil {
+		return err
+	}
+	transport_tpg.MutexStore.Lock(lockName)
+	defer transport_tpg.MutexStore.Unlock(lockName)
+
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/routers/{{router}}/updateNamedSet")
 	if err != nil {
 		return err
@@ -641,6 +653,13 @@ func resourceComputeRouterNamedSetDelete(d *schema.ResourceData, meta interface{
 		return fmt.Errorf("Error fetching project for RouterNamedSet: %s", err)
 	}
 	billingProject = project
+
+	lockName, err := tpgresource.ReplaceVars(d, config, "router/{{region}}/{{router}}")
+	if err != nil {
+		return err
+	}
+	transport_tpg.MutexStore.Lock(lockName)
+	defer transport_tpg.MutexStore.Unlock(lockName)
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/routers/{{router}}/deleteNamedSet?namedSet={{name}}")
 	if err != nil {
 		return err

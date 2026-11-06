@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -679,7 +677,7 @@ func resourceAccessContextManagerAccessLevelsDelete(d *schema.ResourceData, meta
 	obj := make(map[string]interface{})
 	obj["accessLevels"] = []string{}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{AccessContextManagerBasePath}}{{parent}}/accessLevels:replaceAll")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{parent}}/accessLevels:replaceAll")
 	if err != nil {
 		return err
 	}
@@ -713,6 +711,17 @@ func resourceAccessContextManagerAccessLevelsDelete(d *schema.ResourceData, meta
 
 func resourceAccessContextManagerAccessLevelsImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	config := meta.(*transport_tpg.Config)
+
+	if d.Id() == "" {
+		if err := tpgresource.ParseImportId([]string{"(?P<parent>accessPolicies/[^/]+)/(.+)"}, d, config); err != nil {
+			return nil, err
+		}
+		id, err := tpgresource.ReplaceVars(d, config, "{{parent}}/accessLevels")
+		if err != nil {
+			return nil, fmt.Errorf("Error constructing id: %s", err)
+		}
+		d.SetId(id)
+	}
 
 	// current import_formats can't import fields with forward slashes in their value
 	parts, err := tpgresource.GetImportIdQualifiers([]string{"accessPolicies/(?P<accessPolicy>[^/]+)/(.+)"}, d, config, d.Id())

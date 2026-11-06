@@ -62,9 +62,13 @@ func TestAccBigQueryDataset_bigqueryDatasetBasicExample(t *testing.T) {
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"account_name":  "tf-test-bqowner" + randomSuffix,
-		"dataset_id":    "tf_test_example_dataset" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"account_name":          "tf-test-bqowner" + randomSuffix,
+		"dataset_id":            "tf_test_example_dataset" + randomSuffix,
+		"default_collation":     nil,
+		"is_case_insensitive":   nil,
+		"max_time_travel_hours": nil,
+		"owner_role":            "roles/bigquery.dataOwner",
+		"random_suffix":         randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -83,7 +87,7 @@ func TestAccBigQueryDataset_bigqueryDatasetBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.dataset",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -99,13 +103,16 @@ resource "google_bigquery_dataset" "dataset" {
   description                 = "This is a test description"
   location                    = "EU"
   default_table_expiration_ms = 3600000
+  max_time_travel_hours       = "%{max_time_travel_hours}"
+  is_case_insensitive         = %{is_case_insensitive}
+  default_collation           = "%{default_collation}"
 
   labels = {
     env = "default"
   }
 
   access {
-    role          = "roles/bigquery.dataOwner"
+    role          = "%{owner_role}"
     user_by_email = google_service_account.bqowner.email
   }
 
@@ -127,9 +134,13 @@ func TestAccBigQueryDataset_bigqueryDatasetWithMaxTimeTravelHoursExample(t *test
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"account_name":  "tf-test-bqowner" + randomSuffix,
-		"dataset_id":    "tf_test_example_dataset" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"account_name":          "tf-test-bqowner" + randomSuffix,
+		"dataset_id":            "tf_test_example_dataset" + randomSuffix,
+		"default_collation":     nil,
+		"is_case_insensitive":   nil,
+		"max_time_travel_hours": 72,
+		"owner_role":            "OWNER",
+		"random_suffix":         randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -148,7 +159,7 @@ func TestAccBigQueryDataset_bigqueryDatasetWithMaxTimeTravelHoursExample(t *test
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.dataset",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -164,14 +175,16 @@ resource "google_bigquery_dataset" "dataset" {
   description                 = "This is a test description"
   location                    = "EU"
   default_table_expiration_ms = 3600000
-  max_time_travel_hours       = "72"
+  max_time_travel_hours       = "%{max_time_travel_hours}"
+  is_case_insensitive         = %{is_case_insensitive}
+  default_collation           = "%{default_collation}"
 
   labels = {
     env = "default"
   }
 
   access {
-    role          = "OWNER"
+    role          = "%{owner_role}"
     user_by_email = google_service_account.bqowner.email
   }
 
@@ -215,7 +228,7 @@ func TestAccBigQueryDataset_bigqueryDatasetAuthorizedDatasetExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.dataset",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -314,7 +327,7 @@ func TestAccBigQueryDataset_bigqueryDatasetAuthorizedRoutineExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.private",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -371,9 +384,13 @@ func TestAccBigQueryDataset_bigqueryDatasetCaseInsensitiveNamesExample(t *testin
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"account_name":  "tf-test-bqowner" + randomSuffix,
-		"dataset_id":    "tf_test_example_dataset" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"account_name":          "tf-test-bqowner" + randomSuffix,
+		"dataset_id":            "tf_test_example_dataset" + randomSuffix,
+		"default_collation":     nil,
+		"is_case_insensitive":   true,
+		"max_time_travel_hours": nil,
+		"owner_role":            "OWNER",
+		"random_suffix":         randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -392,7 +409,7 @@ func TestAccBigQueryDataset_bigqueryDatasetCaseInsensitiveNamesExample(t *testin
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.dataset",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -408,14 +425,16 @@ resource "google_bigquery_dataset" "dataset" {
   description                 = "This is a test description"
   location                    = "EU"
   default_table_expiration_ms = 3600000
-  is_case_insensitive         = true
+  max_time_travel_hours       = "%{max_time_travel_hours}"
+  is_case_insensitive         = %{is_case_insensitive}
+  default_collation           = "%{default_collation}"
 
   labels = {
     env = "default"
   }
 
   access {
-    role          = "OWNER"
+    role          = "%{owner_role}"
     user_by_email = google_service_account.bqowner.email
   }
 
@@ -437,9 +456,13 @@ func TestAccBigQueryDataset_bigqueryDatasetDefaultCollationSetExample(t *testing
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"account_name":  "tf-test-bqowner" + randomSuffix,
-		"dataset_id":    "tf_test_example_dataset" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"account_name":          "tf-test-bqowner" + randomSuffix,
+		"dataset_id":            "tf_test_example_dataset" + randomSuffix,
+		"default_collation":     "und:ci",
+		"is_case_insensitive":   nil,
+		"max_time_travel_hours": nil,
+		"owner_role":            "OWNER",
+		"random_suffix":         randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -458,7 +481,7 @@ func TestAccBigQueryDataset_bigqueryDatasetDefaultCollationSetExample(t *testing
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.dataset",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -474,14 +497,16 @@ resource "google_bigquery_dataset" "dataset" {
   description                 = "This is a test description"
   location                    = "EU"
   default_table_expiration_ms = 3600000
-  default_collation           = "und:ci"
+  max_time_travel_hours       = "%{max_time_travel_hours}"
+  is_case_insensitive         = %{is_case_insensitive}
+  default_collation           = "%{default_collation}"
 
   labels = {
     env = "default"
   }
 
   access {
-    role          = "OWNER"
+    role          = "%{owner_role}"
     user_by_email = google_service_account.bqowner.email
   }
 
@@ -523,7 +548,7 @@ func TestAccBigQueryDataset_bigqueryDatasetExternalCatalogDatasetOptionsExample(
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.dataset",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -579,7 +604,7 @@ func TestAccBigQueryDataset_bigqueryDatasetResourceTagsExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_bigquery_dataset.dataset",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -267,7 +265,7 @@ func resourceAppEngineFirewallRuleCreate(d *schema.ResourceData, meta interface{
 	}
 	d.SetId(id)
 
-	err = transport_tpg.PollingWaitTime(resourceAppEngineFirewallRulePollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating FirewallRule", d.Timeout(schema.TimeoutCreate), 1)
+	err = transport_tpg.PollingWaitTime(resourceAppEngineFirewallRulePollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating FirewallRule", d.Timeout(schema.TimeoutCreate), 1, config.SleepUnit)
 	if err != nil {
 		return fmt.Errorf("Error waiting to create FirewallRule: %s", err)
 	}

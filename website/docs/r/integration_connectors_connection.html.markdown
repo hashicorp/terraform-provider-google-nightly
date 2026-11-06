@@ -374,6 +374,19 @@ The following arguments are supported:
   Eventing Configuration of a connection
   Structure is [documented below](#nested_eventing_config).
 
+* `async_operations_enabled` -
+  (Optional)
+  Async operations enabled for the connection. If Async Operations is enabled, Connection allows the customers to initiate async long running operations using the actions API.
+
+* `auth_override_enabled` -
+  (Optional)
+  Auth override enabled for the connection. If Auth Override is enabled, Connection allows the backend service auth to be overridden in the entities/actions API.
+
+* `traffic_shaping_configs` -
+  (Optional)
+  Traffic shaping configuration for the connection. Client specifies the throttling configuration for Connector API calls.
+  Structure is [documented below](#nested_traffic_shaping_configs).
+
 * `project` - (Optional) The ID of the project in which the resource belongs.
     If it is not provided, the provider project is used.
 
@@ -702,11 +715,11 @@ The following arguments are supported:
 <a name="nested_node_config"></a>The `node_config` block supports:
 
 * `min_node_count` -
-  (Required)
+  (Optional)
   Minimum number of nodes in the runtime nodes.
 
 * `max_node_count` -
-  (Required)
+  (Optional)
   Minimum number of nodes in the runtime nodes.
 
 <a name="nested_log_config"></a>The `log_config` block supports:
@@ -864,6 +877,24 @@ The following arguments are supported:
 * `enrichment_enabled` -
   (Optional)
   Enrichment Enabled.
+
+* `allowed_event_types` -
+  (Optional)
+  List of allowed event types for the connection.
+
+* `global_event_filter` -
+  (Optional)
+  Filter to be applied on the events to be received by the connection.
+
+* `dead_letter_config` -
+  (Optional)
+  Dead letter configuration for eventing of a connection.
+  Structure is [documented below](#nested_eventing_config_dead_letter_config).
+
+* `enrichment_config` -
+  (Optional)
+  Data enrichment configuration.
+  Structure is [documented below](#nested_eventing_config_enrichment_config).
 
 
 <a name="nested_eventing_config_registration_destination_config"></a>The `registration_destination_config` block supports:
@@ -1028,6 +1059,33 @@ The following arguments are supported:
   The [KMS key name] with which the content of the Operation is encrypted. The
   expected format: projects/*/locations/*/keyRings/*/cryptoKeys/*.
   Will be empty string if google managed.
+
+<a name="nested_eventing_config_dead_letter_config"></a>The `dead_letter_config` block supports:
+
+* `project_id` -
+  (Required)
+  Project which has the topic given.
+
+* `topic` -
+  (Required)
+  Topic to push events which couldn't be processed.
+
+<a name="nested_eventing_config_enrichment_config"></a>The `enrichment_config` block supports:
+
+* `append_acl` -
+  (Optional)
+  Append ACL to the event.
+
+<a name="nested_traffic_shaping_configs"></a>The `traffic_shaping_configs` block supports:
+
+* `quota_limit` -
+  (Required)
+  Maximum number of api calls allowed.
+
+* `duration` -
+  (Required)
+  Specifies the duration over which the API call quota limits are calculated.
+  A duration in seconds with up to nine fractional digits, ending with 's'. Example: "3.5s".
 
 ## Attributes Reference
 

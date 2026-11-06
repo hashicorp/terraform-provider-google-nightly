@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -294,7 +292,6 @@ bytes of each object will be set to the 'data' field of a Pub/Sub message.`,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{},
 										},
-										ExactlyOneOf: []string{},
 									},
 									"match_glob": {
 										Type:     schema.TypeString,
@@ -321,7 +318,6 @@ will be restored when publishing.`,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{},
 										},
-										ExactlyOneOf: []string{},
 									},
 									"text_format": {
 										Type:     schema.TypeList,
@@ -342,7 +338,6 @@ message. When unset, '\n' is used.`,
 												},
 											},
 										},
-										ExactlyOneOf: []string{},
 									},
 								},
 							},
@@ -518,6 +513,30 @@ message to form the inference request.`,
 												},
 											},
 										},
+									},
+								},
+							},
+						},
+						"compression": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Description: `Configuration for compressing/decompressing message data using a
+user-specified compression algorithm.`,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"compression_algorithm": {
+										Type:     schema.TypeString,
+										Required: true,
+										Description: `Specifies the compression algorithm to use.
+Possible values include 'ZLIB'.
+See [CompressionAlgorithm](https://cloud.google.com/pubsub/docs/reference/rest/v1/projects.topics#CompressionAlgorithm) for allowed values.`,
+									},
+									"compression_mode": {
+										Type:         schema.TypeString,
+										Required:     true,
+										ValidateFunc: verify.ValidateEnum([]string{"COMPRESS", "DECOMPRESS"}),
+										Description:  `Specifies whether to compress or decompress the message. Possible values: ["COMPRESS", "DECOMPRESS"]`,
 									},
 								},
 							},
@@ -775,7 +794,7 @@ func resourcePubsubTopicCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.SetId(id)
 
-	err = transport_tpg.PollingWaitTime(resourcePubsubTopicPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating Topic", d.Timeout(schema.TimeoutCreate), 1)
+	err = transport_tpg.PollingWaitTime(resourcePubsubTopicPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating Topic", d.Timeout(schema.TimeoutCreate), 1, config.SleepUnit)
 	if err != nil {
 		log.Printf("[ERROR] Unable to confirm eventually consistent Topic %q finished updating: %q", d.Id(), err)
 	}
@@ -1545,6 +1564,7 @@ func flattenPubsubTopicMessageTransforms(v interface{}, d *schema.ResourceData, 
 		}
 		transformed = append(transformed, map[string]interface{}{
 			"ai_inference":   flattenPubsubTopicMessageTransformsAiInference(original["aiInference"], d, config),
+			"compression":    flattenPubsubTopicMessageTransformsCompression(original["compression"], d, config),
 			"javascript_udf": flattenPubsubTopicMessageTransformsJavascriptUdf(original["javascriptUdf"], d, config),
 			"disabled":       flattenPubsubTopicMessageTransformsDisabled(original["disabled"], d, config),
 		})
@@ -1590,6 +1610,29 @@ func flattenPubsubTopicMessageTransformsAiInferenceUnstructuredInferenceParamete
 }
 
 func flattenPubsubTopicMessageTransformsAiInferenceServiceAccountEmail(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenPubsubTopicMessageTransformsCompression(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["compression_algorithm"] =
+		flattenPubsubTopicMessageTransformsCompressionCompressionAlgorithm(original["compressionAlgorithm"], d, config)
+	transformed["compression_mode"] =
+		flattenPubsubTopicMessageTransformsCompressionCompressionMode(original["compressionMode"], d, config)
+	return []interface{}{transformed}
+}
+func flattenPubsubTopicMessageTransformsCompressionCompressionAlgorithm(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenPubsubTopicMessageTransformsCompressionCompressionMode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2262,6 +2305,13 @@ func expandPubsubTopicMessageTransforms(v interface{}, d tpgresource.TerraformRe
 			transformed["aiInference"] = transformedAiInference
 		}
 
+		transformedCompression, err := expandPubsubTopicMessageTransformsCompression(original["compression"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedCompression); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["compression"] = transformedCompression
+		}
+
 		transformedJavascriptUdf, err := expandPubsubTopicMessageTransformsJavascriptUdf(original["javascript_udf"], d, config)
 		if err != nil {
 			return nil, err
@@ -2355,6 +2405,43 @@ func expandPubsubTopicMessageTransformsAiInferenceUnstructuredInferenceParameter
 }
 
 func expandPubsubTopicMessageTransformsAiInferenceServiceAccountEmail(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandPubsubTopicMessageTransformsCompression(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedCompressionAlgorithm, err := expandPubsubTopicMessageTransformsCompressionCompressionAlgorithm(original["compression_algorithm"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedCompressionAlgorithm); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["compressionAlgorithm"] = transformedCompressionAlgorithm
+	}
+
+	transformedCompressionMode, err := expandPubsubTopicMessageTransformsCompressionCompressionMode(original["compression_mode"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedCompressionMode); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["compressionMode"] = transformedCompressionMode
+	}
+
+	return transformed, nil
+}
+
+func expandPubsubTopicMessageTransformsCompressionCompressionAlgorithm(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandPubsubTopicMessageTransformsCompressionCompressionMode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

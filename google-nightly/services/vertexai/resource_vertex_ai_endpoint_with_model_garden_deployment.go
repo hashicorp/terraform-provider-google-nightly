@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -272,7 +270,8 @@ GKE. (Example: tpu_topology: "2x2x1").`,
 										Type:     schema.TypeInt,
 										Required: true,
 										Description: `The minimum number of machine replicas that will be always deployed on.
-This value must be greater than or equal to 1.
+This value must be greater than or equal to 1. To enable scale-to-zero
+(in beta), set this value to 0 and also set 'initial_replica_count'.
 
 If traffic increases, it may dynamically be deployed onto more replicas,
 and as traffic decreases, some of these extra replicas may be freed.`,
@@ -323,6 +322,17 @@ percentage, the machine replicas change. The default value is 60
 											},
 										},
 									},
+									"initial_replica_count": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										Description: `Number of initial replicas being deployed on when scaling the workload up
+from zero or when creating the workload in case min_replica_count = 0.
+When min_replica_count > 0 (meaning that the scale-to-zero feature is not
+enabled), initial_replica_count should not be set. When min_replica_count
+= 0 (meaning that the scale-to-zero feature is enabled),
+initial_replica_count should be larger than zero, but no greater than
+max_replica_count.`,
+									},
 									"max_replica_count": {
 										Type:     schema.TypeInt,
 										Computed: true,
@@ -349,6 +359,29 @@ desired. If set, the deploy/mutate operation will succeed once
 available_replica_count reaches required_replica_count, and the rest of
 the replicas will be retried. If not set, the default
 required_replica_count will be min_replica_count.`,
+									},
+									"scale_to_zero_spec": {
+										Type:        schema.TypeList,
+										Optional:    true,
+										Description: `Specification for scale-to-zero feature.`,
+										MaxItems:    1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"idle_scaledown_period": {
+													Type:     schema.TypeString,
+													Optional: true,
+													Description: `Duration of no traffic before scaling to zero. [MinValue=300] (5
+minutes) [MaxValue=28800] (8 hours)`,
+												},
+												"min_scaleup_period": {
+													Type:     schema.TypeString,
+													Optional: true,
+													Description: `Minimum duration that a deployment will be scaled up before traffic is
+evaluated for potential scale-down. [MinValue=300] (5 minutes)
+[MaxValue=28800] (8 hours)`,
+												},
+											},
+										},
 									},
 									"spot": {
 										Type:     schema.TypeBool,
@@ -1637,7 +1670,7 @@ func resourceVertexAIEndpointWithModelGardenDeploymentCreate(d *schema.ResourceD
 
 	// Extract deployedModelId and deployedModelDisplayName of model deployed to the endpoint
 	// Make API call to read the endpoint and retrieve deployed model ID and display name
-	readUrl, err := tpgresource.ReplaceVars(d, config, "{{VertexAIBasePath}}projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}")
+	readUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}")
 	if err != nil {
 		return err
 	}
@@ -1894,6 +1927,19 @@ func resourceVertexAIEndpointWithModelGardenDeploymentUpdate(d *schema.ResourceD
 		dedicatedResources["autoscalingMetricSpecs"] = expanded
 		updateMask = append(updateMask, "dedicatedResources.autoscalingMetricSpecs")
 	}
+	if d.HasChange("deploy_config.0.dedicated_resources.0.initial_replica_count") {
+		dedicatedResources["initialReplicaCount"] = d.Get("deploy_config.0.dedicated_resources.0.initial_replica_count")
+		updateMask = append(updateMask, "dedicatedResources.initialReplicaCount")
+	}
+	if d.HasChange("deploy_config.0.dedicated_resources.0.scale_to_zero_spec") {
+		expanded, err := expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpec(
+			d.Get("deploy_config.0.dedicated_resources.0.scale_to_zero_spec"), d, config)
+		if err != nil {
+			return err
+		}
+		dedicatedResources["scaleToZeroSpec"] = expanded
+		updateMask = append(updateMask, "dedicatedResources.scaleToZeroSpec")
+	}
 
 	if len(updateMask) == 0 {
 		return resourceVertexAIEndpointWithModelGardenDeploymentRead(d, meta)
@@ -1907,7 +1953,7 @@ func resourceVertexAIEndpointWithModelGardenDeploymentUpdate(d *schema.ResourceD
 		"updateMask": strings.Join(updateMask, ","),
 	}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{VertexAIBasePath}}projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}:mutateDeployedModel")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}:mutateDeployedModel")
 	if err != nil {
 		return err
 	}
@@ -1985,7 +2031,7 @@ func resourceVertexAIEndpointWithModelGardenDeploymentDelete(d *schema.ResourceD
 	}
 
 	// Undeploy the model
-	undeployUrl, err := tpgresource.ReplaceVars(d, config, "{{VertexAIBasePath}}projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}:undeployModel")
+	undeployUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}:undeployModel")
 	if err != nil {
 		return err
 	}
@@ -2023,7 +2069,7 @@ func resourceVertexAIEndpointWithModelGardenDeploymentDelete(d *schema.ResourceD
 	log.Printf("[DEBUG] Finished undeploying model %s from EndpointWithModelGardenDeployment %q: %#v", deployedModelDisplayName, d.Id(), undeployRes)
 
 	// Delete Endpoint
-	deleteUrl, err := tpgresource.ReplaceVars(d, config, "{{VertexAIBasePath}}projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}")
+	deleteUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/endpoints/{{endpoint}}")
 	if err != nil {
 		return err
 	}
@@ -2119,6 +2165,10 @@ func flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResour
 		flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesMaxReplicaCount(original["maxReplicaCount"], d, config)
 	transformed["required_replica_count"] =
 		flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesRequiredReplicaCount(original["requiredReplicaCount"], d, config)
+	transformed["initial_replica_count"] =
+		flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesInitialReplicaCount(original["initialReplicaCount"], d, config)
+	transformed["scale_to_zero_spec"] =
+		flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpec(original["scaleToZeroSpec"], d, config)
 	transformed["autoscaling_metric_specs"] =
 		flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesAutoscalingMetricSpecs(original["autoscalingMetricSpecs"], d, config)
 	transformed["spot"] =
@@ -2178,6 +2228,46 @@ func flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResour
 	}
 
 	return v // let terraform core handle it otherwise
+}
+
+func flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesInitialReplicaCount(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	// Handles the string fixed64 format
+	if strVal, ok := v.(string); ok {
+		if intVal, err := tpgresource.StringToFixed64(strVal); err == nil {
+			return intVal
+		}
+	}
+
+	// number values are represented as float64
+	if floatVal, ok := v.(float64); ok {
+		intVal := int(floatVal)
+		return intVal
+	}
+
+	return v // let terraform core handle it otherwise
+}
+
+func flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpec(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["min_scaleup_period"] =
+		flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecMinScaleupPeriod(original["minScaleupPeriod"], d, config)
+	transformed["idle_scaledown_period"] =
+		flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecIdleScaledownPeriod(original["idleScaledownPeriod"], d, config)
+	return []interface{}{transformed}
+}
+func flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecMinScaleupPeriod(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecIdleScaledownPeriod(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
 }
 
 func flattenVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesAutoscalingMetricSpecs(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -3696,7 +3786,7 @@ func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourc
 	transformedMinReplicaCount, err := expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesMinReplicaCount(original["min_replica_count"], d, config)
 	if err != nil {
 		return nil, err
-	} else if val := reflect.ValueOf(transformedMinReplicaCount); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+	} else {
 		transformed["minReplicaCount"] = transformedMinReplicaCount
 	}
 
@@ -3712,6 +3802,20 @@ func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourc
 		return nil, err
 	} else if val := reflect.ValueOf(transformedRequiredReplicaCount); val.IsValid() && !tpgresource.IsEmptyValue(val) {
 		transformed["requiredReplicaCount"] = transformedRequiredReplicaCount
+	}
+
+	transformedInitialReplicaCount, err := expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesInitialReplicaCount(original["initial_replica_count"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedInitialReplicaCount); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["initialReplicaCount"] = transformedInitialReplicaCount
+	}
+
+	transformedScaleToZeroSpec, err := expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpec(original["scale_to_zero_spec"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedScaleToZeroSpec); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["scaleToZeroSpec"] = transformedScaleToZeroSpec
 	}
 
 	transformedAutoscalingMetricSpecs, err := expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesAutoscalingMetricSpecs(original["autoscaling_metric_specs"], d, config)
@@ -3868,6 +3972,47 @@ func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourc
 	return v, nil
 }
 
+func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesInitialReplicaCount(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpec(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedMinScaleupPeriod, err := expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecMinScaleupPeriod(original["min_scaleup_period"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedMinScaleupPeriod); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["minScaleupPeriod"] = transformedMinScaleupPeriod
+	}
+
+	transformedIdleScaledownPeriod, err := expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecIdleScaledownPeriod(original["idle_scaledown_period"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedIdleScaledownPeriod); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["idleScaledownPeriod"] = transformedIdleScaledownPeriod
+	}
+
+	return transformed, nil
+}
+
+func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecMinScaleupPeriod(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesScaleToZeroSpecIdleScaledownPeriod(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandVertexAIEndpointWithModelGardenDeploymentDeployConfigDedicatedResourcesAutoscalingMetricSpecs(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -3954,12 +4099,16 @@ func resourceVertexAIEndpointWithModelGardenDeploymentDecoder(d *schema.Resource
 		"minReplicaCount":      "min_replica_count",
 		"maxReplicaCount":      "max_replica_count",
 		"requiredReplicaCount": "required_replica_count",
+		"initialReplicaCount":  "initial_replica_count",
 	} {
 		if v, ok := apiResources[apiKey]; ok {
 			dedicatedResources[apiKey] = v
 		} else {
 			dedicatedResources[apiKey] = d.Get(resourcesPrefix + stateKey)
 		}
+	}
+	if v, ok := apiResources["scaleToZeroSpec"]; ok {
+		dedicatedResources["scaleToZeroSpec"] = v
 	}
 
 	res["deployConfig"] = map[string]interface{}{

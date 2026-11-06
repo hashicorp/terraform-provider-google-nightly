@@ -24,7 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"google.golang.org/api/cloudresourcemanager/v1"
 
@@ -37,7 +36,6 @@ import (
 var (
 	_ = regexp.Match
 	_ = strings.Trim
-	_ = errwrap.Wrap
 	_ = schema.Noop
 )
 
@@ -255,7 +253,7 @@ func (u *ComputeImageIamUpdater) SetResourceIamPolicy(policy *cloudresourcemanag
 }
 
 func (u *ComputeImageIamUpdater) qualifyImageUrl(methodIdentifier string) (string, error) {
-	urlTemplate := fmt.Sprintf("{{ComputeBasePath}}%s/%s", fmt.Sprintf("projects/%s/global/images/%s", u.project, u.image), methodIdentifier)
+	urlTemplate := fmt.Sprintf(transport_tpg.BaseUrl(Product, u.Config)+"%s/%s", fmt.Sprintf("projects/%s/global/images/%s", u.project, u.image), methodIdentifier)
 	url, err := tpgresource.ReplaceVars(u.d, u.Config, urlTemplate)
 	if err != nil {
 		return "", err

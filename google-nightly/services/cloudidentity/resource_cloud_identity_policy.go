@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -98,7 +97,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -556,6 +554,14 @@ func resourceCloudIdentityPolicyDelete(d *schema.ResourceData, meta interface{})
 }
 
 func resourceCloudIdentityPolicyImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	config := meta.(*transport_tpg.Config)
+
+	if d.Id() == "" {
+		if err := tpgresource.ParseImportId([]string{"(?P<name>.+)"}, d, config); err != nil {
+			return nil, err
+		}
+	}
+
 	// 1. Get the ID the user typed (e.g., "policies/12345" or just "12345")
 	id := d.Id()
 

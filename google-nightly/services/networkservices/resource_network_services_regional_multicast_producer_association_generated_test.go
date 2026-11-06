@@ -85,7 +85,7 @@ func TestAccNetworkServicesRegionalMulticastProducerAssociation_networkServicesR
 			},
 			{
 				ResourceName:       "google_network_services_regional_multicast_producer_association.rmpa_test",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

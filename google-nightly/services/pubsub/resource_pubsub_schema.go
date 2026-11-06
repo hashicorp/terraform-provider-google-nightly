@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -554,7 +552,7 @@ func resourcePubsubSchemaDelete(d *schema.ResourceData, meta interface{}) error 
 		return transport_tpg.HandleNotFoundError(err, d, "Schema")
 	}
 
-	err = transport_tpg.PollingWaitTime(resourcePubsubSchemaPollRead(d, meta), transport_tpg.PollCheckForAbsence, "Deleting Schema", d.Timeout(schema.TimeoutCreate), 10)
+	err = transport_tpg.PollingWaitTime(resourcePubsubSchemaPollRead(d, meta), transport_tpg.PollCheckForAbsence, "Deleting Schema", d.Timeout(schema.TimeoutCreate), 10, config.SleepUnit)
 	if err != nil {
 		return fmt.Errorf("Error waiting to delete Schema: %s", err)
 	}

@@ -78,11 +78,11 @@ func TestAccStorageInsightsReportConfig_storageInsightsReportConfigExample(t *te
 				ResourceName:            "google_storage_insights_report_config.config",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_destroy", "location"},
+				ImportStateVerifyIgnore: []string{"force_destroy", "labels", "location", "terraform_labels"},
 			},
 			{
 				ResourceName:       "google_storage_insights_report_config.config",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -98,6 +98,9 @@ data "google_project" "project" {
 resource "google_storage_insights_report_config" "config" {
   display_name = "Test Report Config"
   location = "us-central1"
+  labels = {
+    key = "value"
+  }
   frequency_options {
     frequency = "WEEKLY"
     start_date {

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -233,7 +231,7 @@ func resourceFirebaseHostingSiteCreate(d *schema.ResourceData, meta interface{})
 
 	// Check if the Firebase hostng site already exits. Do an update if so.
 
-	getUrl, err := tpgresource.ReplaceVars(d, config, "{{FirebaseHostingBasePath}}projects/{{project}}/sites/{{site_id}}")
+	getUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/sites/{{site_id}}")
 	if err != nil {
 		return err
 	}

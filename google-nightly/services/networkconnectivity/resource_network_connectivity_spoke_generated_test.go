@@ -86,7 +86,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedVpcNetworkBas
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -160,7 +160,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedVpcNetworkGro
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -243,7 +243,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeRouterApplianceBasi
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -354,7 +354,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeVpnTunnelBasicExamp
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.tunnel1",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -528,7 +528,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeInterconnectAttachm
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -616,7 +616,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedProducerVpcNe
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -709,7 +709,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeCenterGroupExample(
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -785,7 +785,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeLinkedVpcNetworkIpv
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -855,7 +855,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeGatewayExample(t *t
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -934,7 +934,7 @@ func TestAccNetworkConnectivitySpoke_networkConnectivitySpokeCustomHardwareExamp
 			},
 			{
 				ResourceName:       "google_network_connectivity_spoke.primary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

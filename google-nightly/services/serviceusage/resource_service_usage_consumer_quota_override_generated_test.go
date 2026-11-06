@@ -61,9 +61,10 @@ func TestAccServiceUsageConsumerQuotaOverride_consumerQuotaOverrideExample(t *te
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"org_id":        envvar.GetTestOrgFromEnv(t),
-		"project_id":    "quota" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"org_id":         envvar.GetTestOrgFromEnv(t),
+		"override_value": 95,
+		"project_id":     "quota" + randomSuffix,
+		"random_suffix":  randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -82,7 +83,7 @@ func TestAccServiceUsageConsumerQuotaOverride_consumerQuotaOverrideExample(t *te
 			},
 			{
 				ResourceName:       "google_service_usage_consumer_quota_override.override",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -106,7 +107,7 @@ resource "google_service_usage_consumer_quota_override" "override" {
   service        = "servicemanagement.googleapis.com"
   metric         = urlencode("servicemanagement.googleapis.com/default_requests")
   limit          = urlencode("/min/project")
-  override_value = "95"
+  override_value = "%{override_value}"
   force          = true
 }
 `, context)
@@ -118,9 +119,10 @@ func TestAccServiceUsageConsumerQuotaOverride_consumerQuotaOverrideZeroValueExam
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"org_id":        envvar.GetTestOrgFromEnv(t),
-		"project_id":    "quota" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"org_id":         envvar.GetTestOrgFromEnv(t),
+		"override_value": 0,
+		"project_id":     "quota" + randomSuffix,
+		"random_suffix":  randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -139,7 +141,7 @@ func TestAccServiceUsageConsumerQuotaOverride_consumerQuotaOverrideZeroValueExam
 			},
 			{
 				ResourceName:       "google_service_usage_consumer_quota_override.override",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -163,7 +165,7 @@ resource "google_service_usage_consumer_quota_override" "override" {
   service        = "servicemanagement.googleapis.com"
   metric         = urlencode("servicemanagement.googleapis.com/default_requests")
   limit          = urlencode("/min/project")
-  override_value = "0"
+  override_value = "%{override_value}"
   force          = true
 }
 `, context)
@@ -196,7 +198,7 @@ func TestAccServiceUsageConsumerQuotaOverride_regionConsumerQuotaOverrideExample
 			},
 			{
 				ResourceName:       "google_service_usage_consumer_quota_override.override",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -256,7 +258,7 @@ func TestAccServiceUsageConsumerQuotaOverride_consumerQuotaOverrideCustomDimensi
 			},
 			{
 				ResourceName:       "google_service_usage_consumer_quota_override.override",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -301,7 +303,7 @@ func testAccCheckServiceUsageConsumerQuotaOverrideDestroyProducer(t *testing.T) 
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{ServiceUsageBasePath}}projects/{{project}}/services/{{service}}/consumerQuotaMetrics/{{metric}}/limits/{{limit}}/consumerOverrides/")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(serviceusage.Product, config)+"projects/{{project}}/services/{{service}}/consumerQuotaMetrics/{{metric}}/limits/{{limit}}/consumerOverrides/")
 			if err != nil {
 				return err
 			}

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -55,13 +54,11 @@ import (
 )
 
 import (
-	"github.com/gammazero/workerpool"
 	"runtime"
 )
 
 var (
 	_ = runtime.GOARCH
-	_ = workerpool.New
 )
 
 var (
@@ -79,7 +76,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -443,7 +439,7 @@ func resourceStorageFolderDelete(d *schema.ResourceData, meta interface{}) error
 		// decreasing its portability. Ideally we'd want this to connect to
 		// Terraform's top-level -parallelism flag, but that's not plumbed nor
 		// is it scheduled to be plumbed to individual providers.
-		wp := workerpool.New(runtime.NumCPU() - 1)
+		wp := tpgresource.NewWorkerPool(runtime.NumCPU() - 1)
 
 		for _, object := range res.Items {
 			log.Printf("[DEBUG] Found %s", object.Name)
@@ -464,7 +460,7 @@ func resourceStorageFolderDelete(d *schema.ResourceData, meta interface{}) error
 		wp.StopWait()
 	}
 
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+	err = tpgresource.Retry(1*time.Minute, config.SleepUnit, func() *retry.RetryError {
 		err := NewClient(config, userAgent).Folders.Delete(bucket, name).Do()
 		if err == nil {
 			return nil

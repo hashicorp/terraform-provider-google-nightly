@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -82,7 +81,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -480,7 +478,6 @@ uptime checks:
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 					},
 				},
@@ -1028,7 +1025,7 @@ func resourceMonitoringUptimeCheckConfigDelete(d *schema.ResourceData, meta inte
 	transport_tpg.MutexStore.Lock(lockName)
 	defer transport_tpg.MutexStore.Unlock(lockName)
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{MonitoringBasePath}}v3/{{name}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"v3/{{name}}")
 	if err != nil {
 		return err
 	}
@@ -1055,7 +1052,7 @@ func resourceMonitoringUptimeCheckConfigDelete(d *schema.ResourceData, meta inte
 	if err != nil {
 		if transport_tpg.IsGoogleApiErrorWithCode(err, 400) {
 			err := fmt.Errorf("%w - please ensure all associated Alert Policies are deleted.", err)
-			return errwrap.Wrapf("Error when reading or editing UptimeCheckConfig: {{err}}", err)
+			return fmt.Errorf("Error when reading or editing UptimeCheckConfig: %w", err)
 		}
 		return transport_tpg.HandleNotFoundError(err, d, "UptimeCheckConfig")
 	}

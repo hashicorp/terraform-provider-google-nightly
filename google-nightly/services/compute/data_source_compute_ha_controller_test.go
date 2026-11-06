@@ -55,7 +55,7 @@ func TestAccDataSourceComputeHaController_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					acctest.CheckDataSourceStateMatchesResourceStateWithIgnores(
 						"data.google_compute_ha_controller.default",
-						"google_compute_ha_controller.default",
+						"google_compute_ha_controller.ha_controller",
 						[]string{
 							"region",
 						},
@@ -69,14 +69,14 @@ func TestAccDataSourceComputeHaController_basic(t *testing.T) {
 func testAccComputeHaController_computeHaControllerBasicExampleDataSource(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 locals {
-  region          = "us-central1"
-  zone1           = "us-central1-a"
-  zone2           = "us-central1-b"
+  region = "us-central1"
+  zone1  = "us-central1-a"
+  zone2  = "us-central1-b"
 }
 
-data "google_compute_image" "debian_12" {
-  family   = "debian-12"
-  project  = "debian-cloud"
+data "google_compute_image" "debian_13" {
+  family  = "debian-13"
+  project = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
@@ -86,7 +86,7 @@ resource "google_compute_region_disk" "regional_disk" {
   region                    = local.region
   replica_zones             = [local.zone1, local.zone2]
   size                      = 10
-  image                     = data.google_compute_image.debian_12.self_link
+  image                     = data.google_compute_image.debian_13.self_link
 }
 
 resource "google_compute_instance" "vm" {
@@ -111,7 +111,7 @@ resource "google_compute_instance" "vm" {
   allow_stopping_for_update = true
 }
 
-resource "google_compute_ha_controller" "default" {
+resource "google_compute_ha_controller" "ha_controller" {
   name                = "%{hac_name}"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -123,11 +123,18 @@ resource "google_compute_ha_controller" "default" {
   zone_configuration {
     zone = local.zone2
   }
+
+  # To recreate the VMs, Compute Engine must delete the HA Controller first.
+  lifecycle {
+    replace_triggered_by = [
+      google_compute_instance.vm.id
+    ]
+  }
 }
 
 
 data "google_compute_ha_controller" "default" {
-  name = google_compute_ha_controller.default.name
+  name = google_compute_ha_controller.ha_controller.name
 }`,
 		context,
 	)

@@ -90,7 +90,7 @@ func TestAccNetworkServicesRegionalMulticastGroupProducerActivation_networkServi
 			},
 			{
 				ResourceName:       "google_network_services_regional_multicast_group_producer_activation.rmgpa_test",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

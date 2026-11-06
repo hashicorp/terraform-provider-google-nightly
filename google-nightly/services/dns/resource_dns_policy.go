@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -659,7 +657,7 @@ func resourceDNSPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 		patched := make(map[string]interface{})
 		patched["networks"] = nil
 
-		url, err := tpgresource.ReplaceVars(d, config, "{{DNSBasePath}}projects/{{project}}/policies/{{name}}")
+		url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/policies/{{name}}")
 		if err != nil {
 			return err
 		}
@@ -1063,7 +1061,7 @@ func expandDNSPolicyNetworksNetworkUrl(v interface{}, d tpgresource.TerraformRes
 	} else if strings.HasPrefix(v.(string), "https://") {
 		return v, nil
 	}
-	url, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}"+v.(string))
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(registry.GetProduct("compute"), config)+v.(string))
 	if err != nil {
 		return "", err
 	}

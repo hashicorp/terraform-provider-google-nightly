@@ -24,7 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"google.golang.org/api/cloudresourcemanager/v1"
 
@@ -37,7 +36,6 @@ import (
 var (
 	_ = regexp.Match
 	_ = strings.Trim
-	_ = errwrap.Wrap
 	_ = schema.Noop
 )
 
@@ -232,7 +230,7 @@ func (u *HealthcareConsentStoreIamUpdater) SetResourceIamPolicy(policy *cloudres
 }
 
 func (u *HealthcareConsentStoreIamUpdater) qualifyConsentStoreUrl(methodIdentifier string) (string, error) {
-	urlTemplate := fmt.Sprintf("{{HealthcareBasePath}}%s:%s", fmt.Sprintf("%s/consentStores/%s", u.dataset, u.consentStoreId), methodIdentifier)
+	urlTemplate := fmt.Sprintf(transport_tpg.BaseUrl(Product, u.Config)+"%s:%s", fmt.Sprintf("%s/consentStores/%s", u.dataset, u.consentStoreId), methodIdentifier)
 	url, err := tpgresource.ReplaceVars(u.d, u.Config, urlTemplate)
 	if err != nil {
 		return "", err

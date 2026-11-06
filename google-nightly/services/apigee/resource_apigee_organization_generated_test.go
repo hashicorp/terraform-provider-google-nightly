@@ -88,7 +88,7 @@ func TestAccApigeeOrganization_apigeeOrganizationCloudBasicTestExample(t *testin
 			},
 			{
 				ResourceName:       "google_apigee_organization.org",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -203,7 +203,7 @@ func TestAccApigeeOrganization_apigeeOrganizationCloudBasicDisableVpcPeeringTest
 			},
 			{
 				ResourceName:       "google_apigee_organization.org",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -278,7 +278,7 @@ func TestAccApigeeOrganization_apigeeOrganizationCloudBasicDataResidencyTestExam
 			},
 			{
 				ResourceName:       "google_apigee_organization.org",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -360,7 +360,7 @@ func TestAccApigeeOrganization_apigeeOrganizationCloudFullTestExample(t *testing
 			},
 			{
 				ResourceName:       "google_apigee_organization.org",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -551,7 +551,7 @@ func TestAccApigeeOrganization_apigeeOrganizationCloudFullDisableVpcPeeringTestE
 			},
 			{
 				ResourceName:       "google_apigee_organization.org",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -705,7 +705,7 @@ func TestAccApigeeOrganization_apigeeOrganizationRetentionTestExample(t *testing
 			},
 			{
 				ResourceName:       "google_apigee_organization.org",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -844,7 +844,7 @@ resource "google_apigee_organization" "org" {
   authorized_network                   = google_compute_network.apigee_network.id
   billing_type                         = "PAYG"
   runtime_database_encryption_key_name = google_kms_crypto_key.apigee_key.id
-  retention                            = "MINIMUM"
+  retention                            = "NO_RETENTION"
 
   depends_on = [
     google_service_networking_connection.apigee_vpc_connection,
@@ -886,7 +886,7 @@ func TestAccApigeeOrganization_apigeeOrganizationDrzTestExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_apigee_organization.org",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

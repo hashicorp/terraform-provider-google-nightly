@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -182,7 +181,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -719,7 +717,7 @@ func resourceCloudSchedulerJobCreate(d *schema.ResourceData, meta interface{}) e
 		logSuccessMsg = "Job state has been set to PAUSED"
 	}
 
-	linkTmpl := fmt.Sprintf("{{CloudSchedulerBasePath}}projects/{{project}}/locations/{{region}}/jobs/{{name}}:%s", endpoint)
+	linkTmpl := fmt.Sprintf(transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{region}}/jobs/{{name}}:%s", endpoint)
 	url, err = tpgresource.ReplaceVars(d, config, linkTmpl)
 	if err != nil {
 		return err
@@ -1016,7 +1014,7 @@ func resourceCloudSchedulerJobUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 		}
 
-		linkTmpl := fmt.Sprintf("{{CloudSchedulerBasePath}}projects/{{project}}/locations/{{region}}/jobs/{{name}}:%s", endpoint)
+		linkTmpl := fmt.Sprintf(transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{region}}/jobs/{{name}}:%s", endpoint)
 		url, err = tpgresource.ReplaceVars(d, config, linkTmpl)
 		if err != nil {
 			return err

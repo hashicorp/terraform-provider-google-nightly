@@ -82,7 +82,7 @@ func TestAccIAMBetaWorkloadIdentityPoolManagedIdentity_iamWorkloadIdentityPoolMa
 			},
 			{
 				ResourceName:       "google_iam_workload_identity_pool_managed_identity.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -139,7 +139,7 @@ func TestAccIAMBetaWorkloadIdentityPoolManagedIdentity_iamWorkloadIdentityPoolMa
 			},
 			{
 				ResourceName:       "google_iam_workload_identity_pool_managed_identity.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -187,7 +187,7 @@ func testAccCheckIAMBetaWorkloadIdentityPoolManagedIdentityDestroyProducer(t *te
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{IAMBetaBasePath}}projects/{{project}}/locations/global/workloadIdentityPools/{{workload_identity_pool_id}}/namespaces/{{workload_identity_pool_namespace_id}}/managedIdentities/{{workload_identity_pool_managed_identity_id}}")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(iambeta.Product, config)+"projects/{{project}}/locations/global/workloadIdentityPools/{{workload_identity_pool_id}}/namespaces/{{workload_identity_pool_namespace_id}}/managedIdentities/{{workload_identity_pool_managed_identity_id}}")
 			if err != nil {
 				return err
 			}

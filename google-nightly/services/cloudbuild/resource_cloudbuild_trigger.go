@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -106,7 +105,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -829,6 +827,13 @@ build step or with certain reserved volume paths.`,
 
 This field is experimental.`,
 									},
+									"worker_release": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Description: `Option to specify which release or release channel to use to run this build.
+Possible values are the release channels 'rapid', 'regular', or 'stable', or a specific
+release version such as 'legacy'.`,
+									},
 								},
 							},
 						},
@@ -1058,7 +1063,6 @@ Default time is ten minutes (600s).`,
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"git_repository_link_type": {
 							Type:        schema.TypeString,
@@ -1067,7 +1071,6 @@ Default time is ten minutes (600s).`,
 						},
 					},
 				},
-				ExactlyOneOf: []string{},
 			},
 			"disabled": {
 				Type:        schema.TypeBool,
@@ -1333,7 +1336,6 @@ Only populated on get requests.`,
 
 The syntax of the regular expressions accepted is the syntax accepted by
 RE2 and described at https://github.com/google/re2/wiki/Syntax`,
-										ExactlyOneOf: []string{},
 									},
 									"comment_control": {
 										Type:         schema.TypeString,
@@ -1348,7 +1350,6 @@ RE2 and described at https://github.com/google/re2/wiki/Syntax`,
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"push": {
 							Type:        schema.TypeList,
@@ -1364,7 +1365,6 @@ RE2 and described at https://github.com/google/re2/wiki/Syntax`,
 
 The syntax of the regular expressions accepted is the syntax accepted by
 RE2 and described at https://github.com/google/re2/wiki/Syntax`,
-										ExactlyOneOf: []string{},
 									},
 									"invert_regex": {
 										Type:        schema.TypeBool,
@@ -1378,11 +1378,9 @@ RE2 and described at https://github.com/google/re2/wiki/Syntax`,
 
 The syntax of the regular expressions accepted is the syntax accepted by
 RE2 and described at https://github.com/google/re2/wiki/Syntax`,
-										ExactlyOneOf: []string{},
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"repository": {
 							Type:        schema.TypeString,
@@ -3268,6 +3266,8 @@ func flattenCloudBuildTriggerBuildOptions(v interface{}, d *schema.ResourceData,
 		flattenCloudBuildTriggerBuildOptionsLogStreamingOption(original["logStreamingOption"], d, config)
 	transformed["worker_pool"] =
 		flattenCloudBuildTriggerBuildOptionsWorkerPool(original["workerPool"], d, config)
+	transformed["worker_release"] =
+		flattenCloudBuildTriggerBuildOptionsWorkerRelease(original["workerRelease"], d, config)
 	transformed["logging"] =
 		flattenCloudBuildTriggerBuildOptionsLogging(original["logging"], d, config)
 	transformed["env"] =
@@ -3320,6 +3320,10 @@ func flattenCloudBuildTriggerBuildOptionsLogStreamingOption(v interface{}, d *sc
 }
 
 func flattenCloudBuildTriggerBuildOptionsWorkerPool(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenCloudBuildTriggerBuildOptionsWorkerRelease(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -5328,6 +5332,13 @@ func expandCloudBuildTriggerBuildOptions(v interface{}, d tpgresource.TerraformR
 		transformed["workerPool"] = transformedWorkerPool
 	}
 
+	transformedWorkerRelease, err := expandCloudBuildTriggerBuildOptionsWorkerRelease(original["worker_release"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedWorkerRelease); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["workerRelease"] = transformedWorkerRelease
+	}
+
 	transformedLogging, err := expandCloudBuildTriggerBuildOptionsLogging(original["logging"], d, config)
 	if err != nil {
 		return nil, err
@@ -5388,6 +5399,10 @@ func expandCloudBuildTriggerBuildOptionsLogStreamingOption(v interface{}, d tpgr
 }
 
 func expandCloudBuildTriggerBuildOptionsWorkerPool(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandCloudBuildTriggerBuildOptionsWorkerRelease(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

@@ -24,7 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"google.golang.org/api/cloudresourcemanager/v1"
 
@@ -37,7 +36,6 @@ import (
 var (
 	_ = regexp.Match
 	_ = strings.Trim
-	_ = errwrap.Wrap
 	_ = schema.Noop
 )
 
@@ -260,7 +258,7 @@ func (u *SecretManagerSecretIamUpdater) SetResourceIamPolicy(policy *cloudresour
 }
 
 func (u *SecretManagerSecretIamUpdater) qualifySecretUrl(methodIdentifier string) (string, error) {
-	urlTemplate := fmt.Sprintf("{{SecretManagerBasePath}}%s:%s", fmt.Sprintf("projects/%s/secrets/%s", u.project, u.secretId), methodIdentifier)
+	urlTemplate := fmt.Sprintf(transport_tpg.BaseUrl(Product, u.Config)+"%s:%s", fmt.Sprintf("projects/%s/secrets/%s", u.project, u.secretId), methodIdentifier)
 	url, err := tpgresource.ReplaceVars(u.d, u.Config, urlTemplate)
 	if err != nil {
 		return "", err

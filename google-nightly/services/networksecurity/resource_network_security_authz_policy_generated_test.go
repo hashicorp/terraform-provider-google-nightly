@@ -99,7 +99,7 @@ func TestAccNetworkSecurityAuthzPolicy_networkSecurityAuthzPolicyAdvancedExample
 			},
 			{
 				ResourceName:       "google_network_security_authz_policy.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -163,7 +163,10 @@ resource "google_compute_instance" "callouts_instance" {
   }
 
   metadata = {
-    gce-container-declaration = "# DISCLAIMER:\n# This container declaration format is not a public API and may change without\n# notice. Please use gcloud command-line tool or Google Cloud Console to run\n# Containers on Google Compute Engine.\n\nspec:\n  containers:\n  - image: us-docker.pkg.dev/service-extensions-samples/callouts/python-example-basic:main\n    name: callouts-vm\n    securityContext:\n      privileged: false\n    stdin: false\n    tty: false\n    volumeMounts: []\n  restartPolicy: Always\n  volumes: []\n"
+    startup-script = <<-EOF
+      #! /bin/bash
+      docker run -d --restart=always --network=host --name=callouts-vm us-docker.pkg.dev/service-extensions-samples/callouts/python-example-basic:main
+    EOF
     google-logging-enabled = "true"
   }
 
@@ -372,7 +375,7 @@ func TestAccNetworkSecurityAuthzPolicy_networkSecurityAuthzPolicyMcpExample(t *t
 			},
 			{
 				ResourceName:       "google_network_security_authz_policy.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -504,7 +507,7 @@ func TestAccNetworkSecurityAuthzPolicy_networkSecurityAuthzPolicyNetworkRulesExa
 			},
 			{
 				ResourceName:       "google_network_security_authz_policy.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -524,7 +527,7 @@ func TestAccNetworkSecurityAuthzPolicy_networkSecurityAuthzPolicyNetworkRulesExa
 			},
 			{
 				ResourceName:       "google_network_security_authz_policy.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -544,7 +547,7 @@ func TestAccNetworkSecurityAuthzPolicy_networkSecurityAuthzPolicyNetworkRulesExa
 			},
 			{
 				ResourceName:       "google_network_security_authz_policy.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -564,7 +567,7 @@ func TestAccNetworkSecurityAuthzPolicy_networkSecurityAuthzPolicyNetworkRulesExa
 			},
 			{
 				ResourceName:       "google_network_security_authz_policy.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -584,7 +587,7 @@ func TestAccNetworkSecurityAuthzPolicy_networkSecurityAuthzPolicyNetworkRulesExa
 			},
 			{
 				ResourceName:       "google_network_security_authz_policy.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

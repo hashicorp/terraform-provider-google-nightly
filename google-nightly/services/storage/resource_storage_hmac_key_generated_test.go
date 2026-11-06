@@ -81,7 +81,7 @@ func TestAccStorageHmacKey_storageHmacKeyExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_storage_hmac_key.key",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -115,7 +115,7 @@ func testAccCheckStorageHmacKeyDestroyProducer(t *testing.T) func(s *terraform.S
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{StorageBasePath}}projects/{{project}}/hmacKeys/{{access_id}}")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(storage.Product, config)+"projects/{{project}}/hmacKeys/{{access_id}}")
 			if err != nil {
 				return err
 			}

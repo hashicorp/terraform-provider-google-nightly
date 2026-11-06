@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -400,7 +398,7 @@ func resourceMonitoringMetricDescriptorCreate(d *schema.ResourceData, meta inter
 	}
 	d.SetId(id)
 
-	err = transport_tpg.PollingWaitTime(resourceMonitoringMetricDescriptorPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating MetricDescriptor", d.Timeout(schema.TimeoutCreate), 20)
+	err = transport_tpg.PollingWaitTime(resourceMonitoringMetricDescriptorPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating MetricDescriptor", d.Timeout(schema.TimeoutCreate), 20, config.SleepUnit)
 	if err != nil {
 		return fmt.Errorf("Error waiting to create MetricDescriptor: %s", err)
 	}
@@ -682,7 +680,7 @@ func resourceMonitoringMetricDescriptorUpdate(d *schema.ResourceData, meta inter
 		log.Printf("[DEBUG] Finished updating MetricDescriptor %q: %#v", d.Id(), res)
 	}
 
-	err = transport_tpg.PollingWaitTime(resourceMonitoringMetricDescriptorPollRead(d, meta), transport_tpg.PollCheckForExistence, "Updating MetricDescriptor", d.Timeout(schema.TimeoutUpdate), 20)
+	err = transport_tpg.PollingWaitTime(resourceMonitoringMetricDescriptorPollRead(d, meta), transport_tpg.PollCheckForExistence, "Updating MetricDescriptor", d.Timeout(schema.TimeoutUpdate), 20, config.SleepUnit)
 	if err != nil {
 		return err
 	}
@@ -741,7 +739,7 @@ func resourceMonitoringMetricDescriptorDelete(d *schema.ResourceData, meta inter
 		return transport_tpg.HandleNotFoundError(err, d, "MetricDescriptor")
 	}
 
-	err = transport_tpg.PollingWaitTime(resourceMonitoringMetricDescriptorPollRead(d, meta), transport_tpg.PollCheckForAbsence, "Deleting MetricDescriptor", d.Timeout(schema.TimeoutCreate), 20)
+	err = transport_tpg.PollingWaitTime(resourceMonitoringMetricDescriptorPollRead(d, meta), transport_tpg.PollCheckForAbsence, "Deleting MetricDescriptor", d.Timeout(schema.TimeoutCreate), 20, config.SleepUnit)
 	if err != nil {
 		return fmt.Errorf("Error waiting to delete MetricDescriptor: %s", err)
 	}

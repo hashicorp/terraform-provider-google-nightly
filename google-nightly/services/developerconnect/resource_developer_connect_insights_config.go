@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -248,7 +246,7 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 							Type:             schema.TypeList,
 							Optional:         true,
 							ForceNew:         true,
-							DiffSuppressFunc: tpgresource.ProjectNumberDiffSuppress,
+							DiffSuppressFunc: tpgresource.CompareProjectNames,
 							Description:      `The project IDs. Format {project}.`,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,

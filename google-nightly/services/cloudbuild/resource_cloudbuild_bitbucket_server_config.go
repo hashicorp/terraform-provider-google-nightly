@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -398,7 +396,7 @@ func resourceCloudBuildBitbucketServerConfigCreate(d *schema.ResourceData, meta 
 		obj = make(map[string]interface{})
 		obj["requests"] = requests
 
-		url, err = tpgresource.ReplaceVars(d, config, "{{CloudBuildBasePath}}projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}/connectedRepositories:batchCreate")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}/connectedRepositories:batchCreate")
 		if err != nil {
 			return err
 		}
@@ -679,7 +677,7 @@ func resourceCloudBuildBitbucketServerConfigUpdate(d *schema.ResourceData, meta 
 		}
 	}
 	// reconstruct url
-	url, err = tpgresource.ReplaceVars(d, config, "{{CloudBuildBasePath}}projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}")
+	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}")
 	if err != nil {
 		return err
 	}
@@ -735,7 +733,7 @@ func resourceCloudBuildBitbucketServerConfigUpdate(d *schema.ResourceData, meta 
 		removeRepos := oReposSet.Difference(nReposSet).List()
 		createRepos := nReposSet.Difference(oReposSet).List()
 
-		url, err = tpgresource.ReplaceVars(d, config, "{{CloudBuildBasePath}}projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}:removeBitbucketServerConnectedRepository")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}:removeBitbucketServerConnectedRepository")
 		if err != nil {
 			return err
 		}
@@ -779,7 +777,7 @@ func resourceCloudBuildBitbucketServerConfigUpdate(d *schema.ResourceData, meta 
 			obj = make(map[string]interface{})
 			obj["requests"] = requests
 
-			url, err = tpgresource.ReplaceVars(d, config, "{{CloudBuildBasePath}}projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}/connectedRepositories:batchCreate")
+			url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/bitbucketServerConfigs/{{config_id}}/connectedRepositories:batchCreate")
 			if err != nil {
 				return err
 			}

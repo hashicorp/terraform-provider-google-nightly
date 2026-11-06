@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -200,8 +198,6 @@ min_limit and max_limit.`,
 										Optional: true,
 										Description: `Specifies maximum number of nodes allocated to the instance partition. If set, this number
 should be greater than or equal to min_nodes.`,
-										ExactlyOneOf: []string{},
-										RequiredWith: []string{},
 									},
 									"max_processing_units": {
 										Type:     schema.TypeInt,
@@ -209,22 +205,18 @@ should be greater than or equal to min_nodes.`,
 										Description: `Specifies maximum number of processing units allocated to the instance partition.
 If set, this number should be multiples of 1000 and be greater than or equal to
 min_processing_units.`,
-										ExactlyOneOf: []string{},
 									},
 									"min_nodes": {
 										Type:     schema.TypeInt,
 										Optional: true,
 										Description: `Specifies number of nodes allocated to the instance partition. If set, this number
 should be greater than or equal to 1.`,
-										ExactlyOneOf: []string{},
-										RequiredWith: []string{},
 									},
 									"min_processing_units": {
 										Type:     schema.TypeInt,
 										Optional: true,
 										Description: `Specifies minimum number of processing units allocated to the instance partition.
 If set, this number should be multiples of 1000.`,
-										ExactlyOneOf: []string{},
 									},
 								},
 							},

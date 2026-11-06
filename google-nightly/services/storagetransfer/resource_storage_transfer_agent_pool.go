@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -57,7 +56,7 @@ import (
 // waitForAgentPoolReady waits for an agent pool to leave the
 // "CREATING" state and become "CREATED", to indicate that it's ready.
 func waitForAgentPoolReady(d *schema.ResourceData, config *transport_tpg.Config, timeout time.Duration) error {
-	return retry.Retry(timeout, func() *retry.RetryError {
+	return tpgresource.Retry(timeout, config.SleepUnit, func() *retry.RetryError {
 		if err := resourceStorageTransferAgentPoolRead(d, config); err != nil {
 			return retry.NonRetryableError(err)
 		}
@@ -90,7 +89,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All

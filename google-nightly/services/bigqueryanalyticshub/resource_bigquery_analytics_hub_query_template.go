@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -83,7 +82,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -380,7 +378,7 @@ func resourceBigqueryAnalyticsHubQueryTemplateCreate(d *schema.ResourceData, met
 	if d.Get("submit").(bool) {
 		log.Printf("[DEBUG] Attempting to submit BigQuery Analytics Hub QueryTemplate %q (ID: %s)", d.Get("name").(string), d.Id())
 
-		submitUrl, err := tpgresource.ReplaceVars(d, config, "{{BigqueryAnalyticsHubBasePath}}projects/{{project}}/locations/{{location}}/dataExchanges/{{data_exchange_id}}/queryTemplates/{{query_template_id}}:submit")
+		submitUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/dataExchanges/{{data_exchange_id}}/queryTemplates/{{query_template_id}}:submit")
 		if err != nil {
 			return fmt.Errorf("Error constructing submit URL for QueryTemplate %q: %s", d.Id(), err)
 		}
@@ -652,7 +650,7 @@ func resourceBigqueryAnalyticsHubQueryTemplateUpdate(d *schema.ResourceData, met
 		// If the update succeeded, we can assume the state is DRAFTED
 		log.Printf("[DEBUG] Attempting to submit BigQuery Analytics Hub QueryTemplate %q (ID: %s)", d.Get("name").(string), d.Id())
 
-		submitUrl, err := tpgresource.ReplaceVars(d, config, "{{BigqueryAnalyticsHubBasePath}}projects/{{project}}/locations/{{location}}/dataExchanges/{{data_exchange_id}}/queryTemplates/{{query_template_id}}:submit")
+		submitUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/dataExchanges/{{data_exchange_id}}/queryTemplates/{{query_template_id}}:submit")
 		if err != nil {
 			return fmt.Errorf("Error constructing submit URL for QueryTemplate %q: %s", d.Id(), err)
 		}
@@ -695,7 +693,7 @@ func resourceBigqueryAnalyticsHubQueryTemplateDelete(d *schema.ResourceData, met
 
 	deletionPolicy := d.Get("deletion_policy").(string)
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{BigqueryAnalyticsHubBasePath}}projects/{{project}}/locations/{{location}}/dataExchanges/{{data_exchange_id}}/queryTemplates/{{query_template_id}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/dataExchanges/{{data_exchange_id}}/queryTemplates/{{query_template_id}}")
 	if err != nil {
 		return err
 	}

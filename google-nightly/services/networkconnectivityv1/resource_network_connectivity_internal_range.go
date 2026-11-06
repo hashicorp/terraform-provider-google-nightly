@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -54,6 +53,10 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
+import "errors"
+
+var _ = errors.New
+
 var (
 	_ = bytes.Clone
 	_ = context.WithCancel
@@ -69,7 +72,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -778,7 +780,7 @@ func resourceNetworkConnectivityv1InternalRangeDelete(d *schema.ResourceData, me
 	}
 
 	var url string
-	url, err = tpgresource.ReplaceVars(d, config, "{{NetworkConnectivityv1BasePath}}projects/{{project}}/locations/global/internalRanges/{{name}}")
+	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/global/internalRanges/{{name}}")
 	if err != nil {
 		return err
 	}
@@ -814,7 +816,8 @@ func resourceNetworkConnectivityv1InternalRangeDelete(d *schema.ResourceData, me
 				return nil
 			}
 			// If operation wait failed with "already being used", retry the whole delete
-			if gerr, ok := errwrap.GetType(err, &googleapi.Error{}).(*googleapi.Error); ok && gerr != nil && gerr.Code == 400 && strings.Contains(gerr.Message, "already being used") {
+			var gerr *googleapi.Error
+			if errors.As(err, &gerr) && gerr != nil && gerr.Code == 400 && strings.Contains(gerr.Message, "already being used") {
 				log.Printf("[DEBUG] InternalRange %q is still in use during operation wait, retrying in 5s...", d.Id())
 				time.Sleep(5 * config.SleepUnit)
 				continue
@@ -823,7 +826,8 @@ func resourceNetworkConnectivityv1InternalRangeDelete(d *schema.ResourceData, me
 		}
 
 		// If DELETE request failed with "already being used", retry
-		if gerr, ok := errwrap.GetType(err, &googleapi.Error{}).(*googleapi.Error); ok && gerr != nil && gerr.Code == 400 && strings.Contains(gerr.Message, "already being used") {
+		var gerr *googleapi.Error
+		if errors.As(err, &gerr) && gerr != nil && gerr.Code == 400 && strings.Contains(gerr.Message, "already being used") {
 			log.Printf("[DEBUG] InternalRange %q is still in use, retrying in 5s...", d.Id())
 			time.Sleep(5 * config.SleepUnit)
 			continue

@@ -81,7 +81,7 @@ func TestAccIamConnectorsConnector_iamConnectorsConnectorBasicExample(t *testing
 			},
 			{
 				ResourceName:       "google_iam_connectors_connector.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -134,7 +134,7 @@ func TestAccIamConnectorsConnector_iamConnectorsConnectorGeminiEnterpriseExample
 			},
 			{
 				ResourceName:       "google_iam_connectors_connector.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -187,7 +187,7 @@ func TestAccIamConnectorsConnector_iamConnectorsConnectorThreeLeggedExample(t *t
 			},
 			{
 				ResourceName:       "google_iam_connectors_connector.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -246,7 +246,7 @@ func TestAccIamConnectorsConnector_iamConnectorsConnectorTwoLeggedExample(t *tes
 			},
 			{
 				ResourceName:       "google_iam_connectors_connector.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

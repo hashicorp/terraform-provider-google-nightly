@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -198,7 +196,6 @@ func ResourceClouddeployAutomation() *schema.Resource {
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"promote_release_rule": {
 							Type:        schema.TypeList,
@@ -229,7 +226,6 @@ func ResourceClouddeployAutomation() *schema.Resource {
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"repair_rollout_rule": {
 							Type:        schema.TypeList,
@@ -290,7 +286,6 @@ func ResourceClouddeployAutomation() *schema.Resource {
 															},
 														},
 													},
-													ExactlyOneOf: []string{},
 												},
 												"rollback": {
 													Type:        schema.TypeList,
@@ -311,14 +306,12 @@ func ResourceClouddeployAutomation() *schema.Resource {
 															},
 														},
 													},
-													ExactlyOneOf: []string{},
 												},
 											},
 										},
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"timed_promote_release_rule": {
 							Type:        schema.TypeList,
@@ -356,7 +349,6 @@ func ResourceClouddeployAutomation() *schema.Resource {
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 					},
 				},

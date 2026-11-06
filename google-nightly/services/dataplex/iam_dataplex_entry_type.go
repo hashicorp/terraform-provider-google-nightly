@@ -24,7 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"google.golang.org/api/cloudresourcemanager/v1"
 
@@ -37,7 +36,6 @@ import (
 var (
 	_ = regexp.Match
 	_ = strings.Trim
-	_ = errwrap.Wrap
 	_ = schema.Noop
 )
 
@@ -46,7 +44,7 @@ func init() {
 		Name:        "google_dataplex_entry_type_iam_binding",
 		ProductName: "Dataplex",
 		Type:        registry.SchemaTypeIAMResource,
-		Schema:      tpgiamresource.ResourceIamBinding(DataplexEntryTypeIamSchema, DataplexEntryTypeIamUpdaterProducer, DataplexEntryTypeIdParseFunc),
+		Schema:      tpgiamresource.ResourceIamBinding(DataplexEntryTypeIamSchema, DataplexEntryTypeIamUpdaterProducer, DataplexEntryTypeIdParseFunc, tpgiamresource.IamWithMaxBackoffSeconds(1200)),
 	}.Register()
 	registry.Schema{
 		Name:        "google_dataplex_entry_type_iam_member",
@@ -77,6 +75,7 @@ func NewDataplexEntryTypeIamMemberResource() *schema.Resource {
 		DataplexEntryTypeIamUpdaterProducer,
 		DataplexEntryTypeIdParseFunc,
 		tpgiamresource.IamWithParentResourceIdentity(DataplexEntryTypeIamParentParentResourceIdentityParser),
+		tpgiamresource.IamWithMaxBackoffSeconds(1200),
 	)
 }
 
@@ -275,7 +274,7 @@ func (u *DataplexEntryTypeIamUpdater) SetResourceIamPolicy(policy *cloudresource
 }
 
 func (u *DataplexEntryTypeIamUpdater) qualifyEntryTypeUrl(methodIdentifier string) (string, error) {
-	urlTemplate := fmt.Sprintf("{{DataplexBasePath}}%s:%s", fmt.Sprintf("projects/%s/locations/%s/entryTypes/%s", u.project, u.location, u.entryTypeId), methodIdentifier)
+	urlTemplate := fmt.Sprintf(transport_tpg.BaseUrl(Product, u.Config)+"%s:%s", fmt.Sprintf("projects/%s/locations/%s/entryTypes/%s", u.project, u.location, u.entryTypeId), methodIdentifier)
 	url, err := tpgresource.ReplaceVars(u.d, u.Config, urlTemplate)
 	if err != nil {
 		return "", err

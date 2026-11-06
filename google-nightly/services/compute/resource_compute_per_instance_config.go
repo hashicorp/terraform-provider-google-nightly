@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -745,7 +743,7 @@ func resourceComputePerInstanceConfigUpdate(d *schema.ResourceData, meta interfa
 	}
 	obj["mostDisruptiveAllowedAction"] = mostDisruptiveAction
 
-	url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/applyUpdatesToInstances")
+	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/applyUpdatesToInstances")
 	if err != nil {
 		return err
 	}
@@ -803,9 +801,9 @@ func resourceComputePerInstanceConfigDelete(d *schema.ResourceData, meta interfa
 
 	var url string
 	if d.Get("remove_instance_on_destroy").(bool) {
-		url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/deleteInstances")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/deleteInstances")
 	} else {
-		url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/deletePerInstanceConfigs")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/deletePerInstanceConfigs")
 	}
 	if err != nil {
 		return err
@@ -851,7 +849,7 @@ func resourceComputePerInstanceConfigDelete(d *schema.ResourceData, meta interfa
 	}
 
 	if d.Get("remove_instance_on_destroy").(bool) {
-		err = transport_tpg.PollingWaitTime(resourceComputePerInstanceConfigInstancePollRead(d, meta, d.Get("name").(string)), PollCheckInstanceConfigInstanceDeleted, "Deleting PerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1)
+		err = transport_tpg.PollingWaitTime(resourceComputePerInstanceConfigInstancePollRead(d, meta, d.Get("name").(string)), PollCheckInstanceConfigInstanceDeleted, "Deleting PerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1, config.SleepUnit)
 		if err != nil {
 			return fmt.Errorf("Error waiting for instance delete on PerInstanceConfig %q: %s", d.Id(), err)
 		}
@@ -868,7 +866,7 @@ func resourceComputePerInstanceConfigDelete(d *schema.ResourceData, meta interfa
 		obj["instances"] = []string{instanceName}
 
 		// The deletion must be applied to the instance after the PerInstanceConfig is deleted
-		url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/applyUpdatesToInstances")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceGroupManagers/{{instance_group_manager}}/applyUpdatesToInstances")
 		if err != nil {
 			return err
 		}
@@ -896,7 +894,7 @@ func resourceComputePerInstanceConfigDelete(d *schema.ResourceData, meta interfa
 		}
 
 		// PerInstanceConfig goes into "DELETING" state while the instance is actually deleted
-		err = transport_tpg.PollingWaitTime(resourceComputePerInstanceConfigPollRead(d, meta), PollCheckInstanceConfigDeleted, "Deleting PerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1)
+		err = transport_tpg.PollingWaitTime(resourceComputePerInstanceConfigPollRead(d, meta), PollCheckInstanceConfigDeleted, "Deleting PerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1, config.SleepUnit)
 		if err != nil {
 			return fmt.Errorf("Error waiting for delete on PerInstanceConfig %q: %s", d.Id(), err)
 		}

@@ -83,7 +83,7 @@ func TestAccGeminiDataAnalyticsDataAgent_geminiDataAnalyticsDataAgentBasicExampl
 			},
 			{
 				ResourceName:       "google_gemini_data_analytics_data_agent.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -150,7 +150,7 @@ func TestAccGeminiDataAnalyticsDataAgent_geminiDataAnalyticsDataAgentBigqueryExa
 			},
 			{
 				ResourceName:       "google_gemini_data_analytics_data_agent.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -320,7 +320,7 @@ func TestAccGeminiDataAnalyticsDataAgent_geminiDataAnalyticsDataAgentCmekExample
 			},
 			{
 				ResourceName:       "google_gemini_data_analytics_data_agent.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -380,7 +380,7 @@ func testAccCheckGeminiDataAnalyticsDataAgentDestroyProducer(t *testing.T) func(
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{GeminiDataAnalyticsBasePath}}projects/{{project}}/locations/{{location}}/dataAgents/{{data_agent_id}}")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(geminidataanalytics.Product, config)+"projects/{{project}}/locations/{{location}}/dataAgents/{{data_agent_id}}")
 			if err != nil {
 				return err
 			}

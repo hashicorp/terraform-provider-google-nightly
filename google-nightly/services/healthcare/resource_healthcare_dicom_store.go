@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -600,6 +598,17 @@ func resourceHealthcareDicomStoreDelete(d *schema.ResourceData, meta interface{}
 func resourceHealthcareDicomStoreImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 
 	config := meta.(*transport_tpg.Config)
+
+	if d.Id() == "" {
+		if err := tpgresource.ParseImportId([]string{"(?P<dataset>.+)/dicomStores/(?P<name>[^/]+)"}, d, config); err != nil {
+			return nil, err
+		}
+		id, err := tpgresource.ReplaceVars(d, config, "{{dataset}}/dicomStores/{{name}}")
+		if err != nil {
+			return nil, fmt.Errorf("Error constructing id: %s", err)
+		}
+		d.SetId(id)
+	}
 
 	dicomStoreId, err := ParseHealthcareDicomStoreId(d.Id(), config)
 	if err != nil {

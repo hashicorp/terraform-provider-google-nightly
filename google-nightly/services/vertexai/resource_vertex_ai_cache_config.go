@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -136,6 +134,13 @@ func ResourceVertexAICacheConfig() *schema.Resource {
 				Type:        schema.TypeBool,
 				Required:    true,
 				Description: `If set to true, disables GenAI caching. Otherwise caching is enabled.`,
+			},
+			"region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Description: `The region of the Vertex AI API endpoint used to manage the cache config, e.g. 'us-central1'.
+The cache config is a project-level setting, so this only selects which regional endpoint
+requests are sent to. If not specified, the provider-level region is used.`,
 			},
 			"name": {
 				Type:        schema.TypeString,

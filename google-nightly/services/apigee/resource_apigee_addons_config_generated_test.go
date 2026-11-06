@@ -87,7 +87,7 @@ func TestAccApigeeAddonsConfig_apigeeAddonsTestExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_apigee_addons_config.apigee_org_addons",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -201,7 +201,7 @@ func testAccCheckApigeeAddonsConfigDestroyProducer(t *testing.T) func(s *terrafo
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{ApigeeBasePath}}organizations/{{org}}")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(apigee.Product, config)+"organizations/{{org}}")
 			if err != nil {
 				return err
 			}

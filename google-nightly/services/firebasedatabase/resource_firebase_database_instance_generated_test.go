@@ -83,7 +83,7 @@ func TestAccFirebaseDatabaseInstance_firebaseDatabaseInstanceBasicExample(t *tes
 			},
 			{
 				ResourceName:       "google_firebase_database_instance.basic",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -129,7 +129,7 @@ func TestAccFirebaseDatabaseInstance_firebaseDatabaseInstanceFullExample(t *test
 			},
 			{
 				ResourceName:       "google_firebase_database_instance.full",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -180,7 +180,7 @@ func TestAccFirebaseDatabaseInstance_firebaseDatabaseInstanceDefaultDatabaseExam
 			},
 			{
 				ResourceName:       "google_firebase_database_instance.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -248,7 +248,7 @@ func testAccCheckFirebaseDatabaseInstanceDestroyProducer(t *testing.T) func(s *t
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{FirebaseDatabaseBasePath}}projects/{{project}}/locations/{{region}}/instances/{{instance_id}}")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(firebasedatabase.Product, config)+"projects/{{project}}/locations/{{region}}/instances/{{instance_id}}")
 			if err != nil {
 				return err
 			}
