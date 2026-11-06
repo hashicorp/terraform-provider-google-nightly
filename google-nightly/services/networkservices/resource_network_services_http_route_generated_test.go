@@ -80,7 +80,7 @@ func TestAccNetworkServicesHttpRoute_networkServicesHttpRouteBasicExample(t *tes
 			},
 			{
 				ResourceName:       "google_network_services_http_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -136,7 +136,7 @@ func TestAccNetworkServicesHttpRoute_networkServicesHttpRouteMatchesAndActionsEx
 			},
 			{
 				ResourceName:       "google_network_services_http_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -258,7 +258,7 @@ func TestAccNetworkServicesHttpRoute_networkServicesHttpRouteActionsExample(t *t
 			},
 			{
 				ResourceName:       "google_network_services_http_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -301,6 +301,7 @@ resource "google_network_services_http_route" "default" {
           service_name = "new"
           weight = 1
         }
+        mirror_percent = 50
       }
       cors_policy {
         allow_origins = ["example"]
@@ -321,6 +322,7 @@ resource "google_network_services_http_route" "default" {
         add = { "minor-version": "1"}
         remove = ["removearg"]
       }
+      idle_timeout = "1s"
     }
   }
 }
@@ -354,7 +356,7 @@ func TestAccNetworkServicesHttpRoute_networkServicesHttpRouteMeshBasicExample(t 
 			},
 			{
 				ResourceName:       "google_network_services_http_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

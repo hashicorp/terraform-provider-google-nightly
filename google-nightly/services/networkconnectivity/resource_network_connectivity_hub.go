@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -119,14 +117,6 @@ func ResourceNetworkConnectivityHub() *schema.Resource {
 		),
 
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:             schema.TypeString,
-				Computed:         true,
-				Optional:         true,
-				ForceNew:         true,
-				DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
-				Description:      `Immutable. The name of the hub. Hub names must be unique. They use the following form: 'projects/{project_number}/locations/global/hubs/{hub_id}'`,
-			},
 			"description": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -168,6 +158,14 @@ If 'export_psc' is true, at least one of 'published_services_and_regional_google
 **Note**: This field is non-authoritative, and will only manage the labels present in your configuration.
 Please refer to the field 'effective_labels' for all of the labels present on the resource.`,
 				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+			"name": {
+				Type:             schema.TypeString,
+				Computed:         true,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: tpgresource.CompareSelfLinkOrResourceName,
+				Description:      `Immutable. The name of the hub. Hub names must be unique. They use the following form: 'projects/{project_number}/locations/global/hubs/{hub_id}'`,
 			},
 			"policy_mode": {
 				Type:         schema.TypeString,
@@ -211,10 +209,9 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 				},
 			},
 			"state": {
-				Type:         schema.TypeString,
-				Computed:     true,
-				Description:  `Output only. The current lifecycle state of this hub.`,
-				ExactlyOneOf: []string{},
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: `Output only. The current lifecycle state of this hub.`,
 			},
 			"terraform_labels": {
 				Type:     schema.TypeMap,

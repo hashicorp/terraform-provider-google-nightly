@@ -81,7 +81,7 @@ func TestAccBigqueryReservationReservationAssignment_bigqueryReservationAssignme
 			},
 			{
 				ResourceName:       "google_bigquery_reservation_assignment.assignment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -114,6 +114,7 @@ func TestAccBigqueryReservationReservationAssignment_bigqueryReservationAssignme
 
 	context := map[string]interface{}{
 		"project":          envvar.GetTestProjectFromEnv(),
+		"principal":        nil,
 		"reservation_name": "tf-test-example-reservation" + randomSuffix,
 		"random_suffix":    randomSuffix,
 	}
@@ -134,7 +135,7 @@ func TestAccBigqueryReservationReservationAssignment_bigqueryReservationAssignme
 			},
 			{
 				ResourceName:       "google_bigquery_reservation_assignment.assignment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -157,6 +158,7 @@ resource "google_bigquery_reservation_assignment" "assignment" {
   job_type = "QUERY"
   location = "us-central1"
   reservation = google_bigquery_reservation.basic.id
+  principal = "%{principal}"
 }
 `, context)
 }
@@ -168,7 +170,7 @@ func TestAccBigqueryReservationReservationAssignment_bigqueryReservationAssignme
 
 	context := map[string]interface{}{
 		"project":          envvar.GetTestProjectFromEnv(),
-		"service_account":  envvar.GetTestServiceAccountFromEnv(t),
+		"principal":        fmt.Sprintf("principal://iam.googleapis.com/projects/-/serviceAccounts/%s", envvar.GetTestServiceAccountFromEnv(t)),
 		"reservation_name": "tf-test-example-reservation" + randomSuffix,
 		"random_suffix":    randomSuffix,
 	}
@@ -189,7 +191,7 @@ func TestAccBigqueryReservationReservationAssignment_bigqueryReservationAssignme
 			},
 			{
 				ResourceName:       "google_bigquery_reservation_assignment.assignment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -211,8 +213,8 @@ resource "google_bigquery_reservation_assignment" "assignment" {
   assignee  = "projects/%{project}"
   job_type = "QUERY"
   location = "us-central1"
-  principal = "principal://iam.googleapis.com/projects/-/serviceAccounts/%{service_account}"
   reservation = google_bigquery_reservation.basic.id
+  principal = "%{principal}"
 }
 `, context)
 }
@@ -244,7 +246,7 @@ func TestAccBigqueryReservationReservationAssignment_bigqueryReservationAssignme
 			},
 			{
 				ResourceName:       "google_bigquery_reservation_assignment.assignment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

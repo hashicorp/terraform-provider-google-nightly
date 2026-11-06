@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -233,7 +232,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -989,7 +987,6 @@ by a locally installed custom policy implementation.`,
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"policy": {
 							Type:        schema.TypeList,
@@ -1040,7 +1037,6 @@ The possible values are:
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 					},
 				},
@@ -1507,7 +1503,7 @@ alt name matches one of the specified values.`,
 				Type:     schema.TypeString,
 				Optional: true,
 				Description: `URL to networkservices.ServiceLbPolicy resource.
-Can only be set if load balancing scheme is EXTERNAL_MANAGED, INTERNAL_MANAGED or INTERNAL_SELF_MANAGED for a global backend service, and EXTERNAL_MANAGED or INTERNAL_MANAGED for a regional backend service. For a global backend service, the service lb policy must be global. For a regional backend service, the service lb policy must be regional and in the same region.`,
+Can only be set if load balancing scheme is EXTERNAL_MANAGED, INTERNAL_MANAGED or INTERNAL_SELF_MANAGED. For a global backend service, the service lb policy must be global. For a regional backend service, the service lb policy must be regional and in the same region.`,
 			},
 			"session_affinity": {
 				Type:         schema.TypeString,
@@ -1619,16 +1615,14 @@ subjectAltNames.`,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"dns_name": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										Description:  `The SAN specified as a DNS Name.`,
-										ExactlyOneOf: []string{},
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The SAN specified as a DNS Name.`,
 									},
 									"uniform_resource_identifier": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										Description:  `The SAN specified as a URI.`,
-										ExactlyOneOf: []string{},
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The SAN specified as a URI.`,
 									},
 								},
 							},
@@ -2186,7 +2180,7 @@ func resourceComputeBackendServiceCreate(d *schema.ResourceData, meta interface{
 	if o, n := d.GetChange("security_policy"); o.(string) != n.(string) {
 		pol, err := tpgresource.ParseSecurityPolicyFieldValue(n.(string), d, config)
 		if err != nil {
-			return errwrap.Wrapf("Error parsing Backend Service security policy: {{err}}", err)
+			return fmt.Errorf("Error parsing Backend Service security policy: %w", err)
 		}
 
 		sBody := emptySecurityPolicyReference()
@@ -2194,7 +2188,7 @@ func resourceComputeBackendServiceCreate(d *schema.ResourceData, meta interface{
 			sBody["securityPolicy"] = link
 		}
 
-		securityPolicyPath := "{{ComputeBasePath}}projects/{{project}}/global/backendServices/{{name}}/setSecurityPolicy?prettyPrint=false"
+		securityPolicyPath := transport_tpg.BaseUrl(Product, config) + "projects/{{project}}/global/backendServices/{{name}}/setSecurityPolicy?prettyPrint=false"
 		sUrl, err := tpgresource.ReplaceVars(d, config, securityPolicyPath)
 		if err != nil {
 			return err
@@ -2211,7 +2205,7 @@ func resourceComputeBackendServiceCreate(d *schema.ResourceData, meta interface{
 		})
 
 		if err != nil {
-			return errwrap.Wrapf("Error setting Backend Service security policy: {{err}}", err)
+			return fmt.Errorf("Error setting Backend Service security policy: %w", err)
 		}
 		// This uses the create timeout for simplicity, though technically this code appears in both create and update
 		err = ComputeOperationWaitTime(config, res, project, "Setting Backend Service Security Policy", userAgent, d.Timeout(schema.TimeoutCreate))
@@ -2223,7 +2217,7 @@ func resourceComputeBackendServiceCreate(d *schema.ResourceData, meta interface{
 	if o, n := d.GetChange("edge_security_policy"); o.(string) != n.(string) {
 		pol, err := tpgresource.ParseSecurityPolicyFieldValue(n.(string), d, config)
 		if err != nil {
-			return errwrap.Wrapf("Error parsing Backend Service edge security policy: {{err}}", err)
+			return fmt.Errorf("Error parsing Backend Service edge security policy: %w", err)
 		}
 
 		eBody := emptySecurityPolicyReference()
@@ -2231,7 +2225,7 @@ func resourceComputeBackendServiceCreate(d *schema.ResourceData, meta interface{
 			eBody["securityPolicy"] = link
 		}
 
-		edgeSecurityPolicyPath := "{{ComputeBasePath}}projects/{{project}}/global/backendServices/{{name}}/setEdgeSecurityPolicy?prettyPrint=false"
+		edgeSecurityPolicyPath := transport_tpg.BaseUrl(Product, config) + "projects/{{project}}/global/backendServices/{{name}}/setEdgeSecurityPolicy?prettyPrint=false"
 		eUrl, err := tpgresource.ReplaceVars(d, config, edgeSecurityPolicyPath)
 		if err != nil {
 			return err
@@ -2247,7 +2241,7 @@ func resourceComputeBackendServiceCreate(d *schema.ResourceData, meta interface{
 			Headers:   headers,
 		})
 		if err != nil {
-			return errwrap.Wrapf("Error setting Backend Service edge security policy: {{err}}", err)
+			return fmt.Errorf("Error setting Backend Service edge security policy: %w", err)
 		}
 		// This uses the create timeout for simplicity, though technically this code appears in both create and update
 		err = ComputeOperationWaitTime(config, res, project, "Setting Backend Service Edge Security Policy", userAgent, d.Timeout(schema.TimeoutCreate))
@@ -2692,7 +2686,7 @@ func resourceComputeBackendServiceUpdate(d *schema.ResourceData, meta interface{
 	if o, n := d.GetChange("security_policy"); o.(string) != n.(string) {
 		pol, err := tpgresource.ParseSecurityPolicyFieldValue(n.(string), d, config)
 		if err != nil {
-			return errwrap.Wrapf("Error parsing Backend Service security policy: {{err}}", err)
+			return fmt.Errorf("Error parsing Backend Service security policy: %w", err)
 		}
 
 		sBody := emptySecurityPolicyReference()
@@ -2700,7 +2694,7 @@ func resourceComputeBackendServiceUpdate(d *schema.ResourceData, meta interface{
 			sBody["securityPolicy"] = link
 		}
 
-		securityPolicyPath := "{{ComputeBasePath}}projects/{{project}}/global/backendServices/{{name}}/setSecurityPolicy?prettyPrint=false"
+		securityPolicyPath := transport_tpg.BaseUrl(Product, config) + "projects/{{project}}/global/backendServices/{{name}}/setSecurityPolicy?prettyPrint=false"
 		sUrl, err := tpgresource.ReplaceVars(d, config, securityPolicyPath)
 		if err != nil {
 			return err
@@ -2717,7 +2711,7 @@ func resourceComputeBackendServiceUpdate(d *schema.ResourceData, meta interface{
 		})
 
 		if err != nil {
-			return errwrap.Wrapf("Error setting Backend Service security policy: {{err}}", err)
+			return fmt.Errorf("Error setting Backend Service security policy: %w", err)
 		}
 		// This uses the create timeout for simplicity, though technically this code appears in both create and update
 		err = ComputeOperationWaitTime(config, res, project, "Setting Backend Service Security Policy", userAgent, d.Timeout(schema.TimeoutCreate))
@@ -2729,7 +2723,7 @@ func resourceComputeBackendServiceUpdate(d *schema.ResourceData, meta interface{
 	if o, n := d.GetChange("edge_security_policy"); o.(string) != n.(string) {
 		pol, err := tpgresource.ParseSecurityPolicyFieldValue(n.(string), d, config)
 		if err != nil {
-			return errwrap.Wrapf("Error parsing Backend Service edge security policy: {{err}}", err)
+			return fmt.Errorf("Error parsing Backend Service edge security policy: %w", err)
 		}
 
 		eBody := emptySecurityPolicyReference()
@@ -2737,7 +2731,7 @@ func resourceComputeBackendServiceUpdate(d *schema.ResourceData, meta interface{
 			eBody["securityPolicy"] = link
 		}
 
-		edgeSecurityPolicyPath := "{{ComputeBasePath}}projects/{{project}}/global/backendServices/{{name}}/setEdgeSecurityPolicy?prettyPrint=false"
+		edgeSecurityPolicyPath := transport_tpg.BaseUrl(Product, config) + "projects/{{project}}/global/backendServices/{{name}}/setEdgeSecurityPolicy?prettyPrint=false"
 		eUrl, err := tpgresource.ReplaceVars(d, config, edgeSecurityPolicyPath)
 		if err != nil {
 			return err
@@ -2753,7 +2747,7 @@ func resourceComputeBackendServiceUpdate(d *schema.ResourceData, meta interface{
 			Headers:   headers,
 		})
 		if err != nil {
-			return errwrap.Wrapf("Error setting Backend Service edge security policy: {{err}}", err)
+			return fmt.Errorf("Error setting Backend Service edge security policy: %w", err)
 		}
 		// This uses the create timeout for simplicity, though technically this code appears in both create and update
 		err = ComputeOperationWaitTime(config, res, project, "Setting Backend Service Edge Security Policy", userAgent, d.Timeout(schema.TimeoutCreate))

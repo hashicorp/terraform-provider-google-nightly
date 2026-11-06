@@ -84,7 +84,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceBasicExample(t *tes
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -143,7 +143,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceDeletionProtectionE
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -204,7 +204,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceCmekTestExample(t *
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -279,7 +279,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceEndpointExample(t *
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.endpoint",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -328,7 +328,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceAuxExample(t *testi
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.aux",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -380,7 +380,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceMetadataExample(t *
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.metadata",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -432,11 +432,11 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServicePrivateServiceConne
 				ResourceName:            "google_dataproc_metastore_service.default",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"labels", "location", "service_id", "tags", "terraform_labels"},
+				ImportStateVerifyIgnore: []string{"deletion_policy", "labels", "location", "service_id", "tags", "terraform_labels"},
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -460,9 +460,10 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 resource "google_dataproc_metastore_service" "default" {
-  service_id = "%{metastore_service_name}"
-  location   = "us-central1"
-  tier       = "DEVELOPER"
+  service_id      = "%{metastore_service_name}"
+  location        = "us-central1"
+  tier            = "DEVELOPER"
+  deletion_policy = "FORCE"
 
   hive_metastore_config {
     version = "3.1.2"
@@ -503,7 +504,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceTelemetryExample(t 
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.telemetry",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -536,7 +537,9 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceDpms2Example(t *tes
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
+		"instance_size":          "EXTRA_SMALL",
 		"metastore_service_name": "tf-test-ms-dpms2" + randomSuffix,
+		"scaling_factor":         nil,
 		"random_suffix":          randomSuffix,
 	}
 
@@ -556,7 +559,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceDpms2Example(t *tes
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.dpms2",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -579,7 +582,8 @@ resource "google_dataproc_metastore_service" "dpms2" {
   }
 
   scaling_config {
-    instance_size = "EXTRA_SMALL"
+    instance_size  = "%{instance_size}"
+    scaling_factor = "%{scaling_factor}"
   }
 }
 `, context)
@@ -591,7 +595,9 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceDpms2ScalingFactorE
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
+		"instance_size":          nil,
 		"metastore_service_name": "tf-test-ms-dpms2sf" + randomSuffix,
+		"scaling_factor":         2,
 		"random_suffix":          randomSuffix,
 	}
 
@@ -611,7 +617,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceDpms2ScalingFactorE
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.dpms2_scaling_factor",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -634,7 +640,8 @@ resource "google_dataproc_metastore_service" "dpms2_scaling_factor" {
   }
 
   scaling_config {
-    scaling_factor = "2"
+    instance_size  = "%{instance_size}"
+    scaling_factor = "%{scaling_factor}"
   }
 }
 `, context)
@@ -646,7 +653,9 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceDpms2ScalingFactorL
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
+		"instance_size":          nil,
 		"metastore_service_name": "tf-test-ms-dpms2sflt1" + randomSuffix,
+		"scaling_factor":         "0.1",
 		"random_suffix":          randomSuffix,
 	}
 
@@ -666,7 +675,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceDpms2ScalingFactorL
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.dpms2_scaling_factor_lt1",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -689,7 +698,8 @@ resource "google_dataproc_metastore_service" "dpms2_scaling_factor_lt1" {
   }
 
   scaling_config {
-    scaling_factor = "0.1"
+    instance_size  = "%{instance_size}"
+    scaling_factor = "%{scaling_factor}"
   }
 }
 `, context)
@@ -721,7 +731,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceScheduledBackupExam
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.backup",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -791,7 +801,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceAutoscalingMaxScali
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.test_resource",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -851,7 +861,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceAutoscalingMinAndMa
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.test_resource",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -912,7 +922,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceAutoscalingMinScali
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.test_resource",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -972,7 +982,7 @@ func TestAccDataprocMetastoreService_dataprocMetastoreServiceAutoscalingNoLimitC
 			},
 			{
 				ResourceName:       "google_dataproc_metastore_service.test_resource",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

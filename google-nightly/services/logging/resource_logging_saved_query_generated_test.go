@@ -61,7 +61,9 @@ func TestAccLoggingSavedQuery_loggingSavedQueryBasicExample(t *testing.T) {
 
 	context := map[string]interface{}{
 		"project":                  envvar.GetTestProjectFromEnv(),
+		"description":              "A saved query",
 		"logging_saved_query_name": "tf-test-my-saved-query" + randomSuffix,
+		"visibility":               "SHARED",
 		"random_suffix":            randomSuffix,
 	}
 
@@ -81,7 +83,7 @@ func TestAccLoggingSavedQuery_loggingSavedQueryBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_logging_saved_query.saved_query",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -96,11 +98,11 @@ resource "google_logging_saved_query" "saved_query" {
   display_name = "My Saved Query"
   parent       = "projects/%{project}"
   location     = "global"
-  description  = "A saved query"
+  description  = "%{description}"
   logging_query {
     filter = "resource.type=gce_instance"
   }
-  visibility = "SHARED"
+  visibility = "%{visibility}"
 }
 `, context)
 }
@@ -112,7 +114,9 @@ func TestAccLoggingSavedQuery_loggingSavedQueryNoDescriptionExample(t *testing.T
 
 	context := map[string]interface{}{
 		"project":                  envvar.GetTestProjectFromEnv(),
+		"description":              nil,
 		"logging_saved_query_name": "tf-test-my-saved-query-no-description" + randomSuffix,
+		"visibility":               "SHARED",
 		"random_suffix":            randomSuffix,
 	}
 
@@ -132,7 +136,7 @@ func TestAccLoggingSavedQuery_loggingSavedQueryNoDescriptionExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_logging_saved_query.saved_query",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -147,10 +151,11 @@ resource "google_logging_saved_query" "saved_query" {
   display_name = "My Saved Query"
   parent       = "projects/%{project}"
   location     = "global"
+  description  = "%{description}"
   logging_query {
     filter = "resource.type=gce_instance"
   }
-  visibility = "SHARED"
+  visibility = "%{visibility}"
 }
 `, context)
 }
@@ -162,7 +167,9 @@ func TestAccLoggingSavedQuery_loggingSavedQueryPrivateExample(t *testing.T) {
 
 	context := map[string]interface{}{
 		"project":                  envvar.GetTestProjectFromEnv(),
+		"description":              "A saved query",
 		"logging_saved_query_name": "tf-test-my-saved-query-private" + randomSuffix,
+		"visibility":               "PRIVATE",
 		"random_suffix":            randomSuffix,
 	}
 
@@ -182,7 +189,7 @@ func TestAccLoggingSavedQuery_loggingSavedQueryPrivateExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_logging_saved_query.saved_query",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -197,11 +204,11 @@ resource "google_logging_saved_query" "saved_query" {
   display_name = "My Saved Query"
   parent       = "projects/%{project}"
   location     = "global"
-  description  = "A saved query"
+  description  = "%{description}"
   logging_query {
     filter = "resource.type=gce_instance"
   }
-  visibility = "PRIVATE"
+  visibility = "%{visibility}"
 }
 `, context)
 }
@@ -233,7 +240,7 @@ func TestAccLoggingSavedQuery_loggingSavedQuerySummaryFieldsExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_logging_saved_query.saved_query",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -291,7 +298,7 @@ func TestAccLoggingSavedQuery_loggingSavedQuerySqlBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_logging_saved_query.saved_query",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

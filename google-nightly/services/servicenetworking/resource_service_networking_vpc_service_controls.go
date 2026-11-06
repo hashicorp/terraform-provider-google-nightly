@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -75,7 +74,7 @@ func resourceServiceNetworkingVPCServiceControlsSet(d *schema.ResourceData, meta
 	obj := make(map[string]interface{})
 	obj["consumerNetwork"] = fmt.Sprintf("projects/%s/global/networks/%s", projectNumber, network)
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{ServiceNetworkingBasePath}}services/{{service}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"services/{{service}}")
 	if err != nil {
 		return err
 	}
@@ -148,7 +147,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -237,6 +235,7 @@ functionality, this value is 'servicenetworking.googleapis.com'.`,
 			},
 			"project": {
 				Type:        schema.TypeString,
+				Computed:    true,
 				Optional:    true,
 				ForceNew:    true,
 				Description: `The id of the Google Cloud project containing the consumer network.`,
@@ -275,6 +274,9 @@ func resourceServiceNetworkingVPCServiceControlsRead(d *schema.ResourceData, met
 	if err != nil {
 		return err
 	}
+	if err := d.Set("project", project); err != nil {
+		return fmt.Errorf("Error reading VPCServiceControls: %s", err)
+	}
 	projectNumber, err := getProjectNumber(d, config, project, userAgent)
 	if err != nil {
 		return err
@@ -283,7 +285,7 @@ func resourceServiceNetworkingVPCServiceControlsRead(d *schema.ResourceData, met
 	service := d.Get("service").(string)
 	network := d.Get("network").(string)
 	parent := fmt.Sprintf("services/%s/projects/%s/global/networks/%s", service, projectNumber, network)
-	url, err = tpgresource.ReplaceVars(d, config, "{{ServiceNetworkingBasePath}}"+parent+"/vpcServiceControls")
+	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+parent+"/vpcServiceControls")
 	if err != nil {
 		return err
 	}

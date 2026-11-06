@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -76,7 +75,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -162,6 +160,7 @@ func ResourceBigqueryReservationCapacityCommitment() *schema.Resource {
 			},
 			"capacity_commitment_id": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
 				ForceNew: true,
 				Description: `The optional capacity commitment ID. Capacity commitment name will be generated automatically if this field is
@@ -383,6 +382,11 @@ func resourceBigqueryReservationCapacityCommitmentRead(d *schema.ResourceData, m
 	}
 
 	log.Printf("[DEBUG] Finished reading BigqueryReservationCapacityCommitment %q: %#v", d.Id(), res)
+	if name, ok := res["name"].(string); ok && name != "" {
+		if err := d.Set("capacity_commitment_id", tpgresource.GetResourceNameFromSelfLink(name)); err != nil {
+			return fmt.Errorf("Error setting capacity_commitment_id: %s", err)
+		}
+	}
 
 	// Explicitly set virtual fields to default values if unset
 	if _, ok := d.GetOkExists("deletion_policy"); !ok {

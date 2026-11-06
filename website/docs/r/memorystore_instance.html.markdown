@@ -47,7 +47,7 @@ resource "google_memorystore_instance" "instance-basic" {
     network    = google_compute_network.producer_net.id
     project_id = data.google_project.project.project_id
   }
-  location                    = "us-east4"
+  location                    = "northamerica-south1"
   node_type                   = "SHARED_CORE_NANO"
   deletion_protection_enabled = false
   maintenance_policy {
@@ -72,7 +72,7 @@ resource "google_memorystore_instance" "instance-basic" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name          = "my-policy"
-  location      = "us-east4"
+  location      = "northamerica-south1"
   service_class = "gcp-memorystore"
   description   = "my basic service connection policy"
   network       = google_compute_network.producer_net.id
@@ -84,7 +84,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "my-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-east4"
+  region        = "northamerica-south1"
   network       = google_compute_network.producer_net.id
 }
 
@@ -113,7 +113,7 @@ resource "google_memorystore_instance" "instance-full" {
     network                    = google_compute_network.producer_net.id
     project_id                 = data.google_project.project.project_id
   }     
-  location                     = "us-east4"
+  location                     = "northamerica-south1"
   replica_count                = 1
   node_type                    = "SHARED_CORE_NANO"
   transit_encryption_mode      = "TRANSIT_ENCRYPTION_DISABLED"
@@ -124,7 +124,7 @@ resource "google_memorystore_instance" "instance-full" {
   }
   zone_distribution_config {
     mode                       = "SINGLE_ZONE"
-    zone                       = "us-east4-a"
+    zone                       = "northamerica-south1-a"
   }
   maintenance_policy {
     weekly_maintenance_window {
@@ -161,7 +161,7 @@ resource "google_memorystore_instance" "instance-full" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name          = "my-policy"
-  location      = "us-east4"
+  location      = "northamerica-south1"
   service_class = "gcp-memorystore"
   description   = "my basic service connection policy"
   network       = google_compute_network.producer_net.id
@@ -173,7 +173,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "my-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-east4"
+  region        = "northamerica-south1"
   network       = google_compute_network.producer_net.id
 }
 
@@ -202,7 +202,7 @@ resource "google_memorystore_instance" "instance-persistence-aof" {
     network    = google_compute_network.producer_net.id
     project_id = data.google_project.project.project_id
   }
-  location = "us-east4"
+  location = "northamerica-south1"
   node_type = "SHARED_CORE_NANO"
   persistence_config {
     mode = "AOF"
@@ -221,7 +221,7 @@ resource "google_memorystore_instance" "instance-persistence-aof" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name          = "my-policy"
-  location      = "us-east4"
+  location      = "northamerica-south1"
   service_class = "gcp-memorystore"
   description   = "my basic service connection policy"
   network       = google_compute_network.producer_net.id
@@ -233,7 +233,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "my-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-east4"
+  region        = "northamerica-south1"
   network       = google_compute_network.producer_net.id
 }
 
@@ -263,7 +263,7 @@ resource "google_memorystore_instance" "primary_instance" {
     network                      = google_compute_network.primary_producer_net.id
     project_id                   = data.google_project.project.project_id
   }
-  location                       = "asia-east1"
+  location                       = "northamerica-south1"
   replica_count                  = 1
   node_type                      = "SHARED_CORE_NANO"
   transit_encryption_mode        = "TRANSIT_ENCRYPTION_DISABLED"
@@ -273,7 +273,7 @@ resource "google_memorystore_instance" "primary_instance" {
   }
   zone_distribution_config {
     mode                         = "SINGLE_ZONE"
-    zone                         = "asia-east1-c"
+    zone                         = "northamerica-south1-a"
   }
   deletion_protection_enabled    = true
   persistence_config {
@@ -295,7 +295,7 @@ resource "google_memorystore_instance" "primary_instance" {
 
 resource "google_network_connectivity_service_connection_policy" "primary_policy" {
   name                           = "my-policy-primary-instance"
-  location                       = "asia-east1"
+  location                       = "northamerica-south1"
   service_class                  = "gcp-memorystore"
   description                    = "my basic service connection policy"
   network                        = google_compute_network.primary_producer_net.id
@@ -307,7 +307,7 @@ resource "google_network_connectivity_service_connection_policy" "primary_policy
 resource "google_compute_subnetwork" "primary_producer_subnet" {
   name                           = "my-subnet-primary-instance"
   ip_cidr_range                  = "10.0.1.0/29"
-  region                         = "asia-east1"
+  region                         = "northamerica-south1"
   network                        = google_compute_network.primary_producer_net.id
 }
 
@@ -402,7 +402,7 @@ data "google_project" "project" {}
 resource "google_memorystore_instance" "test-instance" {
   instance_id  = "ca-instance"
   shard_count = 1
-  location     = "us-east4"
+  location     = "northamerica-south1"
   node_type    = "SHARED_CORE_NANO"
   
   desired_auto_created_endpoints {
@@ -426,7 +426,7 @@ resource "google_memorystore_instance" "test-instance" {
 
 resource "google_privateca_ca_pool" "default" {
   name     = "ca-pool"
-  location = "us-east4"
+  location = "northamerica-south1"
   tier     = "ENTERPRISE"
 }
 
@@ -439,7 +439,7 @@ resource "google_privateca_ca_pool_iam_member" "memorystore_p4sa_requester" {
 resource "google_privateca_certificate_authority" "default" {
   pool                     = google_privateca_ca_pool.default.name
   certificate_authority_id = "ca-auth"
-  location                 = "us-east4"
+  location                 = "northamerica-south1"
   config {
     subject_config {
       subject {
@@ -473,7 +473,7 @@ resource "google_privateca_certificate_authority" "default" {
 
 resource "google_network_connectivity_service_connection_policy" "default" {
   name           = "ca-policy"
-  location       = "us-east4"
+  location       = "northamerica-south1"
   service_class  = "gcp-memorystore"
   network        = google_compute_network.producer_net.id
   psc_config {
@@ -484,7 +484,7 @@ resource "google_network_connectivity_service_connection_policy" "default" {
 resource "google_compute_subnetwork" "producer_subnet" {
   name          = "ca-subnet"
   ip_cidr_range = "10.0.0.248/29"
-  region        = "us-east4"
+  region        = "northamerica-south1"
   network       = google_compute_network.producer_net.id
 }
 
@@ -649,7 +649,9 @@ The following arguments are supported:
 	management without updating or deleting the resource in the API.
 	When set to "DELETE", deleting the resource is allowed.
 * `desired_psc_auto_connections` - (Optional) `desired_psc_auto_connections` is deprecated  Use `desired_auto_created_endpoints` instead `terraform import` will only work with desired_auto_created_endpoints`.
+  Structure is [documented below](#nested_desired_psc_auto_connections).
 * `desired_auto_created_endpoints` - (Optional) Immutable. User inputs for the auto-created endpoints connections. 
+  Structure is [documented below](#nested_desired_auto_created_endpoints).
 
 
 <a name="nested_automated_backup_config"></a>The `automated_backup_config` block supports:
@@ -816,6 +818,16 @@ The following arguments are supported:
   SINGLE_ZONE
   Possible values are: `MULTI_ZONE`, `SINGLE_ZONE`.
 
+* `zones` -
+  (Optional)
+  Specify the zones of a multi-zone instance where Memorystore
+  instance allocates resources. This flag isn't applicable for single-zone
+  instances.
+
+* `active_zones` -
+  (Output)
+  The exact list of zones where the instance currently has active VMs.
+
 <a name="nested_cross_instance_replication_config"></a>The `cross_instance_replication_config` block supports:
 
 * `instance_role` -
@@ -912,6 +924,28 @@ The following arguments are supported:
 * `backup` -
   (Required)
   Example: `projects/{project}/locations/{location}/backupCollections/{collection}/backups/{backup}`.
+
+<a name="nested_desired_psc_auto_connections"></a>The `desired_psc_auto_connections` block supports:
+
+* `project_id` -
+  (Required)
+  Required. The consumer project_id where the forwarding rule is created from.
+
+* `network` -
+  (Required)
+  Required. The consumer network where the IP address resides, in the form of
+  projects/{project_id}/global/networks/{network_id}.
+
+<a name="nested_desired_auto_created_endpoints"></a>The `desired_auto_created_endpoints` block supports:
+
+* `project_id` -
+  (Required)
+  Required. The consumer project_id where the forwarding rule is created from.
+
+* `network` -
+  (Required)
+  Required. The consumer network where the IP address resides, in the form of
+  projects/{project_id}/global/networks/{network_id}.
 
 ## Attributes Reference
 

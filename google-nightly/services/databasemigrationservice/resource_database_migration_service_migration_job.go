@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -981,7 +979,7 @@ func resourceDatabaseMigrationServiceMigrationJobUpdate(d *schema.ResourceData, 
 		if !ok || opName == "" {
 			return nil
 		}
-		opBaseUrl, err := tpgresource.ReplaceVars(d, config, "{{DatabaseMigrationServiceBasePath}}")
+		opBaseUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config))
 		if err != nil {
 			return err
 		}
@@ -1003,7 +1001,7 @@ func resourceDatabaseMigrationServiceMigrationJobUpdate(d *schema.ResourceData, 
 		}
 
 		// If available, get more detailed error info from the migration job resource itself.
-		if jobUrl, jobUrlErr := tpgresource.ReplaceVars(d, config, "{{DatabaseMigrationServiceBasePath}}projects/{{project}}/locations/{{location}}/migrationJobs/{{migration_job_id}}"); jobUrlErr == nil {
+		if jobUrl, jobUrlErr := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/migrationJobs/{{migration_job_id}}"); jobUrlErr == nil {
 			if jobRes, fetchJobErr := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 				Config:    config,
 				Method:    "GET",
@@ -1112,7 +1110,7 @@ func resourceDatabaseMigrationServiceMigrationJobUpdate(d *schema.ResourceData, 
 
 	if isTransitionToRunning || isObjectsConfigUpdate {
 		log.Printf("[DEBUG] Running Verify on Migration Job %q due to state transition or objects_config update", d.Id())
-		url, err := tpgresource.ReplaceVars(d, config, "{{DatabaseMigrationServiceBasePath}}projects/{{project}}/locations/{{location}}/migrationJobs/{{migration_job_id}}:verify")
+		url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/migrationJobs/{{migration_job_id}}:verify")
 		if err != nil {
 			return err
 		}
@@ -1137,7 +1135,7 @@ func resourceDatabaseMigrationServiceMigrationJobUpdate(d *schema.ResourceData, 
 
 		if isTransitionToRunning {
 			log.Printf("[DEBUG] Transitioning Migration Job %q to RUNNING", d.Id())
-			url, err := tpgresource.ReplaceVars(d, config, "{{DatabaseMigrationServiceBasePath}}projects/{{project}}/locations/{{location}}/migrationJobs/{{migration_job_id}}:start")
+			url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/migrationJobs/{{migration_job_id}}:start")
 			if err != nil {
 				return err
 			}

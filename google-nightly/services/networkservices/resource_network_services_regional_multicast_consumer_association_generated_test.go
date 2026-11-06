@@ -85,7 +85,7 @@ func TestAccNetworkServicesRegionalMulticastConsumerAssociation_networkServicesR
 			},
 			{
 				ResourceName:       "google_network_services_regional_multicast_consumer_association.rmca_test",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

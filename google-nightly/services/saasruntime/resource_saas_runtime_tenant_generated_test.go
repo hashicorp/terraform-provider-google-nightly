@@ -75,7 +75,7 @@ func TestAccSaasRuntimeTenant_saasRuntimeTenantBasicExample(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckSaasRuntimeTenantDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -89,7 +89,7 @@ func TestAccSaasRuntimeTenant_saasRuntimeTenantBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_saas_runtime_tenant.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -100,7 +100,6 @@ func TestAccSaasRuntimeTenant_saasRuntimeTenantBasicExample(t *testing.T) {
 func testAccSaasRuntimeTenant_saasRuntimeTenantBasicExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_saas_runtime_saas" "example_saas" {
-  provider = google-beta
   saas_id  = "%{saas_name}"
   location = "global"
 
@@ -110,7 +109,6 @@ resource "google_saas_runtime_saas" "example_saas" {
 }
 
 resource "google_saas_runtime_tenant" "example" {
-  provider = google-beta
   location = "global"
   tenant_id = "%{tenant_name}"
   saas = google_saas_runtime_saas.example_saas.id

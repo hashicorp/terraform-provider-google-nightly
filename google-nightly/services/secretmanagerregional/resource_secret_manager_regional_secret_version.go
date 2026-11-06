@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -60,7 +59,7 @@ func setEnabled(v interface{}, d tpgresource.TerraformResourceData, config *tran
 		return nil
 	}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{SecretManagerRegionalBasePath}}{{name}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}")
 	if err != nil {
 		return err
 	}
@@ -103,7 +102,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -293,7 +291,7 @@ func resourceSecretManagerRegionalRegionalSecretVersionCreate(d *schema.Resource
 	}
 
 	// Override the url after setting the location
-	url, err = tpgresource.ReplaceVars(d, config, "{{SecretManagerRegionalBasePath}}{{secret}}:addVersion")
+	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{secret}}:addVersion")
 	if err != nil {
 		return err
 	}
@@ -334,9 +332,11 @@ func resourceSecretManagerRegionalRegionalSecretVersionCreate(d *schema.Resource
 	}
 	d.SetId(name.(string))
 
-	err = setEnabled(d.Get("enabled"), d, config)
-	if err != nil {
-		return err
+	if !d.Get("enabled").(bool) {
+		err = setEnabled(false, d, config)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Printf("[DEBUG] Finished creating RegionalSecretVersion %q: %#v", d.Id(), res)
@@ -380,7 +380,7 @@ func resourceSecretManagerRegionalRegionalSecretVersionRead(d *schema.ResourceDa
 	}
 
 	// Override the url after setting the location
-	url, err = tpgresource.ReplaceVars(d, config, "{{SecretManagerRegionalBasePath}}{{name}}")
+	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}")
 	if err != nil {
 		return err
 	}
@@ -497,7 +497,7 @@ func resourceSecretManagerRegionalRegionalSecretVersionDelete(d *schema.Resource
 	deletionPolicy := d.Get("deletion_policy")
 
 	if deletionPolicy == "DISABLE" {
-		url, err = tpgresource.ReplaceVars(d, config, "{{SecretManagerRegionalBasePath}}{{name}}:disable")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}:disable")
 		if err != nil {
 			return err
 		}
@@ -623,7 +623,7 @@ func flattenSecretManagerRegionalRegionalSecretVersionPayload(v interface{}, d *
 		return []interface{}{transformed}
 	}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{SecretManagerRegionalBasePath}}{{name}}:access")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}:access")
 	if err != nil {
 		return err
 	}

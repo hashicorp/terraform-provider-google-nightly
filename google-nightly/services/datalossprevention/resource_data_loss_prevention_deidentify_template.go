@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -4237,6 +4235,36 @@ The 'new_value' block must only contain one argument. For example when replacing
 							},
 							ExactlyOneOf: []string{"deidentify_config.0.image_transformations", "deidentify_config.0.info_type_transformations", "deidentify_config.0.record_transformations"},
 						},
+						"transformation_error_handling": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: `Mode for handling transformation errors. If left unspecified, the default mode is TransformationErrorHandling.ThrowError.`,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"leave_untransformed": {
+										Type:        schema.TypeList,
+										Optional:    true,
+										Description: `Ignore errors`,
+										MaxItems:    1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{},
+										},
+										ExactlyOneOf: []string{"deidentify_config.0.transformation_error_handling.0.leave_untransformed", "deidentify_config.0.transformation_error_handling.0.throw_error"},
+									},
+									"throw_error": {
+										Type:        schema.TypeList,
+										Optional:    true,
+										Description: `Throw an error`,
+										MaxItems:    1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{},
+										},
+										ExactlyOneOf: []string{"deidentify_config.0.transformation_error_handling.0.leave_untransformed", "deidentify_config.0.transformation_error_handling.0.throw_error"},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -4654,25 +4682,30 @@ func resourceDataLossPreventionDeidentifyTemplateImport(d *schema.ResourceData, 
 	config := meta.(*transport_tpg.Config)
 
 	// Custom import to handle parent possibilities
-	if err := tpgresource.ParseImportId([]string{"(?P<name>.+)"}, d, config); err != nil {
+	if err := tpgresource.ParseImportId([]string{
+		"(?P<parent>.+)/deidentifyTemplates/(?P<name>[^/]+)",
+		"(?P<name>.+)",
+	}, d, config); err != nil {
 		return nil, err
 	}
-	parts := strings.Split(d.Get("name").(string), "/")
-	if len(parts) == 6 {
-		if err := d.Set("name", parts[5]); err != nil {
-			return nil, fmt.Errorf("Error setting name: %s", err)
+	if d.Get("parent").(string) == "" {
+		parts := strings.Split(d.Get("name").(string), "/")
+		if len(parts) == 6 {
+			if err := d.Set("name", parts[5]); err != nil {
+				return nil, fmt.Errorf("Error setting name: %s", err)
+			}
+		} else if len(parts) == 4 {
+			if err := d.Set("name", parts[3]); err != nil {
+				return nil, fmt.Errorf("Error setting name: %s", err)
+			}
+		} else {
+			return nil, fmt.Errorf("Unexpected import id: %s, expected form {{parent}}/deidentifyTemplate/{{name}}", d.Get("name").(string))
 		}
-	} else if len(parts) == 4 {
-		if err := d.Set("name", parts[3]); err != nil {
-			return nil, fmt.Errorf("Error setting name: %s", err)
+		// Remove "/deidentifyTemplate/{{name}}" from the id
+		parts = parts[:len(parts)-2]
+		if err := d.Set("parent", strings.Join(parts, "/")); err != nil {
+			return nil, fmt.Errorf("Error setting parent: %s", err)
 		}
-	} else {
-		return nil, fmt.Errorf("Unexpected import id: %s, expected form {{parent}}/deidentifyTemplate/{{name}}", d.Get("name").(string))
-	}
-	// Remove "/deidentifyTemplate/{{name}}" from the id
-	parts = parts[:len(parts)-2]
-	if err := d.Set("parent", strings.Join(parts, "/")); err != nil {
-		return nil, fmt.Errorf("Error setting parent: %s", err)
 	}
 
 	// Replace import id for the resource id
@@ -4723,6 +4756,8 @@ func flattenDataLossPreventionDeidentifyTemplateDeidentifyConfig(v interface{}, 
 		flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigInfoTypeTransformations(original["infoTypeTransformations"], d, config)
 	transformed["record_transformations"] =
 		flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigRecordTransformations(original["recordTransformations"], d, config)
+	transformed["transformation_error_handling"] =
+		flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandling(original["transformationErrorHandling"], d, config)
 	return []interface{}{transformed}
 }
 func flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigImageTransformations(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -11026,6 +11061,37 @@ func flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigRecordTransforma
 	return v
 }
 
+func flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandling(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["throw_error"] =
+		flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingThrowError(original["throwError"], d, config)
+	transformed["leave_untransformed"] =
+		flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingLeaveUntransformed(original["leaveUntransformed"], d, config)
+	return []interface{}{transformed}
+}
+func flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingThrowError(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	return []interface{}{transformed}
+}
+
+func flattenDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingLeaveUntransformed(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	return []interface{}{transformed}
+}
+
 func expandDataLossPreventionDeidentifyTemplateDescription(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
@@ -11065,6 +11131,13 @@ func expandDataLossPreventionDeidentifyTemplateDeidentifyConfig(v interface{}, d
 		return nil, err
 	} else if val := reflect.ValueOf(transformedRecordTransformations); val.IsValid() && !tpgresource.IsEmptyValue(val) {
 		transformed["recordTransformations"] = transformedRecordTransformations
+	}
+
+	transformedTransformationErrorHandling, err := expandDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandling(original["transformation_error_handling"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedTransformationErrorHandling); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["transformationErrorHandling"] = transformedTransformationErrorHandling
 	}
 
 	return transformed, nil
@@ -19238,6 +19311,71 @@ func expandDataLossPreventionDeidentifyTemplateDeidentifyConfigRecordTransformat
 
 func expandDataLossPreventionDeidentifyTemplateDeidentifyConfigRecordTransformationsRecordSuppressionsConditionExpressionsConditionsConditionsValueDayOfWeekValue(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
+}
+
+func expandDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandling(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedThrowError, err := expandDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingThrowError(original["throw_error"], d, config)
+	if err != nil {
+		return nil, err
+	} else {
+		transformed["throwError"] = transformedThrowError
+	}
+
+	transformedLeaveUntransformed, err := expandDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingLeaveUntransformed(original["leave_untransformed"], d, config)
+	if err != nil {
+		return nil, err
+	} else {
+		transformed["leaveUntransformed"] = transformedLeaveUntransformed
+	}
+
+	return transformed, nil
+}
+
+func expandDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingThrowError(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 {
+		return nil, nil
+	}
+
+	if l[0] == nil {
+		transformed := make(map[string]interface{})
+		return transformed, nil
+	}
+	transformed := make(map[string]interface{})
+
+	return transformed, nil
+}
+
+func expandDataLossPreventionDeidentifyTemplateDeidentifyConfigTransformationErrorHandlingLeaveUntransformed(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 {
+		return nil, nil
+	}
+
+	if l[0] == nil {
+		transformed := make(map[string]interface{})
+		return transformed, nil
+	}
+	transformed := make(map[string]interface{})
+
+	return transformed, nil
 }
 
 func resourceDataLossPreventionDeidentifyTemplateEncoder(d *schema.ResourceData, meta interface{}, obj map[string]interface{}) (map[string]interface{}, error) {

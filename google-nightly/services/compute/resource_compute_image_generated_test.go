@@ -81,7 +81,7 @@ func TestAccComputeImage_imageBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_compute_image.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -139,7 +139,7 @@ func TestAccComputeImage_imageGuestOsExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_compute_image.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -186,6 +186,10 @@ resource "google_compute_image" "example" {
   guest_os_features {
     type = "SEV_LIVE_MIGRATABLE_V2"
   }
+
+  guest_os_features {
+    type = "SUSPEND_SAFE_FPR"
+  }
 }
 `, context)
 }
@@ -217,7 +221,7 @@ func TestAccComputeImage_imageBasicStorageLocationExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_compute_image.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

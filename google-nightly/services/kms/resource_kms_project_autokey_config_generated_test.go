@@ -86,7 +86,7 @@ func TestAccKMSProjectAutokeyConfig_kmsAutokeyConfigProjectExample(t *testing.T)
 			},
 			{
 				ResourceName:       "google_kms_project_autokey_config.example-autokeyconfig-project",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -171,7 +171,7 @@ func testAccCheckKMSProjectAutokeyConfigDestroyProducer(t *testing.T) func(s *te
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{KMSBasePath}}projects/{{project}}/autokeyConfig")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(kms.Product, config)+"projects/{{project}}/autokeyConfig")
 			if err != nil {
 				return err
 			}

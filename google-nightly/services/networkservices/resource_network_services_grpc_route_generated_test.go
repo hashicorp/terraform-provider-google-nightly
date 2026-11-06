@@ -80,7 +80,7 @@ func TestAccNetworkServicesGrpcRoute_networkServicesGrpcRouteBasicExample(t *tes
 			},
 			{
 				ResourceName:       "google_network_services_grpc_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -141,7 +141,7 @@ func TestAccNetworkServicesGrpcRoute_networkServicesGrpcRouteMatchesAndActionsEx
 			},
 			{
 				ResourceName:       "google_network_services_grpc_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -174,6 +174,7 @@ resource "google_network_services_grpc_route" "default" {
         grpc_service = "foo"
         grpc_method = "bar"
         case_sensitive = true
+        type = "EXACT"
       }
     }
     action {
@@ -191,6 +192,7 @@ resource "google_network_services_grpc_route" "default" {
           retry_conditions = ["cancelled"]
           num_retries = 1
       }
+      idle_timeout = "30s"
     }
   }
 }
@@ -223,7 +225,7 @@ func TestAccNetworkServicesGrpcRoute_networkServicesGrpcRouteActionsExample(t *t
 			},
 			{
 				ResourceName:       "google_network_services_grpc_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -288,7 +290,7 @@ func TestAccNetworkServicesGrpcRoute_networkServicesGrpcRouteLocationExample(t *
 			},
 			{
 				ResourceName:       "google_network_services_grpc_route.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

@@ -84,7 +84,7 @@ func TestAccVertexAITaskStore_vertexAiTaskStoreBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_vertex_ai_task_store.task_store",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -140,7 +140,7 @@ func TestAccVertexAITaskStore_vertexAiTaskStoreFullExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_vertex_ai_task_store.task_store",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -160,7 +160,7 @@ func TestAccVertexAITaskStore_vertexAiTaskStoreFullExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_vertex_ai_task_store.task_store",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -219,7 +219,7 @@ func TestAccVertexAITaskStore_vertexAiTaskStoreCmekExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_vertex_ai_task_store.task_store",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

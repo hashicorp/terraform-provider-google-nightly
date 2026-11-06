@@ -83,7 +83,7 @@ func TestAccFirebaseHostingCustomDomain_firebasehostingCustomdomainBasicExample(
 			},
 			{
 				ResourceName:       "google_firebase_hosting_custom_domain.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -132,7 +132,7 @@ func TestAccFirebaseHostingCustomDomain_firebasehostingCustomdomainFullExample(t
 			},
 			{
 				ResourceName:       "google_firebase_hosting_custom_domain.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -193,7 +193,7 @@ func TestAccFirebaseHostingCustomDomain_firebasehostingCustomdomainCloudRunExamp
 			},
 			{
 				ResourceName:       "google_firebase_hosting_custom_domain.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -272,7 +272,7 @@ func testAccCheckFirebaseHostingCustomDomainDestroyProducer(t *testing.T) func(s
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{FirebaseHostingBasePath}}projects/{{project}}/sites/{{site_id}}/customDomains/{{custom_domain}}")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(firebasehosting.Product, config)+"projects/{{project}}/sites/{{site_id}}/customDomains/{{custom_domain}}")
 			if err != nil {
 				return err
 			}

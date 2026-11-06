@@ -84,6 +84,17 @@ func zoneNicIPv6DiffSuppress(k, old, new string, d *schema.ResourceData) bool {
 	return ipv6RepresentationDiffSuppress(k, old, new, d)
 }
 
+// autoNetIPv6DiffSuppress suppresses diffs on networking_auto_configuration.internal.ipv6_address
+// when comparing equivalent IPv6 representations (with or without CIDR prefix length).
+func autoNetIPv6DiffSuppress(k, old, new string, d *schema.ResourceData) bool {
+	if old == "" || new == "" {
+		return old == new
+	}
+	oldAddr, oldPfx, _ := strings.Cut(old, "/")
+	newAddr, newPfx, _ := strings.Cut(new, "/")
+	return (oldPfx == "" || newPfx == "" || oldPfx == newPfx) && ipv6RepresentationDiffSuppress(k, oldAddr, newAddr, d)
+}
+
 func isKnownCtyObject(obj cty.Value) bool {
 	return !obj.IsNull() && obj.IsKnown() && obj.Type().IsObjectType()
 }

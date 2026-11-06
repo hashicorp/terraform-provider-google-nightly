@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -132,7 +130,7 @@ func ResourceVertexAIFeatureOnlineStoreFeatureview() *schema.Resource {
 					},
 					"region": {
 						Type:              schema.TypeString,
-						RequiredForImport: true,
+						OptionalForImport: true,
 					},
 					"project": {
 						Type:              schema.TypeString,
@@ -151,13 +149,6 @@ func ResourceVertexAIFeatureOnlineStoreFeatureview() *schema.Resource {
 				Required:    true,
 				ForceNew:    true,
 				Description: `The name of the FeatureOnlineStore to use for the featureview.`,
-			},
-			"region": {
-				Type:        schema.TypeString,
-				Computed:    true,
-				Optional:    true,
-				ForceNew:    true,
-				Description: `The region for the resource. It should be the same as the featureonlinestore region.`,
 			},
 			"big_query_source": {
 				Type:        schema.TypeList,
@@ -238,6 +229,13 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 				ForceNew:    true,
 				Description: `Name of the FeatureView. This value may be up to 60 characters, and valid characters are [a-z0-9_]. The first character cannot be a number.`,
 			},
+			"region": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Optional:    true,
+				ForceNew:    true,
+				Description: `The region for the resource. It should be the same as the featureonlinestore region.`,
+			},
 			"sync_config": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -283,7 +281,6 @@ To explicitly set a timezone to the cron tab, apply a prefix in the cron tab: "C
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"crowding_column": {
 							Type:        schema.TypeString,
@@ -325,7 +322,6 @@ For details on allowed values, see the [API documentation](https://cloud.google.
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 					},
 				},

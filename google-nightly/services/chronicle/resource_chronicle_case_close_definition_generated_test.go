@@ -62,11 +62,15 @@ func TestAccChronicleCaseCloseDefinition_chronicleCaseclosedefinitionUpdateExamp
 
 	context := map[string]interface{}{
 		"chronicle_id":  envvar.GetTestChronicleInstanceIdFromEnv(t),
+		"close_reason":  "MAINTENANCE",
+		"root_cause":    "Scheduled maintenance activity",
 		"random_suffix": randomSuffix,
 	}
 
 	context_1 := map[string]interface{}{
 		"chronicle_id":  envvar.GetTestChronicleInstanceIdFromEnv(t),
+		"close_reason":  "NOT_MALICIOUS",
+		"root_cause":    "Authorized administrative activity",
 		"random_suffix": randomSuffix,
 	}
 
@@ -86,12 +90,12 @@ func TestAccChronicleCaseCloseDefinition_chronicleCaseclosedefinitionUpdateExamp
 			},
 			{
 				ResourceName:       "google_chronicle_case_close_definition.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
 			{
-				Config: testAccChronicleCaseCloseDefinition_chronicleCaseclosedefinitionFullExample(context_1),
+				Config: testAccChronicleCaseCloseDefinition_chronicleCaseclosedefinitionBasicExample(context_1),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction("google_chronicle_case_close_definition.example", plancheck.ResourceActionUpdate),
@@ -106,7 +110,7 @@ func TestAccChronicleCaseCloseDefinition_chronicleCaseclosedefinitionUpdateExamp
 			},
 			{
 				ResourceName:       "google_chronicle_case_close_definition.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -119,19 +123,8 @@ func testAccChronicleCaseCloseDefinition_chronicleCaseclosedefinitionBasicExampl
 resource "google_chronicle_case_close_definition" "example" {
   location = "us"
   instance = "%{chronicle_id}"
-  close_reason = "MAINTENANCE"
-  root_cause = "Scheduled maintenance activity"
-}
-`, context)
-}
-
-func testAccChronicleCaseCloseDefinition_chronicleCaseclosedefinitionFullExample(context map[string]interface{}) string {
-	return acctest.Nprintf(`
-resource "google_chronicle_case_close_definition" "example" {
-  location = "us"
-  instance = "%{chronicle_id}"
-  close_reason = "NOT_MALICIOUS"
-  root_cause = "Authorized administrative activity"
+  close_reason = "%{close_reason}"
+  root_cause = "%{root_cause}"
 }
 `, context)
 }

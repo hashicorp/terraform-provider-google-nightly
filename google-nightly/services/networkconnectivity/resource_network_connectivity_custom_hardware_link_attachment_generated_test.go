@@ -94,7 +94,7 @@ func TestAccNetworkConnectivityCustomHardwareLinkAttachment_networkConnectivityC
 			},
 			{
 				ResourceName:       "google_network_connectivity_custom_hardware_link_attachment.attachment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -114,7 +114,7 @@ func TestAccNetworkConnectivityCustomHardwareLinkAttachment_networkConnectivityC
 			},
 			{
 				ResourceName:       "google_network_connectivity_custom_hardware_link_attachment.attachment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -248,7 +248,7 @@ func TestAccNetworkConnectivityCustomHardwareLinkAttachment_networkConnectivityC
 			},
 			{
 				ResourceName:       "google_network_connectivity_custom_hardware_link_attachment.attachment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -268,7 +268,7 @@ func TestAccNetworkConnectivityCustomHardwareLinkAttachment_networkConnectivityC
 			},
 			{
 				ResourceName:       "google_network_connectivity_custom_hardware_link_attachment.attachment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

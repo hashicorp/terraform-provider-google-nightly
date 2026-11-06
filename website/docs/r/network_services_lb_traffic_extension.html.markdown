@@ -240,7 +240,9 @@ resource "google_network_services_lb_traffic_extension" "default" {
           authority = "ext11.com"
           service   = google_compute_region_backend_service.callouts_backend.self_link
           timeout   = "0.1s"
-          fail_open = false
+
+          fail_open          = false
+          observability_mode = true
 
           supported_events = ["REQUEST_HEADERS"]
           forward_headers = ["custom-header"]
@@ -309,7 +311,10 @@ resource "google_compute_instance" "callouts_instance" {
 
   # Initialize an Envoy's Ext Proc gRPC API based on a docker container
   metadata = {
-    gce-container-declaration = "# DISCLAIMER:\n# This container declaration format is not a public API and may change without\n# notice. Please use gcloud command-line tool or Google Cloud Console to run\n# Containers on Google Compute Engine.\n\nspec:\n  containers:\n  - image: us-docker.pkg.dev/service-extensions-samples/callouts/python-example-basic:main\n    name: callouts-vm\n    securityContext:\n      privileged: false\n    stdin: false\n    tty: false\n    volumeMounts: []\n  restartPolicy: Always\n  volumes: []\n"
+    startup-script = <<-EOF
+      #! /bin/bash
+      docker run -d --restart=always --network=host --name=callouts-vm us-docker.pkg.dev/service-extensions-samples/callouts/python-example-basic:main
+    EOF
     google-logging-enabled = "true"
   }
 
@@ -773,7 +778,7 @@ The following arguments are supported:
   The name for this extension chain. The name is logged as part of the HTTP request logs.
   The name must conform with RFC-1034, is restricted to lower-cased letters, numbers and hyphens,
   and can have a maximum length of 63 characters. Additionally, the first character must be a letter
-  and the last a letter or a number.
+  and the last character must be a letter or a number.
 
 * `match_condition` -
   (Required)
@@ -785,7 +790,7 @@ The following arguments are supported:
   A set of extensions to execute for the matching request.
   At least one extension is required. Up to 3 extensions can be defined for each extension chain for
   LbTrafficExtension resource. LbRouteExtension chains are limited to 1 extension per extension chain.
-  Further documentation to be found at https://cloud.google.com/service-extensions/docs/reference/rest/v1/ExtensionChain#Extension
+  Further documentation can be found at https://cloud.google.com/service-extensions/docs/reference/rest/v1/ExtensionChain#Extension
   Structure is [documented below](#nested_extension_chains_extensions).
 
 
@@ -854,6 +859,15 @@ The following arguments are supported:
   Metadata associated with the extension. This field is used to pass metadata to the extension service.
   You can set up key value pairs for metadata as you like and need.
   f.e. {"key": "value", "key2": "value2"}.
+
+* `observability_mode` -
+  (Optional)
+  When set to `TRUE`, enables `observability_mode` on the `ext_proc` filter.
+  This makes `ext_proc` calls asynchronous. Envoy doesn't check for the response from `ext_proc` calls.
+  For more information about the filter, see: https://www.envoyproxy.io/docs/envoy/v1.32.3/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto
+  This field is helpful when you want to try out the extension in async log-only mode.
+  Supported by regional `LbTrafficExtension` and `LbRouteExtension` resources.
+  Only `STREAMED` (default) body processing mode is supported.
 
 <a name="nested_target"></a>The `target` block supports:
 

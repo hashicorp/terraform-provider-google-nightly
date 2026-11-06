@@ -83,7 +83,7 @@ func TestAccWorkbenchInstance_workbenchInstanceBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_workbench_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -133,7 +133,7 @@ func TestAccWorkbenchInstance_workbenchInstanceBasicContainerExample(t *testing.
 			},
 			{
 				ResourceName:       "google_workbench_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -188,7 +188,7 @@ func TestAccWorkbenchInstance_workbenchInstanceBasicGpuExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_workbench_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -200,16 +200,16 @@ func testAccWorkbenchInstance_workbenchInstanceBasicGpuExample(context map[strin
 	return acctest.Nprintf(`
 resource "google_compute_reservation" "gpu_reservation" {
   name     = "%{reservation_name}"
-  zone     = "us-east1-b"
+  zone     = "us-central1-b"
 
   specific_reservation {
     count = 1
     
     instance_properties {
-      machine_type = "g2-standard-4"
+      machine_type = "n1-standard-1"
       
       guest_accelerators {
-        accelerator_type  = "nvidia-l4"
+        accelerator_type  = "nvidia-tesla-t4"
         accelerator_count = 1
       }
     }
@@ -220,11 +220,11 @@ resource "google_compute_reservation" "gpu_reservation" {
 
 resource "google_workbench_instance" "instance" {
   name = "%{instance_name}"
-  location = "us-east1-b"
+  location = "us-central1-b"
   gce_setup {
-    machine_type = "g2-standard-4"
+    machine_type = "n1-standard-1" // cant be e2 because of accelerator
     accelerator_configs {
-      type         = "NVIDIA_L4"
+      type         = "NVIDIA_TESLA_T4"
       core_count   = 1
     }
     boot_disk {
@@ -278,7 +278,7 @@ func TestAccWorkbenchInstance_workbenchInstanceLabelsStoppedExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_workbench_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -333,7 +333,7 @@ func TestAccWorkbenchInstance_workbenchInstanceFullExample(t *testing.T) {
 		"project_id":           envvar.GetTestProjectFromEnv(),
 		"service_account":      envvar.GetTestServiceAccountFromEnv(t),
 		"instance_name":        "tf-test-workbench-instance" + randomSuffix,
-		"key_name":             kms.BootstrapKMSKeyInLocation(t, "us-east1").CryptoKey.Name,
+		"key_name":             kms.BootstrapKMSKeyInLocation(t, "us-central1").CryptoKey.Name,
 		"network_name":         "tf-test-wbi-test-default" + randomSuffix,
 		"reservation_name":     "tf-test-wbi-reservation" + randomSuffix,
 		"resource_policy_name": "tf-test-wbi-policy" + randomSuffix,
@@ -356,7 +356,7 @@ func TestAccWorkbenchInstance_workbenchInstanceFullExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_workbench_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -374,13 +374,13 @@ resource "google_compute_network" "my_network" {
 resource "google_compute_subnetwork" "my_subnetwork" {
   name   = "%{network_name}"
   network = google_compute_network.my_network.id
-  region = "us-east1"
+  region = "us-central1"
   ip_cidr_range = "10.0.1.0/24"
 }
 
 resource "google_compute_address" "static" {
   name   = "%{network_name}"
-  region = "us-east1"
+  region = "us-central1"
 }
 
 resource "google_service_account_iam_member" "act_as_permission" {
@@ -391,17 +391,17 @@ resource "google_service_account_iam_member" "act_as_permission" {
 
 resource "google_compute_reservation" "gpu_reservation" {
   name     = "%{reservation_name}"
-  zone     = "us-east1-b"
+  zone     = "us-central1-a"
 
   specific_reservation {
     count = 1
     
     instance_properties {
-      machine_type = "g2-standard-4"
-      min_cpu_platform = "Intel Cascade Lake"
+      machine_type = "n1-standard-4"
+      min_cpu_platform = "Intel Broadwell"
 
       guest_accelerators {
-        accelerator_type  = "nvidia-l4"
+        accelerator_type  = "nvidia-tesla-t4"
         accelerator_count = 1
       }
     }
@@ -412,7 +412,7 @@ resource "google_compute_reservation" "gpu_reservation" {
 
 resource "google_compute_resource_policy" "my_policy" {
   name   = "%{resource_policy_name}"
-  region = "us-east1"
+  region = "us-central1"
   snapshot_schedule_policy {
     schedule {
       daily_schedule {
@@ -425,15 +425,15 @@ resource "google_compute_resource_policy" "my_policy" {
 
 resource "google_workbench_instance" "instance" {
   name = "%{instance_name}"
-  location = "us-east1-b"
+  location = "us-central1-a"
 
   enable_deletion_protection = false
 
   gce_setup {
-    machine_type = "g2-standard-4"
-    min_cpu_platform = "Intel Cascade Lake"
+    machine_type = "n1-standard-4" // cant be e2 because of accelerator
+    min_cpu_platform = "Intel Broadwell"
     accelerator_configs {
-      type         = "NVIDIA_L4"
+      type         = "NVIDIA_TESLA_T4"
       core_count   = 1
     }
 
@@ -541,7 +541,7 @@ func TestAccWorkbenchInstance_workbenchInstanceConfidentialComputeExample(t *tes
 			},
 			{
 				ResourceName:       "google_workbench_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -605,7 +605,7 @@ func TestAccWorkbenchInstance_workbenchInstanceEucExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_workbench_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

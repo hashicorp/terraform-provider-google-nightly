@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -145,6 +143,39 @@ func ResourceApihubPluginInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"display_name": {
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: `The display name for this plugin instance. Max length is 255 characters.`,
+			},
+			"location": {
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: `Resource ID segment making up resource 'name'. It identifies the resource within its parent collection as described in https://google.aip.dev/122.`,
+			},
+			"plugin": {
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: `Resource ID segment making up resource 'name'. It identifies the resource within its parent collection as described in https://google.aip.dev/122.`,
+			},
+			"plugin_instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				Description: `The ID to use for the plugin instance, which will become the final
+component of the plugin instance's resource name. This field is optional.
+
+* If provided, the same will be used. The service will throw an error if
+the specified id is already used by another plugin instance in the plugin
+resource.
+* If not provided, a system generated id will be used.
+
+This value should be 4-63 characters, and valid characters
+are /a-z[0-9]-_/.`,
+			},
 			"actions": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -283,39 +314,6 @@ ERROR`,
 						},
 					},
 				},
-			},
-			"display_name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: `The display name for this plugin instance. Max length is 255 characters.`,
-			},
-			"location": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: `Resource ID segment making up resource 'name'. It identifies the resource within its parent collection as described in https://google.aip.dev/122.`,
-			},
-			"plugin": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: `Resource ID segment making up resource 'name'. It identifies the resource within its parent collection as described in https://google.aip.dev/122.`,
-			},
-			"plugin_instance_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				Description: `The ID to use for the plugin instance, which will become the final
-component of the plugin instance's resource name. This field is optional.
-
-* If provided, the same will be used. The service will throw an error if
-the specified id is already used by another plugin instance in the plugin
-resource.
-* If not provided, a system generated id will be used.
-
-This value should be 4-63 characters, and valid characters
-are /a-z[0-9]-_/.`,
 			},
 			"auth_config": {
 				Type:        schema.TypeList,

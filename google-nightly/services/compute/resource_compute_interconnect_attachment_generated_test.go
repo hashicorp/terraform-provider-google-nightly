@@ -84,7 +84,7 @@ func TestAccComputeInterconnectAttachment_interconnectAttachmentBasicExample(t *
 			},
 			{
 				ResourceName:       "google_compute_interconnect_attachment.on_prem",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -147,7 +147,7 @@ func TestAccComputeInterconnectAttachment_interconnectAttachmentDedicatedExample
 			},
 			{
 				ResourceName:       "google_compute_interconnect_attachment.on_prem",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -226,7 +226,7 @@ func TestAccComputeInterconnectAttachment_computeInterconnectAttachmentIpsecEncr
 			},
 			{
 				ResourceName:       "google_compute_interconnect_attachment.ipsec-encrypted-interconnect-attachment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -300,7 +300,7 @@ func TestAccComputeInterconnectAttachment_computeInterconnectAttachmentCustomRan
 			},
 			{
 				ResourceName:       "google_compute_interconnect_attachment.custom-ranges-interconnect-attachment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -368,7 +368,7 @@ func TestAccComputeInterconnectAttachment_interconnectAttachmentMulticastEnabled
 			},
 			{
 				ResourceName:       "google_compute_interconnect_attachment.on_prem",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

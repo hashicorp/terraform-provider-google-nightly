@@ -174,6 +174,40 @@ resource "google_backup_dr_backup_plan" "my-filestore-backup-plan-1" {
 }
 ```
 
+## Example Usage - Backup Dr Backup Plan For Netapp Volume
+
+
+```hcl
+resource "google_backup_dr_backup_vault" "my_backup_vault" {
+  location = "us-central1"
+  backup_vault_id = "backup-vault-netapp-test"
+  backup_minimum_enforced_retention_duration = "100000s"
+}
+
+resource "google_backup_dr_backup_plan" "my-netapp-backup-plan-1" {
+  location = "us-central1"
+  backup_plan_id = "backup-plan-netapp-test"
+  resource_type = "netapp.googleapis.com/Volume"
+  backup_vault = google_backup_dr_backup_vault.my_backup_vault.id
+
+  backup_rules {
+    rule_id = "rule-1"
+    backup_retention_days = 5
+
+    standard_schedule {
+      recurrence_type = "HOURLY"
+      hourly_frequency = 6
+      time_zone = "UTC"
+
+      backup_window {
+        start_hour_of_day = 0
+        end_hour_of_day = 6
+      }
+    }
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -186,7 +220,7 @@ The following arguments are supported:
 * `resource_type` -
   (Required)
   The resource type to which the `BackupPlan` will be applied.
-  Examples include, "compute.googleapis.com/Instance", "compute.googleapis.com/Disk", "sqladmin.googleapis.com/Instance", "alloydb.googleapis.com/Cluster", "file.googleapis.com/Instance" and "storage.googleapis.com/Bucket".
+  Examples include, "compute.googleapis.com/Instance", "compute.googleapis.com/Disk", "sqladmin.googleapis.com/Instance", "alloydb.googleapis.com/Cluster", "file.googleapis.com/Instance", "netapp.googleapis.com/Volume" and "storage.googleapis.com/Bucket".
 
 * `location` -
   (Required)
@@ -200,6 +234,13 @@ The following arguments are supported:
 * `description` -
   (Optional)
   The description allows for additional details about `BackupPlan` and its use cases to be provided.
+
+* `labels` -
+  (Optional)
+  This collection of key/value pairs allows for custom labels to be supplied by the user.
+
+  **Note**: This field is non-authoritative, and will only manage the labels present in your configuration.
+  Please refer to the field `effective_labels` for all of the labels present on the resource.
 
 * `max_custom_on_demand_retention_days` -
   (Optional)
@@ -353,6 +394,13 @@ In addition to the arguments listed above, the following computed attributes are
 
 * `update_time` -
   When the `BackupPlan` was last updated.
+
+* `terraform_labels` -
+  The combination of labels configured directly on the resource
+   and default labels configured on the provider.
+
+* `effective_labels` -
+  All of labels (key/value pairs) present on the resource in GCP, including the labels configured through Terraform, other clients and services.
 
 
 ## Timeouts

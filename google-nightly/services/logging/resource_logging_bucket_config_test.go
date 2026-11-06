@@ -23,21 +23,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
-	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/kms"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/kms"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/logging"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 )
 
 func TestAccLoggingBucketConfigFolder_basic(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"random_suffix": acctest.RandString(t, 10),
 		"folder_name":   "tf-test-" + acctest.RandString(t, 10),
 		"org_id":        envvar.GetTestOrgFromEnv(t),
-		"original_key":  kms.BootstrapKMSKeyInLocation(t, "us-central1").CryptoKey.Name,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -62,17 +63,16 @@ func TestAccLoggingBucketConfigFolder_basic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"folder"},
 			},
-			{
-				Config: testAccLoggingOrganizationSettings_full(context),
-			},
 		},
 	})
 }
 
 func TestAccLoggingBucketConfigProject_basic(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"random_suffix":   acctest.RandString(t, 10),
@@ -119,8 +119,10 @@ func TestAccLoggingBucketConfigProject_basic(t *testing.T) {
 
 func TestAccLoggingBucketConfigProject_analyticsEnabled(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"random_suffix":   acctest.RandString(t, 10),
@@ -170,8 +172,10 @@ func TestAccLoggingBucketConfigProject_analyticsEnabled(t *testing.T) {
 
 func TestAccLoggingBucketConfigProject_cmekSettings(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"project_name":    "tf-test-" + acctest.RandString(t, 10),
@@ -212,8 +216,10 @@ func TestAccLoggingBucketConfigProject_cmekSettings(t *testing.T) {
 
 func TestAccLoggingBucketConfigBillingAccount_basic(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"random_suffix":        acctest.RandString(t, 10),
@@ -250,8 +256,10 @@ func TestAccLoggingBucketConfigBillingAccount_basic(t *testing.T) {
 
 func TestAccLoggingBucketConfigOrganization_basic(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"random_suffix": acctest.RandString(t, 10),
@@ -483,8 +491,10 @@ resource "google_logging_project_bucket_config" "basic" {
 
 func TestAccLoggingBucketConfig_CreateBuckets_withCustomId(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"random_suffix":        acctest.RandString(t, 10),
@@ -636,8 +646,10 @@ resource "google_logging_organization_bucket_config" "basic" {
 
 func TestAccLoggingBucketConfigProject_indexConfigs(t *testing.T) {
 	// google_logging_organization_settings is a singleton, and multiple tests mutate it.
-	orgSettingsMu.Lock()
-	t.Cleanup(orgSettingsMu.Unlock)
+	if !acctest.IsVcrReplaying() {
+		orgSettingsMu.Lock()
+		t.Cleanup(orgSettingsMu.Unlock)
+	}
 
 	context := map[string]interface{}{
 		"project_name":    "tf-test-" + acctest.RandString(t, 10),

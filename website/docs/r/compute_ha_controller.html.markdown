@@ -36,14 +36,14 @@ Represents an HA Controller resource.
 
 ```hcl
 locals {
-  region          = "us-central1"
-  zone1           = "us-central1-a"
-  zone2           = "us-central1-b"
+  region = "us-central1"
+  zone1  = "us-central1-a"
+  zone2  = "us-central1-b"
 }
 
-data "google_compute_image" "debian_12" {
-  family   = "debian-12"
-  project  = "debian-cloud"
+data "google_compute_image" "debian_13" {
+  family  = "debian-13"
+  project = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
@@ -53,7 +53,7 @@ resource "google_compute_region_disk" "regional_disk" {
   region                    = local.region
   replica_zones             = [local.zone1, local.zone2]
   size                      = 10
-  image                     = data.google_compute_image.debian_12.self_link
+  image                     = data.google_compute_image.debian_13.self_link
 }
 
 resource "google_compute_instance" "vm" {
@@ -78,7 +78,7 @@ resource "google_compute_instance" "vm" {
   allow_stopping_for_update = true
 }
 
-resource "google_compute_ha_controller" "default" {
+resource "google_compute_ha_controller" "ha_controller" {
   name                = "hac-bs"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -89,6 +89,13 @@ resource "google_compute_ha_controller" "default" {
   }
   zone_configuration {
     zone = local.zone2
+  }
+
+  # To recreate the VMs, Compute Engine must delete the HA Controller first.
+  lifecycle {
+    replace_triggered_by = [
+      google_compute_instance.vm.id
+    ]
   }
 }
 ```
@@ -103,14 +110,14 @@ resource "google_compute_ha_controller" "default" {
 
 ```hcl
 locals {
-  region          = "us-central1"
-  zone1           = "us-central1-a"
-  zone2           = "us-central1-b"
+  region = "us-central1"
+  zone1  = "us-central1-a"
+  zone2  = "us-central1-b"
 }
 
-data "google_compute_image" "debian_12" {
-  family   = "debian-12"
-  project  = "debian-cloud"
+data "google_compute_image" "debian_13" {
+  family  = "debian-13"
+  project = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
@@ -120,12 +127,15 @@ resource "google_compute_region_disk" "regional_disk" {
   region                    = local.region
   replica_zones             = [local.zone1, local.zone2]
   size                      = 10
-  image                     = data.google_compute_image.debian_12.self_link
+  image                     = data.google_compute_image.debian_13.self_link
 }
 
+# Reservations in both zones must have the same name; otherwise, you encounter
+# errors after a failover because the Terraform state no longer matches your
+# configuration.
 resource "google_compute_reservation" "reservation_zone1" {
-  name     = "hac-rv-rv" # same name as in zone 2
-  zone     = local.zone1
+  name = "hac-rv-rv" # same name as in zone 2
+  zone = local.zone1
 
   specific_reservation {
     count = 1
@@ -142,8 +152,8 @@ resource "google_compute_reservation" "reservation_zone1" {
 }
 
 resource "google_compute_reservation" "reservation_zone2" {
-  name     = "hac-rv-rv" # same name as in zone 1
-  zone     = local.zone2
+  name = "hac-rv-rv" # same name as in zone 1
+  zone = local.zone2
 
   specific_reservation {
     count = 1
@@ -190,7 +200,7 @@ resource "google_compute_instance" "vm" {
   allow_stopping_for_update = true
 }
 
-resource "google_compute_ha_controller" "default" {
+resource "google_compute_ha_controller" "ha_controller" {
   name                = "hac-rv"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -202,6 +212,9 @@ resource "google_compute_ha_controller" "default" {
     }
   }
 
+  # Reservations in both zones must have the same name; otherwise, you encounter
+  # errors after a failover because the Terraform state no longer matches your
+  # configuration.
   zone_configuration {
     zone = local.zone1
     reservation_affinity {
@@ -222,6 +235,13 @@ resource "google_compute_ha_controller" "default" {
       }
     }
   }
+
+  # To recreate the VMs, Compute Engine must delete the HA Controller first.
+  lifecycle {
+    replace_triggered_by = [
+      google_compute_instance.vm.id
+    ]
+  }
 }
 ```
 <div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
@@ -235,14 +255,14 @@ resource "google_compute_ha_controller" "default" {
 
 ```hcl
 locals {
-  region          = "us-central1"
-  zone1           = "us-central1-a"
-  zone2           = "us-central1-b"
+  region = "us-central1"
+  zone1  = "us-central1-a"
+  zone2  = "us-central1-b"
 }
 
-data "google_compute_image" "debian_12" {
-  family   = "debian-12"
-  project  = "debian-cloud"
+data "google_compute_image" "debian_13" {
+  family  = "debian-13"
+  project = "debian-cloud"
 }
 
 resource "google_compute_region_disk" "regional_disk" {
@@ -252,7 +272,7 @@ resource "google_compute_region_disk" "regional_disk" {
   region                    = local.region
   replica_zones             = [local.zone1, local.zone2]
   size                      = 10
-  image                     = data.google_compute_image.debian_12.self_link
+  image                     = data.google_compute_image.debian_13.self_link
 }
 
 resource "google_compute_node_template" "node_template1" {
@@ -325,7 +345,7 @@ resource "google_compute_instance" "vm" {
   allow_stopping_for_update = true
 }
 
-resource "google_compute_ha_controller" "default" {
+resource "google_compute_ha_controller" "ha_controller" {
   name                = "hac-st"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -347,6 +367,13 @@ resource "google_compute_ha_controller" "default" {
       values   = ["synthetic"]
     }
   }
+
+  # To recreate the VMs, Compute Engine must delete the HA Controller first.
+  lifecycle {
+    replace_triggered_by = [
+      google_compute_instance.vm.id
+    ]
+  }
 }
 ```
 <div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
@@ -366,8 +393,8 @@ locals {
   network = "default"
 }
 
-data "google_compute_image" "debian_12" {
-  family  = "debian-12"
+data "google_compute_image" "debian_13" {
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -378,7 +405,7 @@ resource "google_compute_region_disk" "regional_disk" {
   region                    = local.region
   replica_zones             = [local.zone1, local.zone2]
   size                      = 10
-  image                     = data.google_compute_image.debian_12.self_link
+  image                     = data.google_compute_image.debian_13.self_link
 }
 
 resource "google_compute_instance" "vm" {
@@ -403,7 +430,7 @@ resource "google_compute_instance" "vm" {
   allow_stopping_for_update = true
 }
 
-resource "google_compute_region_backend_service" "bs" {
+resource "google_compute_region_backend_service" "backend_service" {
   name                  = "hac-rbs-bs"
   region                = local.region
   protocol              = "UNSPECIFIED"
@@ -417,19 +444,26 @@ resource "google_compute_region_backend_service" "bs" {
   connection_draining_timeout_sec = 0
 }
 
-resource "google_compute_ha_controller" "default" {
+resource "google_compute_ha_controller" "ha_controller" {
   name                = "hac-rbs"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
   failover_initiation = "MANUAL_ONLY"
 
-  backend_services = [google_compute_region_backend_service.bs.self_link]
+  backend_services = [google_compute_region_backend_service.backend_service.self_link]
 
   zone_configuration {
     zone = local.zone1
   }
   zone_configuration {
     zone = local.zone2
+  }
+
+  # To recreate the VMs, Compute Engine must delete the HA Controller first.
+  lifecycle {
+    replace_triggered_by = [
+      google_compute_instance.vm.id
+    ]
   }
 }
 ```
@@ -449,8 +483,8 @@ locals {
   zone2  = "us-central1-b"
 }
 
-data "google_compute_image" "debian_12" {
-  family  = "debian-12"
+data "google_compute_image" "debian_13" {
+  family  = "debian-13"
   project = "debian-cloud"
 }
 
@@ -515,7 +549,7 @@ resource "google_compute_region_disk" "regional_disk" {
   region                    = local.region
   replica_zones             = [local.zone1, local.zone2]
   size                      = 10
-  image                     = data.google_compute_image.debian_12.self_link
+  image                     = data.google_compute_image.debian_13.self_link
 }
 
 resource "google_compute_instance" "vm" {
@@ -560,7 +594,7 @@ resource "google_compute_instance" "vm" {
   allow_stopping_for_update = true
 }
 
-resource "google_compute_ha_controller" "default" {
+resource "google_compute_ha_controller" "ha_controller" {
   name                = "hac-sip"
   region              = local.region
   instance_name       = google_compute_instance.vm.name
@@ -588,6 +622,13 @@ resource "google_compute_ha_controller" "default" {
       network_ip = google_compute_address.ipv4_nic1_zone2.address
     }
   }
+
+  # To recreate the VMs, Compute Engine must delete the HA Controller first.
+  lifecycle {
+    replace_triggered_by = [
+      google_compute_instance.vm.id
+    ]
+  }
 }
 ```
 
@@ -612,10 +653,6 @@ The following arguments are supported:
   A set of exactly two distinct zone configurations.
   Structure is [documented below](#nested_zone_configuration).
 
-* `region` -
-  (Required)
-  The region where the HA Controller will be created.
-
 
 * `description` -
   (Optional)
@@ -639,6 +676,10 @@ The following arguments are supported:
   The full URL of the backend service.
   Currently, you can specify only one backend service,
   and it must be an L4 Internal Load Balancer (ILB).
+
+* `region` -
+  (Optional)
+  The region where the HA Controller will be created.
 
 * `project` - (Optional) The ID of the project in which the resource belongs.
     If it is not provided, the provider project is used.
@@ -684,9 +725,6 @@ The following arguments are supported:
   - `NO_RESERVATION`: The instance doesn't consume any reservations, even if existing, matching reservations have capacity available.
   - `ANY_RESERVATION`: The instance automatically consumes any reservation with matching properties.
   - `SPECIFIC_RESERVATION`: The instance consumes a specific, matching reservation. You must also provide key and values to consume the reservation. Otherwise, you encounter errors.
-  - `SPECIFIC_THEN_ANY_RESERVATION`: The instance consumes a specific, matching reservation if available. Otherwise, the instance consumes any reservation with matching properties.
-  - `SPECIFIC_THEN_NO_RESERVATION`: The instance consumes a specific, matching reservation if available. Otherwise, the instance doesn't consume any reservations.
-  - `ANY_RESERVATION_THEN_FAIL`: The instance automatically consumes any reservation with matching properties. Otherwise, creating the instance fails.
 
 * `specific_reservation` -
   (Optional)
@@ -711,18 +749,18 @@ The following arguments are supported:
 <a name="nested_zone_configuration_node_affinities"></a>The `node_affinities` block supports:
 
 * `key` -
-  (Optional)
+  (Required)
   The key for the node affinity label.
 
 * `operator` -
-  (Optional)
+  (Required)
   Defines the operation of node selection.
   Possible values:
   - `IN`: Requires Compute Engine to seek for matched nodes.
   - `NOT_IN`: Requires Compute Engine to avoid certain nodes.
 
 * `values` -
-  (Optional)
+  (Required)
   Corresponds to the label values of Node resource.
 
 <a name="nested_zone_configuration_instance_network_interface"></a>The `instance_network_interface` block supports:
@@ -782,8 +820,71 @@ The following arguments are supported:
 In addition to the arguments listed above, the following computed attributes are exported:
 
 * `id` - an identifier for the resource with format `projects/{{project}}/regions/{{region}}/haControllers/{{name}}`
+
+* `creation_timestamp` -
+  The creation timestamp for the HA Controller in RFC3339 text format.
+
+* `self_link_with_id` -
+  The server-defined URL for the HA Controller. This URL includes the resource ID.
+
+* `state` -
+  The current state of the HA Controller.
+  Possible values are the following:
+  - `ACTIVE`: The HA Controller is active and ready to fail over the instance.
+  - `CREATING`: Compute Engine is creating the HA Controller.
+  - `DELETING`: Compute Engine is deleting the HA Controller.
+  - `FAILOVER_IN_PROGRESS`: The HA Controller is failing over the instance to the secondary zone.
+  - `FAILOVER_UNAVAILABLE`: The HA Controller isn't ready to fail over the instance.
+  - `MULTI_ZONE_FAILURE`: The instance requires a failover, but the secondary zone isn't available.
+  - `PENDING_FAILOVER`: The instance requires a failover.
+  - `STARTING`: Compute Engine is starting the HA Controller.
+  - `STOPPED`: The HA Controller is stopped.
+  - `STOPPING`: Compute Engine is stopping the HA Controller.
+  - `UPDATING`: Compute Engine is updating the HA Controller.
+
+* `status` -
+  The current status of the HA Controller.
+  Structure is [documented below](#nested_status).
 * `self_link` - The URI of the created resource.
 
+
+<a name="nested_status"></a>The `status` block contains:
+
+* `primary_zone` -
+  (Output)
+  The name of the primary zone for the instance. Compute Engine updates this field at the
+  start of a failover operation, so this zone might not be operational during a failover.
+
+* `primary_instance` -
+  (Output)
+  The URL of the instance in the primary zone. Compute Engine updates this field at the
+  start of a failover operation.
+
+* `ongoing_failover` -
+  (Output)
+  Indicates whether a failover operation is in progress.
+
+* `ready_for_failover` -
+  (Output)
+  Indicates whether the HA Controller is ready to fail over the instance to the secondary zone.
+
+* `zone_status` -
+  (Output)
+  A map that contains the status of each configured zone, where each key is the name of the zone.
+  Structure is [documented below](#nested_status_zone_status).
+
+
+<a name="nested_status_zone_status"></a>The `zone_status` block contains:
+
+* `zone` - (Required) The identifier for this object. Format specified above.
+
+* `is_primary` -
+  (Output)
+  Indicates whether this zone is the primary zone.
+
+* `is_zone_ready` -
+  (Output)
+  Indicates whether this zone is ready for a failover.
 
 ## Timeouts
 
@@ -791,6 +892,7 @@ This resource provides the following
 [Timeouts](https://developer.hashicorp.com/terraform/plugin/sdkv2/resources/retries-and-customizable-timeouts) configuration options:
 
 - `create` - Default is 20 minutes.
+- `update` - Default is 20 minutes.
 - `delete` - Default is 20 minutes.
 
 ## Import
@@ -809,7 +911,7 @@ In Terraform v1.12.0 and later, use an [`identity` block](https://developer.hash
 import {
   identity = {
     name = "<-required value->"
-    region = "<-required value->"
+    region = "<-optional value->"
     project = "<-optional value->"
   }
   to = google_compute_ha_controller.default

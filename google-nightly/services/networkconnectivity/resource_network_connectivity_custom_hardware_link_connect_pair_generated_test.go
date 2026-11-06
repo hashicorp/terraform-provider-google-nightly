@@ -81,7 +81,7 @@ func TestAccNetworkConnectivityCustomHardwareLinkConnectPair_networkConnectivity
 			},
 			{
 				ResourceName:       "google_network_connectivity_custom_hardware_link_connect_pair.pair",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

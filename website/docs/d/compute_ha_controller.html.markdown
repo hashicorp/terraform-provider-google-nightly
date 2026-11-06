@@ -29,7 +29,7 @@ Get information about a Compute Engine HaController.
 
 ```hcl
 data "google_compute_ha_controller" "default" {
-  name = google_compute_ha_controller.default.name
+  name = google_compute_ha_controller.ha_controller.name
 }
 ```
 
@@ -46,7 +46,7 @@ The following arguments are supported:
 
 
 * `region` -
-  (Required)
+  (Optional)
   The region where the HA Controller will be created.
 
 * `project` - (Optional) The ID of the project in which the resource belongs.
