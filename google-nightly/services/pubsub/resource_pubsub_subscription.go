@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -103,7 +102,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -647,6 +645,29 @@ message to form the inference request.`,
 								},
 							},
 						},
+						"compression": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Description: `Compression/Decompression. Configuration for compressing/decompressing
+message data using a user-specified compression algorithm.`,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"compression_algorithm": {
+										Type:     schema.TypeString,
+										Required: true,
+										Description: `Specifies the compression algorithm to use.
+Possible values include 'ZLIB'.`,
+									},
+									"compression_mode": {
+										Type:         schema.TypeString,
+										Required:     true,
+										ValidateFunc: verify.ValidateEnum([]string{"COMPRESS", "DECOMPRESS"}),
+										Description:  `Specifies whether to compress or decompress the message. Possible values: ["COMPRESS", "DECOMPRESS"]`,
+									},
+								},
+							},
+						},
 						"disabled": {
 							Type:     schema.TypeBool,
 							Optional: true,
@@ -1051,7 +1072,7 @@ func resourcePubsubSubscriptionCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	d.SetId(id)
 
-	err = transport_tpg.PollingWaitTime(resourcePubsubSubscriptionPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating Subscription", d.Timeout(schema.TimeoutCreate), 1)
+	err = transport_tpg.PollingWaitTime(resourcePubsubSubscriptionPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating Subscription", d.Timeout(schema.TimeoutCreate), 1, config.SleepUnit)
 	if err != nil {
 		log.Printf("[ERROR] Unable to confirm eventually consistent Subscription %q finished updating: %q", d.Id(), err)
 	}
@@ -1989,6 +2010,7 @@ func flattenPubsubSubscriptionMessageTransforms(v interface{}, d *schema.Resourc
 		}
 		transformed = append(transformed, map[string]interface{}{
 			"ai_inference":   flattenPubsubSubscriptionMessageTransformsAiInference(original["aiInference"], d, config),
+			"compression":    flattenPubsubSubscriptionMessageTransformsCompression(original["compression"], d, config),
 			"javascript_udf": flattenPubsubSubscriptionMessageTransformsJavascriptUdf(original["javascriptUdf"], d, config),
 			"disabled":       flattenPubsubSubscriptionMessageTransformsDisabled(original["disabled"], d, config),
 		})
@@ -2034,6 +2056,29 @@ func flattenPubsubSubscriptionMessageTransformsAiInferenceUnstructuredInferenceP
 }
 
 func flattenPubsubSubscriptionMessageTransformsAiInferenceServiceAccountEmail(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenPubsubSubscriptionMessageTransformsCompression(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["compression_algorithm"] =
+		flattenPubsubSubscriptionMessageTransformsCompressionCompressionAlgorithm(original["compressionAlgorithm"], d, config)
+	transformed["compression_mode"] =
+		flattenPubsubSubscriptionMessageTransformsCompressionCompressionMode(original["compressionMode"], d, config)
+	return []interface{}{transformed}
+}
+func flattenPubsubSubscriptionMessageTransformsCompressionCompressionAlgorithm(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenPubsubSubscriptionMessageTransformsCompressionCompressionMode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2832,6 +2877,13 @@ func expandPubsubSubscriptionMessageTransforms(v interface{}, d tpgresource.Terr
 			transformed["aiInference"] = transformedAiInference
 		}
 
+		transformedCompression, err := expandPubsubSubscriptionMessageTransformsCompression(original["compression"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedCompression); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["compression"] = transformedCompression
+		}
+
 		transformedJavascriptUdf, err := expandPubsubSubscriptionMessageTransformsJavascriptUdf(original["javascript_udf"], d, config)
 		if err != nil {
 			return nil, err
@@ -2925,6 +2977,43 @@ func expandPubsubSubscriptionMessageTransformsAiInferenceUnstructuredInferencePa
 }
 
 func expandPubsubSubscriptionMessageTransformsAiInferenceServiceAccountEmail(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandPubsubSubscriptionMessageTransformsCompression(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedCompressionAlgorithm, err := expandPubsubSubscriptionMessageTransformsCompressionCompressionAlgorithm(original["compression_algorithm"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedCompressionAlgorithm); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["compressionAlgorithm"] = transformedCompressionAlgorithm
+	}
+
+	transformedCompressionMode, err := expandPubsubSubscriptionMessageTransformsCompressionCompressionMode(original["compression_mode"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedCompressionMode); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["compressionMode"] = transformedCompressionMode
+	}
+
+	return transformed, nil
+}
+
+func expandPubsubSubscriptionMessageTransformsCompressionCompressionAlgorithm(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandPubsubSubscriptionMessageTransformsCompressionCompressionMode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

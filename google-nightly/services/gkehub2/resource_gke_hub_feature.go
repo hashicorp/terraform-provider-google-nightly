@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -587,22 +585,6 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 							MaxItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"post_conditions": {
-										Type:        schema.TypeList,
-										Computed:    true,
-										Optional:    true,
-										Description: `Post conditions to override for the specified upgrade.`,
-										MaxItems:    1,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"soaking": {
-													Type:        schema.TypeString,
-													Required:    true,
-													Description: `Amount of time to "soak" after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days.`,
-												},
-											},
-										},
-									},
 									"upstream_fleets": {
 										Type:        schema.TypeList,
 										Required:    true,
@@ -651,6 +633,22 @@ Please refer to the field 'effective_labels' for all of the labels present on th
 															},
 														},
 													},
+												},
+											},
+										},
+									},
+									"post_conditions": {
+										Type:        schema.TypeList,
+										Computed:    true,
+										Optional:    true,
+										Description: `Post conditions to override for the specified upgrade.`,
+										MaxItems:    1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"soaking": {
+													Type:        schema.TypeString,
+													Required:    true,
+													Description: `Amount of time to "soak" after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days.`,
 												},
 											},
 										},
@@ -913,7 +911,7 @@ func resourceGKEHub2FeatureCreate(d *schema.ResourceData, meta interface{}) erro
 	headers := make(http.Header)
 	// Check if the fleet feature already exists. Do an update if so.
 
-	getUrl, err := tpgresource.ReplaceVars(d, config, "{{GKEHub2BasePath}}projects/{{project}}/locations/{{location}}/features/{{name}}")
+	getUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/features/{{name}}")
 	if err != nil {
 		return err
 	}
@@ -1252,7 +1250,7 @@ func resourceGKEHub2FeatureDelete(d *schema.ResourceData, meta interface{}) erro
 	if d.Get("name").(string) == "rbacrolebindingactuation" {
 		log.Printf("[DEBUG] Mandatory feature 'rbacrolebindingactuation' detected. Resetting instead of deleting.")
 
-		patchUrl, err := tpgresource.ReplaceVarsForId(d, config, "{{GKEHub2BasePath}}projects/{{project}}/locations/{{location}}/features/{{name}}")
+		patchUrl, err := tpgresource.ReplaceVarsForId(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/features/{{name}}")
 		if err != nil {
 			return err
 		}

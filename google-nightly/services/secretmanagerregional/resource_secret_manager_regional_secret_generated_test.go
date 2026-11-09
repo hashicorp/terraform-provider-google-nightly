@@ -83,7 +83,7 @@ func TestAccSecretManagerRegionalRegionalSecret_regionalSecretConfigBasicExample
 			},
 			{
 				ResourceName:       "google_secret_manager_regional_secret.regional-secret-basic",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -138,7 +138,7 @@ func TestAccSecretManagerRegionalRegionalSecret_regionalSecretWithCmekExample(t 
 			},
 			{
 				ResourceName:       "google_secret_manager_regional_secret.regional-secret-with-cmek",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -197,7 +197,7 @@ func TestAccSecretManagerRegionalRegionalSecret_regionalSecretWithRotationExampl
 			},
 			{
 				ResourceName:       "google_secret_manager_regional_secret.regional-secret-with-rotation",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -265,7 +265,7 @@ func TestAccSecretManagerRegionalRegionalSecret_regionalSecretWithTtlExample(t *
 			},
 			{
 				ResourceName:       "google_secret_manager_regional_secret.regional-secret-with-ttl",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -323,7 +323,7 @@ func TestAccSecretManagerRegionalRegionalSecret_regionalSecretWithExpireTimeExam
 			},
 			{
 				ResourceName:       "google_secret_manager_regional_secret.regional-secret-with-expire-time",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -378,7 +378,7 @@ func TestAccSecretManagerRegionalRegionalSecret_regionalSecretWithVersionDestroy
 			},
 			{
 				ResourceName:       "google_secret_manager_regional_secret.regional-secret-with-version-destroy-ttl",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -403,6 +403,50 @@ resource "google_secret_manager_regional_secret" "regional-secret-with-version-d
   }
 
   version_destroy_ttl = "86400s"
+}
+`, context)
+}
+
+func TestAccSecretManagerRegionalRegionalSecret_regionalSecretCloudSqlDbCredentialsExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"secret_id":     "tf-test-tf-reg-secret" + randomSuffix,
+		"random_suffix": randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckSecretManagerRegionalRegionalSecretDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSecretManagerRegionalRegionalSecret_regionalSecretCloudSqlDbCredentialsExample(context),
+			},
+			{
+				ResourceName:            "google_secret_manager_regional_secret.regional-secret-cloud-sql-db-credentials",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"annotations", "labels", "location", "secret_id", "tags", "terraform_labels", "ttl"},
+			},
+			{
+				ResourceName:       "google_secret_manager_regional_secret.regional-secret-cloud-sql-db-credentials",
+				ImportState:        true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccSecretManagerRegionalRegionalSecret_regionalSecretCloudSqlDbCredentialsExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_secret_manager_regional_secret" "regional-secret-cloud-sql-db-credentials" {
+  secret_id   = "%{secret_id}"
+  location    = "us-central1"
+  secret_type = "CLOUD_SQL_DB_CREDENTIALS"
 }
 `, context)
 }

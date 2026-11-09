@@ -84,7 +84,7 @@ func TestAccDataLineageConfig_dataLineageConfigProjectExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_data_lineage_config.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -162,7 +162,7 @@ func TestAccDataLineageConfig_dataLineageConfigFolderExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_data_lineage_config.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -234,7 +234,7 @@ func TestAccDataLineageConfig_dataLineageConfigOrganizationExample(t *testing.T)
 			},
 			{
 				ResourceName:       "google_data_lineage_config.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -274,7 +274,7 @@ func testAccCheckDataLineageConfigDestroyProducer(t *testing.T) func(s *terrafor
 
 			config := acctest.GoogleProviderConfig(t)
 
-			url, err := tpgresource.ReplaceVarsForTest(config, rs, "{{DataLineageBasePath}}{{parent}}/locations/{{location}}/config")
+			url, err := tpgresource.ReplaceVarsForTest(config, rs, transport_tpg.BaseUrl(datalineage.Product, config)+"{{parent}}/locations/{{location}}/config")
 			if err != nil {
 				return err
 			}

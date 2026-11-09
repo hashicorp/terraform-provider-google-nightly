@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -437,8 +435,19 @@ func resourceAccessContextManagerIngressPolicyDelete(d *schema.ResourceData, met
 func resourceAccessContextManagerIngressPolicyImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	config := meta.(*transport_tpg.Config)
 
+	if d.Id() == "" {
+		if err := tpgresource.ParseImportId([]string{"(?P<ingress_policy_name>accessPolicies/[^/]+/servicePerimeters/[^/]+)/(?P<resource>.+)"}, d, config); err != nil {
+			return nil, err
+		}
+		id, err := tpgresource.ReplaceVars(d, config, "{{ingress_policy_name}}/{{resource}}")
+		if err != nil {
+			return nil, fmt.Errorf("Error constructing id: %s", err)
+		}
+		d.SetId(id)
+	}
+
 	// current import_formats can't import fields with forward slashes in their value
-	parts, err := tpgresource.GetImportIdQualifiers([]string{"accessPolicies/(?P<accessPolicy>[^/]+)/servicePerimeters/(?P<perimeter>[^/]+)"}, d, config, d.Id())
+	parts, err := tpgresource.GetImportIdQualifiers([]string{"accessPolicies/(?P<accessPolicy>[^/]+)/servicePerimeters/(?P<perimeter>[^/]+)/(?P<resource>.+)"}, d, config, d.Id())
 	if err != nil {
 		return nil, err
 	}
@@ -446,8 +455,11 @@ func resourceAccessContextManagerIngressPolicyImport(d *schema.ResourceData, met
 	if err := d.Set("access_policy_id", fmt.Sprintf("accessPolicies/%s", parts["accessPolicy"])); err != nil {
 		return nil, fmt.Errorf("Error setting access_policy_id: %s", err)
 	}
-	if err := d.Set("perimeter", fmt.Sprintf("accessPolicies/%s/servicePerimeters/%s", parts["accessPolicy"], parts["perimeter"])); err != nil {
-		return nil, fmt.Errorf("Error setting perimeter: %s", err)
+	if err := d.Set("ingress_policy_name", fmt.Sprintf("accessPolicies/%s/servicePerimeters/%s", parts["accessPolicy"], parts["perimeter"])); err != nil {
+		return nil, fmt.Errorf("Error setting ingress_policy_name: %s", err)
+	}
+	if err := d.Set("resource", parts["resource"]); err != nil {
+		return nil, fmt.Errorf("Error setting resource: %s", err)
 	}
 	return []*schema.ResourceData{d}, nil
 }
@@ -598,7 +610,7 @@ func resourceAccessContextManagerIngressPolicyPatchDeleteEncoder(d *schema.Resou
 // extracting list of objects.
 func resourceAccessContextManagerIngressPolicyListForPatch(d *schema.ResourceData, meta interface{}) ([]interface{}, error) {
 	config := meta.(*transport_tpg.Config)
-	url, err := tpgresource.ReplaceVars(d, config, "{{AccessContextManagerBasePath}}{{ingress_policy_name}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{ingress_policy_name}}")
 	if err != nil {
 		return nil, err
 	}

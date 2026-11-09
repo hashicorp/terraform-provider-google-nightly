@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -87,7 +86,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -263,6 +261,7 @@ attachments (interconnectAttachments).`,
 			"md5_authentication_keys": {
 				Type:        schema.TypeList,
 				Optional:    true,
+				Deprecated:  "`md5_authentication_keys` is deprecated and will be removed in a future major release. It has no effect; use the `md5_authentication_key` block of `google_compute_router_peer` to configure MD5 authentication for a BGP peer instead.",
 				Description: `Keys used for MD5 authentication.`,
 				MaxItems:    1,
 				Elem: &schema.Resource{
@@ -271,6 +270,7 @@ attachments (interconnectAttachments).`,
 							Type:        schema.TypeString,
 							Required:    true,
 							Description: `Value of the key used for MD5 authentication.`,
+							Sensitive:   true,
 						},
 						"name": {
 							Type:     schema.TypeString,
@@ -440,6 +440,11 @@ func resourceComputeRouterCreate(d *schema.ResourceData, meta interface{}) error
 		return err
 	} else if v, ok := d.GetOkExists("region"); !tpgresource.IsEmptyValue(reflect.ValueOf(regionProp)) && (ok || !reflect.DeepEqual(v, regionProp)) {
 		obj["region"] = regionProp
+	}
+
+	obj, err = resourceComputeRouterEncoder(d, meta, obj)
+	if err != nil {
+		return err
 	}
 
 	lockName, err := tpgresource.ReplaceVars(d, config, "router/{{region}}/{{name}}")
@@ -681,6 +686,11 @@ func resourceComputeRouterUpdate(d *schema.ResourceData, meta interface{}) error
 		return err
 	} else if v, ok := d.GetOkExists("md5_authentication_keys"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, md5AuthenticationKeysProp)) {
 		obj["md5AuthenticationKeys"] = md5AuthenticationKeysProp
+	}
+
+	obj, err = resourceComputeRouterEncoder(d, meta, obj)
+	if err != nil {
+		return err
 	}
 
 	lockName, err := tpgresource.ReplaceVars(d, config, "router/{{region}}/{{name}}")
@@ -1156,7 +1166,7 @@ func expandComputeRouterNccGateway(v interface{}, d tpgresource.TerraformResourc
 	// Anything else is assumed to be a regional resource, with a partial link that begins with the resource name.
 	// This isn't very likely - it's a last-ditch effort to extract something useful here.  We can do a better job
 	// as soon as MultiResourceRefs are working since we'll know the types that this field is supposed to point to.
-	url, err := tpgresource.ReplaceVars(d, config, "{{NetworkConnectivityBasePath}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(registry.GetProduct("networkconnectivity"), config))
 	if err != nil {
 		return nil, err
 	}
@@ -1202,6 +1212,19 @@ func expandComputeRouterRegion(v interface{}, d tpgresource.TerraformResourceDat
 		return nil, fmt.Errorf("Invalid value for region: %s", err)
 	}
 	return f.RelativeLink(), nil
+}
+
+func resourceComputeRouterEncoder(d *schema.ResourceData, meta interface{}, obj map[string]interface{}) (map[string]interface{}, error) {
+	// md5_authentication_keys is deprecated and is never sent to the API.
+	//
+	// The API only accepts an MD5 authentication key that is referenced by exactly
+	// one BGP peer, and the keys on a router are managed by
+	// google_compute_router_peer.md5_authentication_key. Sending this field would
+	// overwrite the router's whole key list (removing the keys owned by
+	// google_compute_router_peer), so it is dropped from create and update requests.
+	delete(obj, "md5AuthenticationKeys")
+
+	return obj, nil
 }
 
 func ResourceComputeRouterFlatten(d *schema.ResourceData, meta interface{}, res map[string]interface{}, config *transport_tpg.Config, project string, userAgent string, billingProject string, url string, headers http.Header) error {

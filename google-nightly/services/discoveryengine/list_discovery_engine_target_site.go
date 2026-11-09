@@ -142,7 +142,7 @@ func ListDiscoveryEngineTargetSites(config *transport_tpg.Config,
 		}
 	}
 
-	url, err := tpgresource.ReplaceVars(resourceData, config, "{{DiscoveryEngineBasePath}}projects/{{project}}/locations/{{location}}/collections/default_collection/dataStores/{{data_store_id}}/siteSearchEngine/targetSites")
+	url, err := tpgresource.ReplaceVars(resourceData, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/collections/default_collection/dataStores/{{data_store_id}}/siteSearchEngine/targetSites")
 	if err != nil {
 		return err
 	}
@@ -166,6 +166,11 @@ func ListDiscoveryEngineTargetSites(config *transport_tpg.Config,
 		Flattener: func(res map[string]interface{}, d *schema.ResourceData, config *transport_tpg.Config) error {
 			headers := make(http.Header)
 			var err error
+			if name, ok := res["name"].(string); ok && name != "" {
+				if err := d.Set("target_site_id", tpgresource.GetResourceNameFromSelfLink(name)); err != nil {
+					return fmt.Errorf("Error setting target_site_id: %s", err)
+				}
+			}
 			if v, ok := res["location"]; ok && v != nil {
 				if s, ok := v.(string); ok {
 					v = tpgresource.GetResourceNameFromSelfLink(s)

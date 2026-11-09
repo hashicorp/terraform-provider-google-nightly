@@ -713,20 +713,19 @@ resource "google_pubsub_subscription" "example" {
   name  = "example-subscription"
   topic = google_pubsub_topic.example.id
   tags = {
-    (google_tags_tag_key.tag_key.namespaced_name) = google_tags_tag_value.tag_value.short_name
+    (data.google_tags_tag_key.tag_key.namespaced_name) = data.google_tags_tag_value.tag_value.short_name
   }
 }
 
 data "google_project" "project" {}
 
-resource "google_tags_tag_key" "tag_key" {
+data "google_tags_tag_key" "tag_key" {
   parent     = data.google_project.project.id
   short_name = "tag_key"
-  depends_on = [google_pubsub_topic.example]
 }
 
-resource "google_tags_tag_value" "tag_value" {
-  parent     = google_tags_tag_key.tag_key.id
+data "google_tags_tag_value" "tag_value" {
+  parent     = data.google_tags_tag_key.tag_key.id
   short_name = "tag_value"
 }
 ```
@@ -762,7 +761,7 @@ resource "google_pubsub_subscription" "example" {
 
   message_transforms {
     ai_inference {
-      endpoint = "projects/my-project-name/locations/us-central1/publishers/google/models/gemini-2.5-flash"
+      endpoint = "projects/my-project-name/locations/global/publishers/google/models/gemini-3.5-flash"
       unstructured_inference {
         parameters = {
           "max_tokens" = 25000
@@ -1239,6 +1238,12 @@ The following arguments are supported:
   be sent to.
   Structure is [documented below](#nested_message_transforms_ai_inference).
 
+* `compression` -
+  (Optional)
+  Compression/Decompression. Configuration for compressing/decompressing
+  message data using a user-specified compression algorithm.
+  Structure is [documented below](#nested_message_transforms_compression).
+
 * `javascript_udf` -
   (Optional)
   Javascript User Defined Function. If multiple Javascript UDFs are specified on a resource,
@@ -1278,6 +1283,18 @@ The following arguments are supported:
   A parameters object to be included in each inference request.
   The parameters object is combined with the data field of the Pub/Sub
   message to form the inference request.
+
+<a name="nested_message_transforms_compression"></a>The `compression` block supports:
+
+* `compression_algorithm` -
+  (Required)
+  Specifies the compression algorithm to use.
+  Possible values include `ZLIB`.
+
+* `compression_mode` -
+  (Required)
+  Specifies whether to compress or decompress the message.
+  Possible values are: `COMPRESS`, `DECOMPRESS`.
 
 <a name="nested_message_transforms_javascript_udf"></a>The `javascript_udf` block supports:
 

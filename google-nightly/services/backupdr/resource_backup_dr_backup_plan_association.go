@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -150,7 +148,8 @@ Note:
 - A Backup Plan configured for 'compute.googleapis.com/Instance', can only protect instance type resources.
 - A Backup Plan configured for 'compute.googleapis.com/Disk' can be used to protect both standard Disks and Regional Disks resources.
 - A Backup Plan configured for 'file.googleapis.com/Instance' can only protect Filestore instances.
-- A Backup Plan configured for 'sqladmin.googleapis.com/Instance' can only protect Cloud SQL instances.`,
+- A Backup Plan configured for 'sqladmin.googleapis.com/Instance' can only protect Cloud SQL instances.
+- A Backup Plan configured for 'netapp.googleapis.com/Volume' can only protect NetApp volumes.`,
 			},
 			"backup_plan_association_id": {
 				Type:        schema.TypeString,
@@ -171,7 +170,7 @@ Note:
 				Type:     schema.TypeString,
 				Required: true,
 				Description: `The resource type of workload on which backupplan is applied.
-Examples include, "compute.googleapis.com/Instance", "compute.googleapis.com/Disk", "compute.googleapis.com/RegionDisk", and "file.googleapis.com/Instance"`,
+Examples include, "compute.googleapis.com/Instance", "compute.googleapis.com/Disk", "compute.googleapis.com/RegionDisk", "file.googleapis.com/Instance", and "netapp.googleapis.com/Volume"`,
 			},
 			"auto_protection_policy_binding": {
 				Type:        schema.TypeString,

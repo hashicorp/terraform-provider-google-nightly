@@ -82,7 +82,7 @@ func TestAccPubsubTopic_pubsubTopicBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -130,7 +130,7 @@ func TestAccPubsubTopic_pubsubTopicGeoRestrictedExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -181,7 +181,7 @@ func TestAccPubsubTopic_pubsubTopicSchemaSettingsExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -237,7 +237,7 @@ func TestAccPubsubTopic_pubsubTopicIngestionKinesisExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -289,7 +289,7 @@ func TestAccPubsubTopic_pubsubTopicIngestionCloudStorageExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -346,7 +346,7 @@ func TestAccPubsubTopic_pubsubTopicIngestionAzureEventHubsExample(t *testing.T) 
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -401,7 +401,7 @@ func TestAccPubsubTopic_pubsubTopicIngestionAwsMskExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -453,7 +453,7 @@ func TestAccPubsubTopic_pubsubTopicIngestionConfluentCloudExample(t *testing.T) 
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -506,7 +506,7 @@ func TestAccPubsubTopic_pubsubTopicSingleSmtExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -560,7 +560,7 @@ func TestAccPubsubTopic_pubsubTopicMultipleSmtsExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -605,6 +605,13 @@ EOF
       code = "..."
     }
   }
+
+  message_transforms {
+    compression {
+      compression_algorithm = "ZLIB"
+      compression_mode      = "COMPRESS"
+    }
+  }
 }
 `, context)
 }
@@ -637,7 +644,7 @@ func TestAccPubsubTopic_pubsubTopicTagsExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -702,7 +709,7 @@ func TestAccPubsubTopic_pubsubTopicAiInferenceExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_topic.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -734,7 +741,7 @@ resource "google_pubsub_topic" "example" {
 
   message_transforms {
     ai_inference {
-      endpoint = "projects/%{project_name}/locations/us-central1/publishers/google/models/gemini-2.5-flash"
+      endpoint = "projects/%{project_name}/locations/global/publishers/google/models/gemini-3.5-flash"
       unstructured_inference {
         parameters = {
           "max_tokens" = 25000

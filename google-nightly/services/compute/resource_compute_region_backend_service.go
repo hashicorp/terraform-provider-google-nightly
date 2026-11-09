@@ -36,7 +36,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -159,7 +158,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -1329,7 +1327,7 @@ If it is not provided, the provider region is used.`,
 				Type:     schema.TypeString,
 				Optional: true,
 				Description: `URL to networkservices.ServiceLbPolicy resource.
-Can only be set if load balancing scheme is EXTERNAL_MANAGED or INTERNAL_MANAGED.
+Can only be set if load balancing scheme is EXTERNAL_MANAGED, INTERNAL_MANAGED or INTERNAL_SELF_MANAGED.
 The service lb policy must be regional and in the same region as the backend service.`,
 			},
 			"session_affinity": {
@@ -1469,16 +1467,14 @@ subjectAltNames.`,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"dns_name": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										Description:  `The SAN specified as a DNS Name.`,
-										ExactlyOneOf: []string{},
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The SAN specified as a DNS Name.`,
 									},
 									"uniform_resource_identifier": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										Description:  `The SAN specified as a URI.`,
-										ExactlyOneOf: []string{},
+										Type:        schema.TypeString,
+										Optional:    true,
+										Description: `The SAN specified as a URI.`,
 									},
 								},
 							},
@@ -2027,7 +2023,7 @@ func resourceComputeRegionBackendServiceCreate(d *schema.ResourceData, meta inte
 		}
 		obj["security_policy"] = securityPolicyProp
 
-		url, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/regions/{{region}}/backendServices/{{name}}/setSecurityPolicy")
+		url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/backendServices/{{name}}/setSecurityPolicy")
 		if err != nil {
 			return err
 		}

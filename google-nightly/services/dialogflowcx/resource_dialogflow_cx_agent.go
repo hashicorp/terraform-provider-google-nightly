@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -1231,7 +1229,7 @@ func resourceDialogflowCXAgentDelete(d *schema.ResourceData, meta interface{}) e
 
 	if d.Get("delete_chat_engine_on_destroy").(bool) && engineID != "" {
 		// Check if the engine exist.
-		baseUrl, err := tpgresource.ReplaceVars(d, config, "{{DiscoveryEngineBasePath}}")
+		baseUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(registry.GetProduct("discoveryengine"), config))
 		if err != nil {
 			return err
 		}

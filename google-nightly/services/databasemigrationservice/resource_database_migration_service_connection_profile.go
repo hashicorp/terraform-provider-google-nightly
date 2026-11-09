@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -352,10 +350,9 @@ Currently supported values located at https://cloud.google.com/database-migratio
 																Description: `The allowlisted value for the access control list.`,
 															},
 															"expire_time": {
-																Type:         schema.TypeString,
-																Optional:     true,
-																Description:  `The time when this access control entry expires in RFC 3339 format.`,
-																ExactlyOneOf: []string{},
+																Type:        schema.TypeString,
+																Optional:    true,
+																Description: `The time when this access control entry expires in RFC 3339 format.`,
 															},
 															"label": {
 																Type:        schema.TypeString,
@@ -612,12 +609,11 @@ This field is not returned on request, and the value is encrypted when stored in
 										Description: `Required. Username for the SSH tunnel.`,
 									},
 									"password": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ForceNew:     true,
-										Description:  `Input only. SSH password. Only one of 'password' and 'private_key' can be configured.`,
-										Sensitive:    true,
-										ExactlyOneOf: []string{},
+										Type:        schema.TypeString,
+										Optional:    true,
+										ForceNew:    true,
+										Description: `Input only. SSH password. Only one of 'password' and 'private_key' can be configured.`,
+										Sensitive:   true,
 									},
 									"private_key": {
 										Type:         schema.TypeString,
@@ -629,7 +625,6 @@ This field is not returned on request, and the value is encrypted when stored in
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"private_connectivity": {
 							Type:        schema.TypeList,
@@ -668,8 +663,7 @@ The replica will use this certificate to verify it's connecting to the right hos
 										ForceNew: true,
 										Description: `Input only. The x509 PEM-encoded certificate that will be used by the replica to authenticate against the source database server.
 If this field is used then the 'clientKey' field is mandatory`,
-										Sensitive:    true,
-										RequiredWith: []string{},
+										Sensitive: true,
 									},
 									"client_key": {
 										Type:     schema.TypeString,
@@ -677,8 +671,7 @@ If this field is used then the 'clientKey' field is mandatory`,
 										ForceNew: true,
 										Description: `Input only. The unencrypted PKCS#1 or PKCS#8 PEM-encoded private key associated with the Client Certificate.
 If this field is used then the 'clientCertificate' field is mandatory.`,
-										Sensitive:    true,
-										RequiredWith: []string{},
+										Sensitive: true,
 									},
 									"type": {
 										Type:        schema.TypeString,
@@ -698,7 +691,6 @@ Static IP address connectivity configured on service project.`,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"password_set": {
 							Type:        schema.TypeBool,
@@ -789,8 +781,7 @@ The replica will use this certificate to verify it's connecting to the right hos
 										ForceNew: true,
 										Description: `Input only. The x509 PEM-encoded certificate that will be used by the replica to authenticate against the source database server.
 If this field is used then the 'clientKey' field is mandatory`,
-										Sensitive:    true,
-										RequiredWith: []string{},
+										Sensitive: true,
 									},
 									"client_key": {
 										Type:     schema.TypeString,
@@ -798,8 +789,7 @@ If this field is used then the 'clientKey' field is mandatory`,
 										ForceNew: true,
 										Description: `Input only. The unencrypted PKCS#1 or PKCS#8 PEM-encoded private key associated with the Client Certificate.
 If this field is used then the 'clientCertificate' field is mandatory.`,
-										Sensitive:    true,
-										RequiredWith: []string{},
+										Sensitive: true,
 									},
 									"type": {
 										Type:         schema.TypeString,

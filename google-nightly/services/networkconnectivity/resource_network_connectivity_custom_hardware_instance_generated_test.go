@@ -89,7 +89,7 @@ func TestAccNetworkConnectivityCustomHardwareInstance_networkConnectivityCustomH
 			},
 			{
 				ResourceName:       "google_network_connectivity_custom_hardware_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -109,7 +109,7 @@ func TestAccNetworkConnectivityCustomHardwareInstance_networkConnectivityCustomH
 			},
 			{
 				ResourceName:       "google_network_connectivity_custom_hardware_instance.instance",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -84,7 +83,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -188,7 +186,6 @@ the function to be redeployed.`,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"docker_repository": {
 							Type:        schema.TypeString,
@@ -226,7 +223,6 @@ function exported by the module specified in source_location.`,
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"runtime": {
 							Type:     schema.TypeString,
@@ -255,16 +251,14 @@ function, optional when updating an existing function.`,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"branch_name": {
-													Type:         schema.TypeString,
-													Optional:     true,
-													Description:  `Regex matching branches to build.`,
-													ExactlyOneOf: []string{},
+													Type:        schema.TypeString,
+													Optional:    true,
+													Description: `Regex matching branches to build.`,
 												},
 												"commit_sha": {
-													Type:         schema.TypeString,
-													Optional:     true,
-													Description:  `Regex matching tags to build.`,
-													ExactlyOneOf: []string{},
+													Type:        schema.TypeString,
+													Optional:    true,
+													Description: `Regex matching tags to build.`,
 												},
 												"dir": {
 													Type:        schema.TypeString,
@@ -290,14 +284,12 @@ project ID requesting the build is assumed.`,
 													Description: `Name of the Cloud Source Repository.`,
 												},
 												"tag_name": {
-													Type:         schema.TypeString,
-													Optional:     true,
-													Description:  `Regex matching tags to build.`,
-													ExactlyOneOf: []string{},
+													Type:        schema.TypeString,
+													Optional:    true,
+													Description: `Regex matching tags to build.`,
 												},
 											},
 										},
-										ExactlyOneOf: []string{},
 									},
 									"storage_source": {
 										Type:        schema.TypeList,
@@ -325,7 +317,6 @@ is omitted, the latest generation will be used.`,
 												},
 											},
 										},
-										ExactlyOneOf: []string{},
 									},
 								},
 							},

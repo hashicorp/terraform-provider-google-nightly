@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -556,6 +554,47 @@ func resourceSaasRuntimeReleaseCreate(d *schema.ResourceData, meta interface{}) 
 	return resourceSaasRuntimeReleaseRead(d, meta)
 }
 
+func resourceSaasRuntimeReleasePollRead(d *schema.ResourceData, meta interface{}) transport_tpg.PollReadFunc {
+	return func() (map[string]interface{}, error) {
+		config := meta.(*transport_tpg.Config)
+
+		url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/releases/{{release_id}}")
+		if err != nil {
+			return nil, err
+		}
+
+		billingProject := ""
+
+		project, err := tpgresource.GetProject(d, config)
+		if err != nil {
+			return nil, fmt.Errorf("Error fetching project for Release: %s", err)
+		}
+		billingProject = project
+
+		// err == nil indicates that the billing_project value was found
+		if bp, err := tpgresource.GetBillingProject(d, config); err == nil {
+			billingProject = bp
+		}
+
+		userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
+		if err != nil {
+			return nil, err
+		}
+
+		res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+			Config:    config,
+			Method:    "GET",
+			Project:   billingProject,
+			RawURL:    url,
+			UserAgent: userAgent,
+		})
+		if err != nil {
+			return res, err
+		}
+		return res, nil
+	}
+}
+
 func resourceSaasRuntimeReleaseRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*transport_tpg.Config)
 	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
@@ -837,6 +876,11 @@ func resourceSaasRuntimeReleaseDelete(d *schema.ResourceData, meta interface{}) 
 	})
 	if err != nil {
 		return transport_tpg.HandleNotFoundError(err, d, "Release")
+	}
+
+	err = transport_tpg.PollingWaitTime(resourceSaasRuntimeReleasePollRead(d, meta), transport_tpg.PollCheckForAbsence, "Deleting Release", d.Timeout(schema.TimeoutCreate), 1, config.SleepUnit)
+	if err != nil {
+		return fmt.Errorf("Error waiting to delete Release: %s", err)
 	}
 
 	log.Printf("[DEBUG] Finished deleting Release %q: %#v", d.Id(), res)

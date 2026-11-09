@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -114,6 +112,7 @@ func ResourcePubsubLiteSubscription() *schema.Resource {
 
 		CustomizeDiff: customdiff.All(
 			tpgresource.DefaultProviderProject,
+			tpgresource.DefaultProviderZone,
 			tpgresource.DefaultProviderDeletionPolicy("DELETE"),
 		),
 
@@ -180,6 +179,7 @@ func ResourcePubsubLiteSubscription() *schema.Resource {
 			},
 			"zone": {
 				Type:        schema.TypeString,
+				Computed:    true,
 				Optional:    true,
 				Description: `The zone of the pubsub lite topic.`,
 			},
@@ -362,6 +362,13 @@ func resourcePubsubLiteSubscriptionRead(d *schema.ResourceData, meta interface{}
 		return fmt.Errorf("Error reading Subscription: %s", err)
 	}
 
+	zone, err := tpgresource.GetZone(d, config)
+	if err != nil {
+		return err
+	}
+	if err := d.Set("zone", zone); err != nil {
+		return fmt.Errorf("Error reading Subscription: %s", err)
+	}
 	err = ResourcePubsubLiteSubscriptionFlatten(d, meta, res, config, project, userAgent, billingProject, url, headers)
 	if err != nil {
 		return err

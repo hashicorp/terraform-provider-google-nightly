@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -115,6 +113,7 @@ func ResourceApiGatewayGateway() *schema.Resource {
 		CustomizeDiff: customdiff.All(
 			tpgresource.SetLabelsDiff,
 			tpgresource.DefaultProviderProject,
+			tpgresource.DefaultProviderRegion,
 			tpgresource.DefaultProviderDeletionPolicy("DELETE"),
 		),
 
@@ -383,6 +382,14 @@ func resourceApiGatewayGatewayRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 	if err := d.Set("project", project); err != nil {
+		return fmt.Errorf("Error reading Gateway: %s", err)
+	}
+
+	region, err := tpgresource.GetRegion(d, config)
+	if err != nil {
+		return err
+	}
+	if err := d.Set("region", region); err != nil {
 		return fmt.Errorf("Error reading Gateway: %s", err)
 	}
 

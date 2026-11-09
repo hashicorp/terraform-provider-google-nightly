@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -379,7 +377,7 @@ func resourceCloudIdentityGroupCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	d.SetId(name.(string))
 
-	err = transport_tpg.PollingWaitTime(resourceCloudIdentityGroupPollRead(d, meta), transport_tpg.PollCheckForExistenceWith403, "Creating Group", d.Timeout(schema.TimeoutCreate), 10)
+	err = transport_tpg.PollingWaitTime(resourceCloudIdentityGroupPollRead(d, meta), transport_tpg.PollCheckForExistenceWith403, "Creating Group", d.Timeout(schema.TimeoutCreate), 10, config.SleepUnit)
 	if err != nil {
 		return fmt.Errorf("Error waiting to create Group: %s", err)
 	}
@@ -606,7 +604,7 @@ func resourceCloudIdentityGroupUpdate(d *schema.ResourceData, meta interface{}) 
 			log.Printf("[DEBUG] Finished updating Group %q: %#v", d.Id(), res)
 		}
 
-		err = transport_tpg.PollingWaitTime(resourceCloudIdentityGroupPollRead(d, meta), transport_tpg.PollCheckForExistenceWith403, "Updating Group", d.Timeout(schema.TimeoutUpdate), 10)
+		err = transport_tpg.PollingWaitTime(resourceCloudIdentityGroupPollRead(d, meta), transport_tpg.PollCheckForExistenceWith403, "Updating Group", d.Timeout(schema.TimeoutUpdate), 10, config.SleepUnit)
 		if err != nil {
 			return err
 		}
@@ -660,7 +658,7 @@ func resourceCloudIdentityGroupDelete(d *schema.ResourceData, meta interface{}) 
 		return transport_tpg.HandleNotFoundError(err, d, "Group")
 	}
 
-	err = transport_tpg.PollingWaitTime(resourceCloudIdentityGroupPollRead(d, meta), transport_tpg.PollCheckForAbsenceWith403, "Deleting Group", d.Timeout(schema.TimeoutCreate), 10)
+	err = transport_tpg.PollingWaitTime(resourceCloudIdentityGroupPollRead(d, meta), transport_tpg.PollCheckForAbsenceWith403, "Deleting Group", d.Timeout(schema.TimeoutCreate), 10, config.SleepUnit)
 	if err != nil {
 		return fmt.Errorf("Error waiting to delete Group: %s", err)
 	}

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -451,7 +449,7 @@ func resourceComputeNetworkCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if d.Get("delete_default_routes_on_create").(bool) {
-		networkUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/global/networks/{{name}}")
+		networkUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/global/networks/{{name}}")
 		if err != nil {
 			return err
 		}
@@ -482,7 +480,7 @@ func resourceComputeNetworkCreate(d *schema.ResourceData, meta interface{}) erro
 			if token != "" {
 				params["pageToken"] = token
 			}
-			routesUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/global/routes")
+			routesUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/global/routes")
 			if err != nil {
 				return err
 			}
@@ -516,7 +514,7 @@ func resourceComputeNetworkCreate(d *schema.ResourceData, meta interface{}) erro
 				if !ok || routeName == "" {
 					continue
 				}
-				routeUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/global/routes/"+routeName)
+				routeUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/global/routes/"+routeName)
 				if err != nil {
 					return err
 				}

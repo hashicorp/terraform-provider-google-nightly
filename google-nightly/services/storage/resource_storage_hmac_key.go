@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -290,7 +288,7 @@ func resourceStorageHmacKeyCreate(d *schema.ResourceData, meta interface{}) erro
 
 	d.SetId(id)
 
-	err = transport_tpg.PollingWaitTime(resourceStorageHmacKeyPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating HmacKey", d.Timeout(schema.TimeoutCreate), 1)
+	err = transport_tpg.PollingWaitTime(resourceStorageHmacKeyPollRead(d, meta), transport_tpg.PollCheckForExistence, "Creating HmacKey", d.Timeout(schema.TimeoutCreate), 1, config.SleepUnit)
 	if err != nil {
 		return fmt.Errorf("Error waiting to create HmacKey: %s", err)
 	}
@@ -607,7 +605,7 @@ func resourceStorageHmacKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	headers := make(http.Header)
-	getUrl, err := tpgresource.ReplaceVars(d, config, "{{StorageBasePath}}projects/{{project}}/hmacKeys/{{access_id}}")
+	getUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/hmacKeys/{{access_id}}")
 	if err != nil {
 		return err
 	}
@@ -627,7 +625,7 @@ func resourceStorageHmacKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	// updates
 	if v := getRes["state"]; v == "ACTIVE" {
 		getRes["state"] = "INACTIVE"
-		updateUrl, err := tpgresource.ReplaceVars(d, config, "{{StorageBasePath}}projects/{{project}}/hmacKeys/{{access_id}}")
+		updateUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/hmacKeys/{{access_id}}")
 		if err != nil {
 			return err
 		}

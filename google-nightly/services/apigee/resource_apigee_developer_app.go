@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -115,7 +114,7 @@ func updateDeveloperAppKeyProductsAndScopes(config *transport_tpg.Config, d *sch
 		return fmt.Errorf("cannot update api_products/scopes in place: no existing consumer_key found in state for DeveloperApp %q", d.Id())
 	}
 
-	keyURL, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}{{org_id}}/developers/{{developer_email}}/apps/{{name}}/keys/"+consumerKey)
+	keyURL, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{org_id}}/developers/{{developer_email}}/apps/{{name}}/keys/"+consumerKey)
 	if err != nil {
 		return err
 	}
@@ -195,7 +194,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -602,7 +600,7 @@ func resourceApigeeDeveloperAppCreate(d *schema.ResourceData, meta interface{}) 
 		consumerSecret := d.Get("consumer_secret").(string)
 
 		// First, obtain the auto-generated consumer key(s) to delete them later.
-		readURL, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}{{org_id}}/developers/{{developer_email}}/apps/{{name}}")
+		readURL, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{org_id}}/developers/{{developer_email}}/apps/{{name}}")
 		if err != nil {
 			return fmt.Errorf("Error constructing URL for DeveloperApp read: %s", err)
 		}
@@ -630,7 +628,7 @@ func resourceApigeeDeveloperAppCreate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		// Create the static credential via the keys API.
-		keysURL, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}{{org_id}}/developers/{{developer_email}}/apps/{{name}}/keys")
+		keysURL, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{org_id}}/developers/{{developer_email}}/apps/{{name}}/keys")
 		if err != nil {
 			return fmt.Errorf("Error constructing keys URL for DeveloperApp: %s", err)
 		}
@@ -885,7 +883,7 @@ func resourceApigeeDeveloperAppUpdate(d *schema.ResourceData, meta interface{}) 
 		d.HasChange("key_expires_in") || d.HasChange("status") || d.HasChange("attributes")
 
 	if appFieldChanged {
-		url, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}{{org_id}}/developers/{{developer_email}}/apps/{{name}}")
+		url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{org_id}}/developers/{{developer_email}}/apps/{{name}}")
 		if err != nil {
 			return err
 		}

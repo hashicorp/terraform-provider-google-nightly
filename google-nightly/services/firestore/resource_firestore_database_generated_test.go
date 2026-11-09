@@ -84,7 +84,7 @@ func TestAccFirestoreDatabase_firestoreDatabaseExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_database.database",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -138,7 +138,7 @@ func TestAccFirestoreDatabase_firestoreCmekDatabaseExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_database.database",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -220,7 +220,7 @@ func TestAccFirestoreDatabase_firestoreDatabaseInDatastoreModeExample(t *testing
 			},
 			{
 				ResourceName:       "google_firestore_database.datastore_mode_database",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -274,7 +274,7 @@ func TestAccFirestoreDatabase_firestoreCmekDatabaseInDatastoreModeExample(t *tes
 			},
 			{
 				ResourceName:       "google_firestore_database.database",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -356,7 +356,7 @@ func TestAccFirestoreDatabase_firestoreDatabaseEnterpriseExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_database.enterprise-db",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -383,9 +383,10 @@ func TestAccFirestoreDatabase_firestoreDatabaseDataAccessTestExample(t *testing.
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"project_id":    envvar.GetTestProjectFromEnv(),
-		"database_id":   "tf-test-data-access-database-id" + randomSuffix,
-		"random_suffix": randomSuffix,
+		"project_id":      envvar.GetTestProjectFromEnv(),
+		"database_id":     "tf-test-data-access-database-id" + randomSuffix,
+		"deletion_policy": "DELETE",
+		"random_suffix":   randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -404,7 +405,7 @@ func TestAccFirestoreDatabase_firestoreDatabaseDataAccessTestExample(t *testing.
 			},
 			{
 				ResourceName:       "google_firestore_database.firestore_access_database_test",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -423,7 +424,7 @@ resource "google_firestore_database" "firestore_access_database_test" {
   firestore_data_access_mode          = "DATA_ACCESS_MODE_ENABLED"
   mongodb_compatible_data_access_mode = "DATA_ACCESS_MODE_DISABLED"
   realtime_updates_mode               = "REALTIME_UPDATES_MODE_DISABLED"
-  deletion_policy                     = "DELETE"
+  deletion_policy                     = "%{deletion_policy}"
 }
 `, context)
 }

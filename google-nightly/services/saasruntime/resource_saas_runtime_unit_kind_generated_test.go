@@ -77,7 +77,7 @@ func TestAccSaasRuntimeUnitKind_saasRuntimeUnitKindBasicExample(t *testing.T) {
 
 	acctest.VcrTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderBetaFactories(t),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
 		CheckDestroy:             testAccCheckSaasRuntimeUnitKindDestroyProducer(t),
 		Steps: []resource.TestStep{
 			{
@@ -91,7 +91,7 @@ func TestAccSaasRuntimeUnitKind_saasRuntimeUnitKindBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_saas_runtime_unit_kind.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -102,7 +102,6 @@ func TestAccSaasRuntimeUnitKind_saasRuntimeUnitKindBasicExample(t *testing.T) {
 func testAccSaasRuntimeUnitKind_saasRuntimeUnitKindBasicExample(context map[string]interface{}) string {
 	return acctest.Nprintf(`
 resource "google_saas_runtime_saas" "example_saas" {
-  provider = google-beta
   saas_id  = "%{saas_name}"
   location = "us-east1"
 
@@ -112,7 +111,6 @@ resource "google_saas_runtime_saas" "example_saas" {
 }
 
 resource "google_saas_runtime_unit_kind" "cluster_unit_kind" {
-  provider = google-beta
   location = "us-east1"
   unit_kind_id = "%{cluster_unitkind_name}"
   saas = google_saas_runtime_saas.example_saas.id
@@ -120,7 +118,6 @@ resource "google_saas_runtime_unit_kind" "cluster_unit_kind" {
 }
 
 resource "google_saas_runtime_unit_kind" "example" {
-  provider = google-beta
   location = "us-east1"
   unit_kind_id = "%{app_unitkind_name}"
   saas = google_saas_runtime_saas.example_saas.id
@@ -128,16 +125,6 @@ resource "google_saas_runtime_unit_kind" "example" {
   dependencies {
     unit_kind = google_saas_runtime_unit_kind.cluster_unit_kind.id
     alias     = "cluster"
-  }
-}
-
-resource "google_saas_runtime_release" "example_release" {
-  provider          = google-beta
-  location          = "us-east1"
-  release_id        = "%{release_name}"
-  unit_kind         = google_saas_runtime_unit_kind.cluster_unit_kind.id
-  blueprint {
-    package = "us-central1-docker.pkg.dev/ci-test-project-188019/test-repo/tf-test-easysaas-alpha-image@sha256:16f50ddbcbc7926ad9d4f09fa6c37306b88ccc4d6370f627a4733b1ab0823680"
   }
 }
 `, context)

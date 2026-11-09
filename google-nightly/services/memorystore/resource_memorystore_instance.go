@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -83,7 +82,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -686,6 +684,25 @@ SINGLE_ZONE Possible values: ["MULTI_ZONE", "SINGLE_ZONE"]`,
 							ForceNew: true,
 							Description: `Optional. Defines zone where all resources will be allocated with SINGLE_ZONE mode.
 Ignored for MULTI_ZONE mode.`,
+						},
+						"zones": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Description: `Specify the zones of a multi-zone instance where Memorystore
+instance allocates resources. This flag isn't applicable for single-zone
+instances.`,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"active_zones": {
+							Type:        schema.TypeList,
+							Computed:    true,
+							Description: `The exact list of zones where the instance currently has active VMs.`,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
 						},
 					},
 				},
@@ -2754,6 +2771,10 @@ func flattenMemorystoreInstanceZoneDistributionConfig(v interface{}, d *schema.R
 		flattenMemorystoreInstanceZoneDistributionConfigZone(original["zone"], d, config)
 	transformed["mode"] =
 		flattenMemorystoreInstanceZoneDistributionConfigMode(original["mode"], d, config)
+	transformed["zones"] =
+		flattenMemorystoreInstanceZoneDistributionConfigZones(original["zones"], d, config)
+	transformed["active_zones"] =
+		flattenMemorystoreInstanceZoneDistributionConfigActiveZones(original["activeZones"], d, config)
 	return []interface{}{transformed}
 }
 func flattenMemorystoreInstanceZoneDistributionConfigZone(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -2761,6 +2782,14 @@ func flattenMemorystoreInstanceZoneDistributionConfigZone(v interface{}, d *sche
 }
 
 func flattenMemorystoreInstanceZoneDistributionConfigMode(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenMemorystoreInstanceZoneDistributionConfigZones(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenMemorystoreInstanceZoneDistributionConfigActiveZones(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -3610,6 +3639,20 @@ func expandMemorystoreInstanceZoneDistributionConfig(v interface{}, d tpgresourc
 		transformed["mode"] = transformedMode
 	}
 
+	transformedZones, err := expandMemorystoreInstanceZoneDistributionConfigZones(original["zones"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedZones); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["zones"] = transformedZones
+	}
+
+	transformedActiveZones, err := expandMemorystoreInstanceZoneDistributionConfigActiveZones(original["active_zones"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedActiveZones); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["activeZones"] = transformedActiveZones
+	}
+
 	return transformed, nil
 }
 
@@ -3618,6 +3661,14 @@ func expandMemorystoreInstanceZoneDistributionConfigZone(v interface{}, d tpgres
 }
 
 func expandMemorystoreInstanceZoneDistributionConfigMode(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandMemorystoreInstanceZoneDistributionConfigZones(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandMemorystoreInstanceZoneDistributionConfigActiveZones(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -4157,7 +4208,7 @@ func resourceMemorystoreInstanceDecoder(d *schema.ResourceData, meta interface{}
 
 	// Only instances with SERVER_AUTHENTICATION mode have certificate authority set
 	if isServerAuth && !isCustomerManaged {
-		url, err := tpgresource.ReplaceVars(d, config, "{{MemorystoreBasePath}}projects/{{project}}/locations/{{location}}/instances/{{instance_id}}/certificateAuthority")
+		url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/instances/{{instance_id}}/certificateAuthority")
 		if err != nil {
 			return nil, err
 		}

@@ -83,7 +83,7 @@ func TestAccAlloydbCluster_alloydbClusterBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_alloydb_cluster.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -95,7 +95,7 @@ func testAccAlloydbCluster_alloydbClusterBasicExample(context map[string]interfa
 	return acctest.Nprintf(`
 resource "google_alloydb_cluster" "default" {
   cluster_id = "%{alloydb_cluster_name}"
-  location   = "us-central1"
+  location   = "us-east1"
   network_config {
     network = google_compute_network.default.id
   }
@@ -139,7 +139,7 @@ func TestAccAlloydbCluster_alloydbClusterBeforeUpgradeExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_alloydb_cluster.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -162,7 +162,7 @@ resource "google_alloydb_instance" "default" {
 
 resource "google_alloydb_cluster" "default" {
   cluster_id = "%{alloydb_cluster_name}"
-  location   = "us-central1"
+  location   = "us-east1"
   network_config {
     network = data.google_compute_network.default.id
   }
@@ -209,7 +209,7 @@ func TestAccAlloydbCluster_alloydbClusterAfterUpgradeExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_alloydb_cluster.default",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -232,7 +232,7 @@ resource "google_alloydb_instance" "default" {
 
 resource "google_alloydb_cluster" "default" {
   cluster_id = "%{alloydb_cluster_name}"
-  location   = "us-central1"
+  location   = "us-east1"
   network_config {
     network = data.google_compute_network.default.id
   }
@@ -277,7 +277,7 @@ func TestAccAlloydbCluster_alloydbClusterFullExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_alloydb_cluster.full",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -289,7 +289,7 @@ func testAccAlloydbCluster_alloydbClusterFullExample(context map[string]interfac
 	return acctest.Nprintf(`
 resource "google_alloydb_cluster" "full" {
   cluster_id = "%{alloydb_cluster_name}"
-  location   = "us-central1"
+  location   = "us-east1"
   network_config {
     network = google_compute_network.default.id
   }
@@ -306,7 +306,7 @@ resource "google_alloydb_cluster" "full" {
   }
 
   automated_backup_policy {
-    location      = "us-central1"
+    location      = "us-east1"
     backup_window = "1800s"
     enabled       = true
 
@@ -374,7 +374,7 @@ func TestAccAlloydbCluster_alloydbSecondaryClusterBasicTestExample(t *testing.T)
 			},
 			{
 				ResourceName:       "google_alloydb_cluster.secondary",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -386,7 +386,7 @@ func testAccAlloydbCluster_alloydbSecondaryClusterBasicTestExample(context map[s
 	return acctest.Nprintf(`
 resource "google_alloydb_cluster" "primary" {
   cluster_id = "%{alloydb_primary_cluster_name}"
-  location   = "us-central1"
+  location   = "us-east1"
   network_config {
     network = data.google_compute_network.default.id
   }

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -238,7 +236,6 @@ func firestoreFieldIndexConfigIndexesSchema() *schema.Resource {
 				ValidateFunc: verify.ValidateEnum([]string{"CONTAINS", ""}),
 				Description: `Indicates that this field supports operations on arrayValues. Only one of 'order' and 'arrayConfig' can
 be specified. Possible values: ["CONTAINS"]`,
-				ExactlyOneOf: []string{},
 			},
 			"order": {
 				Type:         schema.TypeString,
@@ -246,7 +243,6 @@ be specified. Possible values: ["CONTAINS"]`,
 				ValidateFunc: verify.ValidateEnum([]string{"ASCENDING", "DESCENDING", ""}),
 				Description: `Indicates that this field supports ordering by the specified order or comparing using =, <, <=, >, >=, !=.
 Only one of 'order' and 'arrayConfig' can be specified. Possible values: ["ASCENDING", "DESCENDING"]`,
-				ExactlyOneOf: []string{},
 			},
 			"query_scope": {
 				Type:         schema.TypeString,
@@ -613,7 +609,7 @@ func resourceFirestoreFieldDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 	billingProject = project
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{FirestoreBasePath}}{{name}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{name}}")
 	if err != nil {
 		return err
 	}

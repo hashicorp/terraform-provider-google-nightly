@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -746,7 +744,7 @@ func resourceComputeRegionPerInstanceConfigUpdate(d *schema.ResourceData, meta i
 	}
 	obj["mostDisruptiveAllowedAction"] = mostDisruptiveAction
 
-	url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/applyUpdatesToInstances")
+	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/applyUpdatesToInstances")
 	if err != nil {
 		return err
 	}
@@ -804,9 +802,9 @@ func resourceComputeRegionPerInstanceConfigDelete(d *schema.ResourceData, meta i
 
 	var url string
 	if d.Get("remove_instance_on_destroy").(bool) {
-		url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/deleteInstances")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/deleteInstances")
 	} else {
-		url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/deletePerInstanceConfigs")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/deletePerInstanceConfigs")
 	}
 	if err != nil {
 		return err
@@ -852,7 +850,7 @@ func resourceComputeRegionPerInstanceConfigDelete(d *schema.ResourceData, meta i
 	}
 
 	if d.Get("remove_instance_on_destroy").(bool) {
-		err = transport_tpg.PollingWaitTime(resourceComputeRegionPerInstanceConfigInstancePollRead(d, meta, d.Get("name").(string)), PollCheckInstanceConfigInstanceDeleted, "Deleting RegionPerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1)
+		err = transport_tpg.PollingWaitTime(resourceComputeRegionPerInstanceConfigInstancePollRead(d, meta, d.Get("name").(string)), PollCheckInstanceConfigInstanceDeleted, "Deleting RegionPerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1, config.SleepUnit)
 		if err != nil {
 			return fmt.Errorf("Error waiting for instance delete on RegionPerInstanceConfig %q: %s", d.Id(), err)
 		}
@@ -868,7 +866,7 @@ func resourceComputeRegionPerInstanceConfigDelete(d *schema.ResourceData, meta i
 		obj["instances"] = []string{instanceName}
 
 		// Updates must be applied to the instance after deleting the PerInstanceConfig
-		url, err = tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/applyUpdatesToInstances")
+		url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/instanceGroupManagers/{{region_instance_group_manager}}/applyUpdatesToInstances")
 		if err != nil {
 			return err
 		}
@@ -897,7 +895,7 @@ func resourceComputeRegionPerInstanceConfigDelete(d *schema.ResourceData, meta i
 		}
 
 		// RegionPerInstanceConfig goes into "DELETING" state while the instance is actually deleted
-		err = transport_tpg.PollingWaitTime(resourceComputeRegionPerInstanceConfigPollRead(d, meta), PollCheckInstanceConfigDeleted, "Deleting RegionPerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1)
+		err = transport_tpg.PollingWaitTime(resourceComputeRegionPerInstanceConfigPollRead(d, meta), PollCheckInstanceConfigDeleted, "Deleting RegionPerInstanceConfig", d.Timeout(schema.TimeoutDelete), 1, config.SleepUnit)
 		if err != nil {
 			return fmt.Errorf("Error waiting for delete on RegionPerInstanceConfig %q: %s", d.Id(), err)
 		}

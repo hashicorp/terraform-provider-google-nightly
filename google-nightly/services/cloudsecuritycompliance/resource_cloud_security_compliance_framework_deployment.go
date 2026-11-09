@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -70,7 +69,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -695,6 +693,12 @@ func resourceCloudSecurityComplianceFrameworkDeploymentRead(d *schema.ResourceDa
 	if d.Get("parent").(string) == "" && d.Get("organization").(string) != "" {
 		if err := d.Set("parent", "organizations/"+d.Get("organization").(string)); err != nil {
 			return err
+		}
+	} else if d.Get("organization").(string) == "" && d.Get("parent").(string) != "" {
+		if strings.HasPrefix(d.Get("parent").(string), "organizations/") {
+			if err := d.Set("organization", strings.TrimPrefix(d.Get("parent").(string), "organizations/")); err != nil {
+				return err
+			}
 		}
 	}
 	url, err = tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"{{parent}}/locations/{{location}}/frameworkDeployments/{{framework_deployment_id}}")

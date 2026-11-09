@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -74,7 +73,7 @@ func deleteSpannerBackups(d *schema.ResourceData, config *transport_tpg.Config, 
 
 		log.Printf("[DEBUG] Found backups for resource %q: %#v)", d.Id(), item)
 
-		path := "{{SpannerBasePath}}" + backupName
+		path := transport_tpg.BaseUrl(Product, config) + backupName
 
 		url, err := tpgresource.ReplaceVars(d, config, path)
 		if err != nil {
@@ -126,7 +125,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -246,11 +244,9 @@ the instance.`,
 													Elem: &schema.Resource{
 														Schema: map[string]*schema.Schema{
 															"max_nodes": {
-																Type:         schema.TypeInt,
-																Optional:     true,
-																Description:  `The maximum number of nodes for this specific replica.`,
-																ExactlyOneOf: []string{},
-																RequiredWith: []string{},
+																Type:        schema.TypeInt,
+																Optional:    true,
+																Description: `The maximum number of nodes for this specific replica.`,
 															},
 															"max_processing_units": {
 																Type:     schema.TypeInt,
@@ -258,23 +254,17 @@ the instance.`,
 																Description: `The maximum number of processing units for this specific replica.
 If set, this number should be multiples of 1000 and be greater than or equal to
 min_processing_units.`,
-																ExactlyOneOf: []string{},
-																RequiredWith: []string{},
 															},
 															"min_nodes": {
-																Type:         schema.TypeInt,
-																Optional:     true,
-																Description:  `The minimum number of nodes for this specific replica.`,
-																ExactlyOneOf: []string{},
-																RequiredWith: []string{},
+																Type:        schema.TypeInt,
+																Optional:    true,
+																Description: `The minimum number of nodes for this specific replica.`,
 															},
 															"min_processing_units": {
 																Type:     schema.TypeInt,
 																Optional: true,
 																Description: `The minimum number of processing units for this specific replica.
 If set, this number should be multiples of 1000.`,
-																ExactlyOneOf: []string{},
-																RequiredWith: []string{},
 															},
 														},
 													},
@@ -343,8 +333,6 @@ min_limit and max_limit.`,
 										Optional: true,
 										Description: `Specifies maximum number of nodes allocated to the instance. If set, this number
 should be greater than or equal to min_nodes.`,
-										ExactlyOneOf: []string{},
-										RequiredWith: []string{},
 									},
 									"max_processing_units": {
 										Type:     schema.TypeInt,
@@ -352,22 +340,18 @@ should be greater than or equal to min_nodes.`,
 										Description: `Specifies maximum number of processing units allocated to the instance.
 If set, this number should be multiples of 1000 and be greater than or equal to
 min_processing_units.`,
-										ExactlyOneOf: []string{},
 									},
 									"min_nodes": {
 										Type:     schema.TypeInt,
 										Optional: true,
 										Description: `Specifies number of nodes allocated to the instance. If set, this number
 should be greater than or equal to 1.`,
-										ExactlyOneOf: []string{},
-										RequiredWith: []string{},
 									},
 									"min_processing_units": {
 										Type:     schema.TypeInt,
 										Optional: true,
 										Description: `Specifies minimum number of processing units allocated to the instance.
 If set, this number should be multiples of 1000.`,
-										ExactlyOneOf: []string{},
 									},
 								},
 							},
@@ -984,7 +968,7 @@ func resourceSpannerInstanceDelete(d *schema.ResourceData, meta interface{}) err
 	headers := make(http.Header)
 
 	if d.Get("force_destroy").(bool) {
-		backupsUrl, err := tpgresource.ReplaceVars(d, config, "{{SpannerBasePath}}projects/{{project}}/instances/{{name}}/backups")
+		backupsUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/instances/{{name}}/backups")
 		if err != nil {
 			return err
 		}

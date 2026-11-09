@@ -60,7 +60,7 @@ resource "google_compute_subnetwork" "subnet" {
   provider                 = google-beta
   name                     = "mdc-subnet"
   ip_cidr_range            = "10.0.0.0/24"
-  region                   = "us-central1"
+  region                   = "us-east4"
   network                  = google_compute_network.net.id
   private_ip_google_access = true
 }
@@ -88,7 +88,7 @@ resource "google_compute_firewall" "internal" {
 resource "google_filestore_instance" "home" {
   provider = google-beta
   name     = "mdc-home"
-  location = "us-central1-b"
+  location = "us-east4-b"
   tier     = "BASIC_HDD"
 
   file_shares {
@@ -105,7 +105,7 @@ resource "google_filestore_instance" "home" {
 resource "google_filestore_instance" "data" {
   provider = google-beta
   name     = "mdc-data"
-  location = "us-central1-b"
+  location = "us-east4-b"
   tier     = "BASIC_HDD"
 
   file_shares {
@@ -122,7 +122,7 @@ resource "google_filestore_instance" "data" {
 resource "google_compute_reservation" "res" {
   provider                      = google-beta
   name                          = "mdc-res"
-  zone                          = "us-central1-b"
+  zone                          = "us-east4-b"
   specific_reservation_required = true
 
   specific_reservation {
@@ -135,10 +135,11 @@ resource "google_compute_reservation" "res" {
 
 resource "google_vertex_ai_model_development_cluster" "default" {
   provider                     = google-beta
-  region                       = "us-central1"
+  region                       = "us-east4"
   model_development_cluster_id = "tftest"
   display_name                 = "tftest"
   deletion_policy              = "DELETE"
+  update_mode                  = "USER_AND_SERVICE"
   depends_on                   = [google_compute_firewall.internal]
 
   labels = {
@@ -196,7 +197,7 @@ resource "google_vertex_ai_model_development_cluster" "default" {
 
   node_pools {
     id                 = "compute"
-    zone               = "us-central1-b"
+    zone               = "us-east4-b"
     provisioning_model = "ON_DEMAND"
     node_image         = "projects/clusterdirector-public-images/global/images/family/common-ubuntu-2204-amd64-nvidia-580-slurm-2505-v20251113"
     startup_script     = "#!/bin/bash\necho hello"
@@ -224,7 +225,7 @@ resource "google_vertex_ai_model_development_cluster" "default" {
 
   node_pools {
     id                      = "flexpool"
-    zone                    = "us-central1-b"
+    zone                    = "us-east4-b"
     provisioning_model      = "FLEX_START"
     flex_start_max_duration = "3600s"
     node_image              = "projects/clusterdirector-public-images/global/images/family/common-ubuntu-2204-amd64-nvidia-580-slurm-2505-v20251113"
@@ -253,7 +254,7 @@ resource "google_vertex_ai_model_development_cluster" "default" {
 
   node_pools {
     id                 = "login"
-    zone               = "us-central1-b"
+    zone               = "us-east4-b"
     provisioning_model = "ON_DEMAND"
     node_image         = "projects/clusterdirector-public-images/global/images/family/common-ubuntu-2204-amd64-nvidia-580-slurm-2505-v20251113"
     startup_script     = "#!/bin/bash\necho hello"
@@ -281,7 +282,7 @@ resource "google_vertex_ai_model_development_cluster" "default" {
 
   node_pools {
     id                 = "respool"
-    zone               = "us-central1-b"
+    zone               = "us-east4-b"
     provisioning_model = "RESERVATION"
     node_image         = "projects/clusterdirector-public-images/global/images/family/common-ubuntu-2204-amd64-nvidia-580-slurm-2505-v20251113"
     startup_script     = "#!/bin/bash\necho hello"
@@ -312,6 +313,101 @@ resource "google_vertex_ai_model_development_cluster" "default" {
   }
 }
 ```
+<div class="oics-button" style="padding-top: 1px; margin-top: -1px;">
+  <a href="https://console.cloud.google.com/cloudshell/open?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fterraform-google-modules%2Fdocs-examples.git&cloudshell_image=gcr.io%2Fcloudshell-images%2Fcloudshell%3Alatest&cloudshell_print=.%2Fmotd&cloudshell_tutorial=.%2Ftutorial.md&cloudshell_working_dir=vertex_ai_model_development_cluster_gke&open_in_editor=main.tf" target="_blank" style="float: right; margin: 32px 0 12px 16px;">
+    <img alt="Open in Cloud Shell" src="//gstatic.com/cloudssh/images/open-btn.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div>
+
+## Example Usage - Vertex Ai Model Development Cluster Gke
+
+
+```hcl
+resource "google_compute_network" "net" {
+  provider                = google-beta
+  name                    = "mdc-gke-net"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  provider                 = google-beta
+  name                     = "mdc-gke-subnet"
+  ip_cidr_range            = "10.0.0.0/24"
+  region                   = "us-east1"
+  network                  = google_compute_network.net.id
+  private_ip_google_access = true
+}
+
+resource "google_compute_firewall" "internal" {
+  provider      = google-beta
+  name          = "mdc-gke-fw"
+  network       = google_compute_network.net.name
+  direction     = "INGRESS"
+  source_ranges = ["10.0.0.0/24"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["0-65535"]
+  }
+  allow {
+    protocol = "udp"
+    ports    = ["0-65535"]
+  }
+  allow {
+    protocol = "icmp"
+  }
+}
+
+resource "google_vertex_ai_model_development_cluster" "default" {
+  provider                     = google-beta
+  region                       = "us-east1"
+  model_development_cluster_id = "tftest-gke"
+  display_name                 = "tftest-gke"
+  deletion_policy              = "DELETE"
+  depends_on                   = [google_compute_firewall.internal]
+
+  labels = {
+    env = "dev"
+  }
+
+  network {
+    network    = google_compute_network.net.id
+    subnetwork = google_compute_subnetwork.subnet.id
+  }
+
+  orchestrator_spec {
+    kubernetes_spec {
+      node_pool_ids                  = ["cpu1"]
+      enable_ip_alias                = true
+      public_access_endpoint_enabled = true
+      control_plane_version          = "-"
+      node_pool_versions = {
+        cpu1 = "-"
+      }
+    }
+  }
+
+  node_pools {
+    id                 = "cpu1"
+    zone               = "us-east1-b"
+    provisioning_model = "ON_DEMAND"
+
+    boot_disk {
+      boot_disk_size_gb = 100
+      boot_disk_type    = "pd-standard"
+    }
+
+    machine_spec {
+      machine_type = "n2-standard-4"
+    }
+
+    scaling_spec {
+      min_node_count = 1
+      max_node_count = 2
+    }
+  }
+}
+```
 
 ## Argument Reference
 
@@ -320,7 +416,10 @@ The following arguments are supported:
 
 * `node_pools` -
   (Required)
-  The spec of the pools of different resources.
+  The spec of the pools of different resources. Node pools can be added,
+  removed, or reordered in place; changing some fields on an existing node
+  pool may require replacing the node pool (validated server-side by the
+  API).
   Structure is [documented below](#nested_node_pools).
 
 * `orchestrator_spec` -
@@ -386,6 +485,13 @@ The following arguments are supported:
 	When set to "ABANDON", the command will remove the resource from Terraform
 	management without updating or deleting the resource in the API.
 	When set to "DELETE", deleting the resource is allowed.
+* `update_mode` - (Optional) Whether the service also refreshes service-managed fields (startup and
+prolog/epilog scripts, default node images) on update. `USER_ONLY` applies
+only your changes; adding a node pool requires `USER_AND_SERVICE`.
+Only applies to Slurm clusters (`orchestrator_spec.slurm_spec`); ignored
+for GKE clusters (`kubernetes_spec`).
+Defaults to `USER_AND_SERVICE`. Possible values are `USER_ONLY` and
+`USER_AND_SERVICE`.
 
 
 <a name="nested_node_pools"></a>The `node_pools` block supports:
@@ -424,7 +530,9 @@ The following arguments are supported:
 
 * `id` -
   (Required)
-  The unique ID referring to this node pool.
+  The unique ID referring to this node pool. Cannot be modified in
+  place on an existing node pool; changing `id` updates the list of
+  node pools by adding/removing pools (validated server-side).
 
 * `labels` -
   (Optional)
@@ -562,6 +670,11 @@ The following arguments are supported:
   The Slurm orchestrator related spec of the cluster.
   Structure is [documented below](#nested_orchestrator_spec_slurm_spec).
 
+* `kubernetes_spec` -
+  (Optional)
+  The GKE orchestrator related spec of the cluster.
+  Structure is [documented below](#nested_orchestrator_spec_kubernetes_spec).
+
 
 <a name="nested_orchestrator_spec_slurm_spec"></a>The `slurm_spec` block supports:
 
@@ -671,6 +784,44 @@ The following arguments are supported:
 * `node_pool_ids` -
   (Required)
   Node pools for the slurm partition
+
+<a name="nested_orchestrator_spec_kubernetes_spec"></a>The `kubernetes_spec` block supports:
+
+* `node_pool_ids` -
+  (Optional)
+  IDs of the NodePools to be included in this GKE cluster. These IDs must
+  correspond to NodePools defined in the `node_pools` field.
+
+* `enable_ip_alias` -
+  (Optional)
+  Whether to enable IP alias.
+
+* `public_access_endpoint_enabled` -
+  (Optional)
+  Whether the GKE cluster's control plane endpoint is publicly accessible.
+  If true, the cluster is created with a public access endpoint (i.e. the
+  private cluster configuration is disabled). If false or unset, the cluster
+  is created with only private control plane access by default.
+
+* `control_plane_version` -
+  (Optional)
+  The Kubernetes version of the GKE control plane.
+  Accepted formats are minor version (for example, `"1.30"`), patch version
+  (for example, `"1.30.5"`), full GKE release version (for example,
+  `"1.30.5-gke.1014001"`), or `"-"` to use the service default version.
+  Upgrades can advance at most one minor version at a time; downgrades are
+  rejected.
+
+* `node_pool_versions` -
+  (Optional)
+  The Kubernetes versions for specific node pools, keyed by node pool ID.
+  When specified, all node pool IDs in the cluster must be included.
+  Accepted formats are minor version (for example, `"1.30"`), patch version
+  (for example, `"1.30.5"`), full GKE release version (for example,
+  `"1.30.5-gke.1014001"`), or `"-"` to align with the control plane version.
+  Node pools cannot be newer than the control plane or more than 2 minor
+  versions behind it; upgrades can advance at most one minor version at a
+  time and downgrades are rejected.
 
 <a name="nested_lustre_export_config"></a>The `lustre_export_config` block supports:
 
@@ -1051,7 +1202,7 @@ This resource provides the following
 [Timeouts](https://developer.hashicorp.com/terraform/plugin/sdkv2/resources/retries-and-customizable-timeouts) configuration options:
 
 - `create` - Default is 120 minutes.
-- `update` - Default is 120 minutes.
+- `update` - Default is 240 minutes.
 - `delete` - Default is 120 minutes.
 
 ## Import

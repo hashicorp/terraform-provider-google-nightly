@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -217,7 +215,7 @@ func resourceComputeInstanceSettingsCreate(d *schema.ResourceData, meta interfac
 
 	headers := make(http.Header)
 
-	fingerprintUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceSettings/{{name}}")
+	fingerprintUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceSettings/{{name}}")
 	if err != nil {
 		return err
 	}
@@ -394,7 +392,7 @@ func resourceComputeInstanceSettingsUpdate(d *schema.ResourceData, meta interfac
 	log.Printf("[DEBUG] Updating InstanceSettings %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
 
-	fingerprintUrl, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceSettings/{{name}}")
+	fingerprintUrl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceSettings/{{name}}")
 	if err != nil {
 		return err
 	}
@@ -462,7 +460,7 @@ func resourceComputeInstanceSettingsDelete(d *schema.ResourceData, meta interfac
 		return err
 	}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/zones/{{zone}}/instanceSettings")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/zones/{{zone}}/instanceSettings")
 	if err != nil {
 		return err
 	}

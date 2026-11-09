@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -168,10 +166,9 @@ func ResourceConfigDeployment() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"gcs_source": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Description:  `URI of a GCS object containing the zipped Terraform blueprint.`,
-							ExactlyOneOf: []string{},
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: `URI of a GCS object containing the zipped Terraform blueprint.`,
 						},
 						"git_source": {
 							Type:        schema.TypeList,
@@ -197,7 +194,6 @@ func ResourceConfigDeployment() *schema.Resource {
 									},
 								},
 							},
-							ExactlyOneOf: []string{},
 						},
 						"input_values": {
 							Type:        schema.TypeSet,
@@ -769,7 +765,7 @@ func resourceConfigDeploymentDelete(d *schema.ResourceData, meta interface{}) er
 		return fmt.Errorf("Error fetching project for Deployment: %s", err)
 	}
 	billingProject = project
-	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/deployments/{{name}}?force={{force_destroy}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/deployments/{{name}}")
 	if err != nil {
 		return err
 	}
@@ -782,6 +778,13 @@ func resourceConfigDeploymentDelete(d *schema.ResourceData, meta interface{}) er
 	}
 
 	headers := make(http.Header)
+
+	if v, ok := d.GetOk("force_destroy"); ok {
+		url, err = transport_tpg.AddQueryParams(url, map[string]string{"force": fmt.Sprintf("%v", v)})
+		if err != nil {
+			return err
+		}
+	}
 
 	log.Printf("[DEBUG] Deleting Deployment %q", d.Id())
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,7 @@ func securityActionEnableDisable(config *transport_tpg.Config, d *schema.Resourc
 		return fmt.Errorf("unsupported security action state %q (must be ENABLED or DISABLED)", desiredState)
 	}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}organizations/{{org_id}}/environments/{{env_id}}/securityActions/{{security_action_id}}:"+action)
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"organizations/{{org_id}}/environments/{{env_id}}/securityActions/{{security_action_id}}:"+action)
 	if err != nil {
 		return err
 	}
@@ -105,7 +104,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -709,7 +707,7 @@ func resourceApigeeSecurityActionUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if len(updateMask) > 0 {
-		url, err := tpgresource.ReplaceVars(d, config, "{{ApigeeBasePath}}organizations/{{org_id}}/environments/{{env_id}}/securityActions/{{security_action_id}}")
+		url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"organizations/{{org_id}}/environments/{{env_id}}/securityActions/{{security_action_id}}")
 		if err != nil {
 			return err
 		}

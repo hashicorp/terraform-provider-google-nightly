@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -435,6 +433,40 @@ See https://cloud.google.com/workstations/docs/reference/rest/v1/projects.locati
 													Optional:    true,
 													Description: `Number of instances to pool for faster workstation boosting.`,
 												},
+												"reservation_affinity": {
+													Type:        schema.TypeList,
+													Computed:    true,
+													Optional:    true,
+													Description: `Reservation affinity to setup a GCE instance.`,
+													MaxItems:    1,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"consume_reservation_type": {
+																Type:         schema.TypeString,
+																Computed:     true,
+																Optional:     true,
+																ValidateFunc: verify.ValidateEnum([]string{"NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION", ""}),
+																Description:  `Type of reservation consumption. Possible values: ["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]`,
+															},
+															"key": {
+																Type:        schema.TypeString,
+																Optional:    true,
+																Description: `Label key of reservation resource.`,
+															},
+															"values": {
+																Type:     schema.TypeList,
+																Optional: true,
+																Description: `Label values of reservation resources.
+Valid values are either the name of a reservation in the same project
+or "projects/{project}/reservations/{reservation}" to target a shared
+reservation in the same zone but in a different project.`,
+																Elem: &schema.Schema{
+																	Type: schema.TypeString,
+																},
+															},
+														},
+													},
+												},
 											},
 										},
 									},
@@ -496,6 +528,40 @@ See https://cloud.google.com/workstations/docs/reference/rest/v1/projects.locati
 										Computed:    true,
 										Optional:    true,
 										Description: `Number of instances to pool for faster workstation startup.`,
+									},
+									"reservation_affinity": {
+										Type:        schema.TypeList,
+										Computed:    true,
+										Optional:    true,
+										Description: `Reservation affinity to setup a GCE instance.`,
+										MaxItems:    1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"consume_reservation_type": {
+													Type:         schema.TypeString,
+													Computed:     true,
+													Optional:     true,
+													ValidateFunc: verify.ValidateEnum([]string{"NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION", ""}),
+													Description:  `Type of reservation consumption. Possible values: ["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]`,
+												},
+												"key": {
+													Type:        schema.TypeString,
+													Optional:    true,
+													Description: `Label key of reservation resource.`,
+												},
+												"values": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Description: `Label values of reservation resources.
+Valid values are either the name of a reservation in the same project
+or "projects/{project}/reservations/{reservation}" to target a shared
+reservation in the same zone but in a different project.`,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
+													},
+												},
+											},
+										},
 									},
 									"service_account": {
 										Type:        schema.TypeString,
@@ -941,6 +1007,9 @@ func resourceWorkstationsWorkstationConfigCreate(d *schema.ResourceData, meta in
 	if err != nil {
 		return err
 	}
+	if strings.Contains(url, "{{location}}") {
+		return fmt.Errorf("failed to qualify endpoint for a resource with a regionalized endpoint %s", url)
+	}
 
 	log.Printf("[DEBUG] Creating new WorkstationConfig: %#v", obj)
 	billingProject := ""
@@ -978,8 +1047,10 @@ func resourceWorkstationsWorkstationConfigCreate(d *schema.ResourceData, meta in
 	}
 	d.SetId(id)
 
+	// Derive location for use in REP endpoints
+	endpointLocation := tpgresource.LocationFromId(d.Id())
 	err = WorkstationsOperationWaitTime(
-		config, res, project, "Creating WorkstationConfig", userAgent,
+		config, res, project, endpointLocation, "Creating WorkstationConfig", userAgent,
 		d.Timeout(schema.TimeoutCreate))
 
 	if err != nil {
@@ -1029,6 +1100,9 @@ func resourceWorkstationsWorkstationConfigRead(d *schema.ResourceData, meta inte
 	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/workstationClusters/{{workstation_cluster_id}}/workstationConfigs/{{workstation_config_id}}")
 	if err != nil {
 		return err
+	}
+	if strings.Contains(url, "{{location}}") {
+		return fmt.Errorf("failed to qualify endpoint for a resource with a regionalized endpoint %s", url)
 	}
 
 	billingProject := ""
@@ -1269,6 +1343,9 @@ func resourceWorkstationsWorkstationConfigUpdate(d *schema.ResourceData, meta in
 	if err != nil {
 		return err
 	}
+	if strings.Contains(url, "{{location}}") {
+		return fmt.Errorf("failed to qualify endpoint for a resource with a regionalized endpoint %s", url)
+	}
 
 	log.Printf("[DEBUG] Updating WorkstationConfig %q: %#v", d.Id(), obj)
 	headers := make(http.Header)
@@ -1363,6 +1440,23 @@ func resourceWorkstationsWorkstationConfigUpdate(d *schema.ResourceData, meta in
 		return err
 	}
 
+	// Only include reservationAffinity leaf fields in updateMask when reservation_affinity
+	// itself has changed. The Cloud Workstations PATCH endpoint checks these 3 leaf paths
+	// individually, and sending them when reservation_affinity is unset would overwrite it
+	// with TYPE_UNSPECIFIED.
+	if d.HasChange("host.0.gce_instance.0.reservation_affinity") {
+		updateMask = append(updateMask,
+			"host.gceInstance.reservationAffinity.consumeReservationType",
+			"host.gceInstance.reservationAffinity.key",
+			"host.gceInstance.reservationAffinity.values",
+		)
+		// Re-encode the updated updateMask query parameter onto the PATCH request URL.
+		url, err = transport_tpg.AddQueryParams(url, map[string]string{"updateMask": strings.Join(updateMask, ",")})
+		if err != nil {
+			return err
+		}
+	}
+
 	// err == nil indicates that the billing_project value was found
 	if bp, err := tpgresource.GetBillingProject(d, config); err == nil {
 		billingProject = bp
@@ -1387,8 +1481,10 @@ func resourceWorkstationsWorkstationConfigUpdate(d *schema.ResourceData, meta in
 			log.Printf("[DEBUG] Finished updating WorkstationConfig %q: %#v", d.Id(), res)
 		}
 
+		// Derive location for use in REP endpoints
+		endpointLocation := tpgresource.LocationFromId(d.Id())
 		err = WorkstationsOperationWaitTime(
-			config, res, project, "Updating WorkstationConfig", userAgent,
+			config, res, project, endpointLocation, "Updating WorkstationConfig", userAgent,
 			d.Timeout(schema.TimeoutUpdate))
 
 		if err != nil {
@@ -1424,6 +1520,9 @@ func resourceWorkstationsWorkstationConfigDelete(d *schema.ResourceData, meta in
 	if err != nil {
 		return err
 	}
+	if strings.Contains(url, "{{location}}") {
+		return fmt.Errorf("failed to qualify endpoint for a resource with a regionalized endpoint %s", url)
+	}
 
 	var obj map[string]interface{}
 
@@ -1449,8 +1548,10 @@ func resourceWorkstationsWorkstationConfigDelete(d *schema.ResourceData, meta in
 		return transport_tpg.HandleNotFoundError(err, d, "WorkstationConfig")
 	}
 
+	// Derive location for use in REP endpoints
+	endpointLocation := tpgresource.LocationFromId(d.Id())
 	err = WorkstationsOperationWaitTime(
-		config, res, project, "Deleting WorkstationConfig", userAgent,
+		config, res, project, endpointLocation, "Deleting WorkstationConfig", userAgent,
 		d.Timeout(schema.TimeoutDelete))
 
 	if err != nil {
@@ -1599,6 +1700,8 @@ func flattenWorkstationsWorkstationConfigHostGceInstance(v interface{}, d *schem
 		flattenWorkstationsWorkstationConfigHostGceInstanceVmTags(original["vmTags"], d, config)
 	transformed["instance_metadata"] =
 		flattenWorkstationsWorkstationConfigHostGceInstanceInstanceMetadata(original["instanceMetadata"], d, config)
+	transformed["reservation_affinity"] =
+		flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinity(original["reservationAffinity"], d, config)
 	return []interface{}{transformed}
 }
 func flattenWorkstationsWorkstationConfigHostGceInstanceMachineType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -1769,6 +1872,7 @@ func flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigs(v interface
 			"pool_size":                    flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsPoolSize(original["poolSize"], d, config),
 			"enable_automatic_failover":    flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsEnableAutomaticFailover(original["enableAutomaticFailover"], d, config),
 			"accelerators":                 flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsAccelerators(original["accelerators"], d, config),
+			"reservation_affinity":         flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinity(original["reservationAffinity"], d, config),
 		})
 	}
 	return transformed
@@ -1864,11 +1968,69 @@ func flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsAccelerators
 	return v // let terraform core handle it otherwise
 }
 
+func flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinity(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["consume_reservation_type"] =
+		flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityConsumeReservationType(original["consumeReservationType"], d, config)
+	transformed["key"] =
+		flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityKey(original["key"], d, config)
+	transformed["values"] =
+		flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityValues(original["values"], d, config)
+	return []interface{}{transformed}
+}
+func flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityConsumeReservationType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityKey(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityValues(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenWorkstationsWorkstationConfigHostGceInstanceVmTags(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
 func flattenWorkstationsWorkstationConfigHostGceInstanceInstanceMetadata(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinity(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	if v == nil {
+		return nil
+	}
+	original := v.(map[string]interface{})
+	if len(original) == 0 {
+		return nil
+	}
+	transformed := make(map[string]interface{})
+	transformed["consume_reservation_type"] =
+		flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinityConsumeReservationType(original["consumeReservationType"], d, config)
+	transformed["key"] =
+		flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinityKey(original["key"], d, config)
+	transformed["values"] =
+		flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinityValues(original["values"], d, config)
+	return []interface{}{transformed}
+}
+func flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinityConsumeReservationType(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinityKey(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenWorkstationsWorkstationConfigHostGceInstanceReservationAffinityValues(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -2496,6 +2658,13 @@ func expandWorkstationsWorkstationConfigHostGceInstance(v interface{}, d tpgreso
 		transformed["instanceMetadata"] = transformedInstanceMetadata
 	}
 
+	transformedReservationAffinity, err := expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinity(original["reservation_affinity"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedReservationAffinity); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["reservationAffinity"] = transformedReservationAffinity
+	}
+
 	return transformed, nil
 }
 
@@ -2711,6 +2880,13 @@ func expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigs(v interface{
 			transformed["accelerators"] = transformedAccelerators
 		}
 
+		transformedReservationAffinity, err := expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinity(original["reservation_affinity"], d, config)
+		if err != nil {
+			return nil, err
+		} else if val := reflect.ValueOf(transformedReservationAffinity); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+			transformed["reservationAffinity"] = transformedReservationAffinity
+		}
+
 		req = append(req, transformed)
 	}
 	return req, nil
@@ -2780,6 +2956,54 @@ func expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsAcceleratorsC
 	return v, nil
 }
 
+func expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinity(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedConsumeReservationType, err := expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityConsumeReservationType(original["consume_reservation_type"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedConsumeReservationType); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["consumeReservationType"] = transformedConsumeReservationType
+	}
+
+	transformedKey, err := expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityKey(original["key"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedKey); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["key"] = transformedKey
+	}
+
+	transformedValues, err := expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityValues(original["values"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedValues); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["values"] = transformedValues
+	}
+
+	return transformed, nil
+}
+
+func expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityConsumeReservationType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityKey(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandWorkstationsWorkstationConfigHostGceInstanceBoostConfigsReservationAffinityValues(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
 func expandWorkstationsWorkstationConfigHostGceInstanceVmTags(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (map[string]string, error) {
 	if v == nil {
 		return map[string]string{}, nil
@@ -2800,6 +3024,54 @@ func expandWorkstationsWorkstationConfigHostGceInstanceInstanceMetadata(v interf
 		m[k] = val.(string)
 	}
 	return m, nil
+}
+
+func expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinity(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	l := v.([]interface{})
+	if len(l) == 0 || l[0] == nil {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := make(map[string]interface{})
+
+	transformedConsumeReservationType, err := expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinityConsumeReservationType(original["consume_reservation_type"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedConsumeReservationType); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["consumeReservationType"] = transformedConsumeReservationType
+	}
+
+	transformedKey, err := expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinityKey(original["key"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedKey); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["key"] = transformedKey
+	}
+
+	transformedValues, err := expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinityValues(original["values"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedValues); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["values"] = transformedValues
+	}
+
+	return transformed, nil
+}
+
+func expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinityConsumeReservationType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinityKey(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandWorkstationsWorkstationConfigHostGceInstanceReservationAffinityValues(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
 }
 
 func expandWorkstationsWorkstationConfigPersistentDirectories(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {

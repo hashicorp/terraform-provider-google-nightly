@@ -86,7 +86,7 @@ func TestAccDataplexDatascan_dataplexDatascanBasicProfileExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.basic_profile",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -144,7 +144,7 @@ func TestAccDataplexDatascan_dataplexDatascanFullProfileTestExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.full_profile_test",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -226,6 +226,7 @@ resource "google_dataplex_datascan" "full_profile_test" {
       }
     }
     catalog_publishing_enabled = true
+    mode = "STANDARD"
   }
 
   project = "%{project_name}"
@@ -264,7 +265,7 @@ func TestAccDataplexDatascan_dataplexDatascanOnetimeProfileExample(t *testing.T)
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.onetime_profile",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -324,7 +325,7 @@ func TestAccDataplexDatascan_dataplexDatascanBasicQualityExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.basic_quality",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -391,7 +392,7 @@ func TestAccDataplexDatascan_dataplexDatascanFullQualityTestExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.full_quality_test",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -510,6 +511,10 @@ resource "google_dataplex_datascan" "full_quality_test" {
         priority = "high"
       }
       non_null_expectation {}
+      debug_queries {
+        description = "test debug query description"
+        sql_statement = "select * from $${data()} where address is null"
+      }
     }
 
     rules {
@@ -643,7 +648,7 @@ func TestAccDataplexDatascan_dataplexDatascanBasicDiscoveryExample(t *testing.T)
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.basic_discovery",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -708,7 +713,7 @@ func TestAccDataplexDatascan_dataplexDatascanFullDiscoveryExample(t *testing.T) 
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.full_discovery",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -795,19 +800,21 @@ func TestAccDataplexDatascan_dataplexDatascanDocumentationExample(t *testing.T) 
 	randomSuffix := acctest.RandString(t, 10)
 
 	context := map[string]interface{}{
-		"location":      envvar.GetTestRegionFromEnv(),
-		"project_name":  envvar.GetTestProjectFromEnv(),
-		"datascan_name": "tf-test-datadocumentation" + randomSuffix,
-		"sql_dialect":   "GOOGLE_SQL",
-		"random_suffix": randomSuffix,
+		"location":                   envvar.GetTestRegionFromEnv(),
+		"project_name":               envvar.GetTestProjectFromEnv(),
+		"catalog_publishing_enabled": true,
+		"datascan_name":              "tf-test-datadocumentation" + randomSuffix,
+		"sql_dialect":                "GOOGLE_SQL",
+		"random_suffix":              randomSuffix,
 	}
 
 	context_1 := map[string]interface{}{
-		"location":      envvar.GetTestRegionFromEnv(),
-		"project_name":  envvar.GetTestProjectFromEnv(),
-		"datascan_name": "tf-test-datadocumentation" + randomSuffix,
-		"sql_dialect":   "SPARK_SQL",
-		"random_suffix": randomSuffix,
+		"location":                   envvar.GetTestRegionFromEnv(),
+		"project_name":               envvar.GetTestProjectFromEnv(),
+		"catalog_publishing_enabled": false,
+		"datascan_name":              "tf-test-datadocumentation" + randomSuffix,
+		"sql_dialect":                "GOOGLE_SQL",
+		"random_suffix":              randomSuffix,
 	}
 
 	acctest.VcrTest(t, resource.TestCase{
@@ -826,7 +833,7 @@ func TestAccDataplexDatascan_dataplexDatascanDocumentationExample(t *testing.T) 
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.documentation",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -846,7 +853,7 @@ func TestAccDataplexDatascan_dataplexDatascanDocumentationExample(t *testing.T) 
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.documentation",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -933,8 +940,9 @@ resource "google_dataplex_datascan" "documentation" {
   }
 
   data_documentation_spec {
-    catalog_publishing_enabled = true
+    catalog_publishing_enabled = %{catalog_publishing_enabled}
     sql_dialect                = "%{sql_dialect}"
+    generation_scopes          = ["ALL"]
   }
 
   project = "%{project_name}"
@@ -970,7 +978,7 @@ func TestAccDataplexDatascan_dataplexDatascanOnetimeDocumentationExample(t *test
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.onetime_documentation",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1093,7 +1101,7 @@ func TestAccDataplexDatascan_dataplexDatascanExecutionIdentityUserCredentialExam
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.identity_user_credential",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1191,7 +1199,7 @@ func TestAccDataplexDatascan_dataplexDatascanExecutionIdentityServiceAccountExam
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.identity_service_account",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1330,7 +1338,7 @@ func TestAccDataplexDatascan_dataplexDatascanQualityReusableRulesCatalogBasedExa
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.reusable_rules_catalog_based",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1560,7 +1568,7 @@ func TestAccDataplexDatascan_dataplexDatascanDataQualityTemplateReferenceExample
 			},
 			{
 				ResourceName:       "google_dataplex_datascan.data_quality_template_reference",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

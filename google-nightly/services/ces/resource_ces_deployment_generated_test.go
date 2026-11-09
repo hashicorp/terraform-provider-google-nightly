@@ -84,7 +84,7 @@ func TestAccCESDeployment_cesDeploymentBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_ces_deployment.my-deployment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -162,7 +162,7 @@ func TestAccCESDeployment_cesDeploymentFullExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_ces_deployment.my-deployment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -212,6 +212,12 @@ resource "google_ces_deployment" "my-deployment" {
             }
         }
     }
+    modality = "MODALITY_TEXT"
+    model_settings {
+        model          = "gemini-3.0-flash-001"
+        temperature    = 0.5
+        thinking_level = "LOW"
+    }
 }
 `, context)
 }
@@ -246,7 +252,7 @@ func TestAccCESDeployment_cesDeploymentWhatsappExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_ces_deployment.my-deployment",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},

@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -69,7 +68,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -214,7 +212,6 @@ Please refer to the field 'effective_annotations' for all of the annotations pre
 												},
 											},
 										},
-										ExactlyOneOf: []string{},
 									},
 									"google_cloud_build_repo": {
 										Type:        schema.TypeList,
@@ -240,7 +237,6 @@ Please refer to the field 'effective_annotations' for all of the annotations pre
 												},
 											},
 										},
-										ExactlyOneOf: []string{},
 									},
 									"google_cloud_storage": {
 										Type:        schema.TypeList,
@@ -261,7 +257,6 @@ Please refer to the field 'effective_annotations' for all of the annotations pre
 												},
 											},
 										},
-										ExactlyOneOf: []string{},
 									},
 								},
 							},

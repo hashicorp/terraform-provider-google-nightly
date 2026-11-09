@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -62,7 +61,7 @@ func NetappVolumeReplicationWaitForMirror(d *schema.ResourceData, meta interface
 		return err
 	}
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{NetappBasePath}}projects/{{project}}/locations/{{location}}/volumes/{{volume_name}}/replications/{{name}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/volumes/{{volume_name}}/replications/{{name}}")
 	if err != nil {
 		return err
 	}
@@ -121,7 +120,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -265,6 +263,13 @@ func ResourceNetappVolumeReplication() *schema.Resource {
 										Optional: true,
 										Description: `Optional. Time in days to mark the volume's data block as cold and make it eligible for tiering, can be range from 2-183.
 Default is 31.`,
+									},
+									"hot_tier_bypass_mode_enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										ForceNew: true,
+										Description: `Flag indicating that the hot tier bypass mode is enabled. Default is false.
+Only applicable to Flex service level.`,
 									},
 									"tier_action": {
 										Type:         schema.TypeString,
@@ -971,7 +976,7 @@ func resourceNetappVolumeReplicationUpdate(d *schema.ResourceData, meta interfac
 
 	if do_change {
 		// We need to send STOP/RESUME API calls
-		rawurl, err := tpgresource.ReplaceVars(d, config, "{{NetappBasePath}}projects/{{project}}/locations/{{location}}/volumes/{{volume_name}}/replications/{{name}}:"+action)
+		rawurl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/volumes/{{volume_name}}/replications/{{name}}:"+action)
 		if err != nil {
 			return err
 		}
@@ -1047,7 +1052,7 @@ func resourceNetappVolumeReplicationDelete(d *schema.ResourceData, meta interfac
 	// FYI: Stopping a PREPARING mirror currently doesn't work. User have to wait until
 	// mirror reaches MIRRORED.
 	if d.Get("mirror_state") != "STOPPED" {
-		rawurl, err := tpgresource.ReplaceVars(d, config, "{{NetappBasePath}}projects/{{project}}/locations/{{location}}/volumes/{{volume_name}}/replications/{{name}}:stop")
+		rawurl, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/locations/{{location}}/volumes/{{volume_name}}/replications/{{name}}:stop")
 		if err != nil {
 			return err
 		}
@@ -1103,7 +1108,7 @@ func resourceNetappVolumeReplicationDelete(d *schema.ResourceData, meta interfac
 	if d.Get("delete_destination_volume").(bool) == true {
 		log.Printf("[DEBUG] delete_destination_volume is true. Deleting destination volume %v", d.Get("destination_volume"))
 		destination_volume := d.Get("destination_volume").(string)
-		del_url, err := tpgresource.ReplaceVars(d, config, "{{NetappBasePath}}"+destination_volume+"?force=true")
+		del_url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+destination_volume+"?force=true")
 		if err != nil {
 			return err
 		}
@@ -1491,6 +1496,13 @@ func expandNetappVolumeReplicationDestinationVolumeParametersTieringPolicy(v int
 		transformed["tierAction"] = transformedTierAction
 	}
 
+	transformedHotTierBypassModeEnabled, err := expandNetappVolumeReplicationDestinationVolumeParametersTieringPolicyHotTierBypassModeEnabled(original["hot_tier_bypass_mode_enabled"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedHotTierBypassModeEnabled); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["hotTierBypassModeEnabled"] = transformedHotTierBypassModeEnabled
+	}
+
 	return transformed, nil
 }
 
@@ -1499,6 +1511,10 @@ func expandNetappVolumeReplicationDestinationVolumeParametersTieringPolicyCoolin
 }
 
 func expandNetappVolumeReplicationDestinationVolumeParametersTieringPolicyTierAction(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandNetappVolumeReplicationDestinationVolumeParametersTieringPolicyHotTierBypassModeEnabled(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

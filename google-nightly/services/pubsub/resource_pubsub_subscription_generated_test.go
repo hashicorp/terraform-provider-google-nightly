@@ -36,7 +36,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/pubsub"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/storage"
-	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/tags"
+	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/tags"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/transport"
 
@@ -86,7 +86,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -148,7 +148,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPullExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -215,7 +215,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPullFilterExample(t *testing.T)
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -274,7 +274,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionDeadLetterExample(t *testing.T)
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -343,7 +343,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushBqExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -431,7 +431,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushBqTableSchemaExample(t *tes
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -511,7 +511,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushBqServiceAccountExample(t *
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -611,7 +611,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushCloudstorageExample(t *test
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -691,7 +691,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushCloudstorageTextExample(t *
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -773,7 +773,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushCloudstorageAvroExample(t *
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -859,7 +859,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushCloudstorageServiceAccountE
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -955,7 +955,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionPushBigtableExample(t *testing.
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1053,7 +1053,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionSingleSmtExample(t *testing.T) 
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1113,7 +1113,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionMultipleSmtsExample(t *testing.
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1174,8 +1174,8 @@ func TestAccPubsubSubscription_pubsubSubscriptionTagsExample(t *testing.T) {
 
 	context := map[string]interface{}{
 		"subscription_name": "tf-test-example-subscription" + randomSuffix,
-		"tag_key":           "tf_test_tag_key" + randomSuffix,
-		"tag_value":         "tf_test_tag_value" + randomSuffix,
+		"tag_key":           tags.BootstrapSharedTestProjectTagKey(t, "pubsub-subscription-tagkey", nil),
+		"tag_value":         tags.BootstrapSharedTestProjectTagValue(t, "pubsub-subscription-tagvalue", tags.BootstrapSharedTestProjectTagKey(t, "pubsub-subscription-tagkey", nil)),
 		"topic_name":        "tf-test-example-topic" + randomSuffix,
 		"random_suffix":     randomSuffix,
 	}
@@ -1196,7 +1196,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionTagsExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1214,20 +1214,19 @@ resource "google_pubsub_subscription" "example" {
   name  = "%{subscription_name}"
   topic = google_pubsub_topic.example.id
   tags = {
-    (google_tags_tag_key.tag_key.namespaced_name) = google_tags_tag_value.tag_value.short_name
+    (data.google_tags_tag_key.tag_key.namespaced_name) = data.google_tags_tag_value.tag_value.short_name
   }
 }
 
 data "google_project" "project" {}
 
-resource "google_tags_tag_key" "tag_key" {
+data "google_tags_tag_key" "tag_key" {
   parent     = data.google_project.project.id
   short_name = "%{tag_key}"
-  depends_on = [google_pubsub_topic.example]
 }
 
-resource "google_tags_tag_value" "tag_value" {
-  parent     = google_tags_tag_key.tag_key.id
+data "google_tags_tag_value" "tag_value" {
+  parent     = data.google_tags_tag_key.tag_key.id
   short_name = "%{tag_value}"
 }
 `, context)
@@ -1265,7 +1264,7 @@ func TestAccPubsubSubscription_pubsubSubscriptionAiInferenceExample(t *testing.T
 			},
 			{
 				ResourceName:       "google_pubsub_subscription.example",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -1302,7 +1301,7 @@ resource "google_pubsub_subscription" "example" {
 
   message_transforms {
     ai_inference {
-      endpoint = "projects/%{project_name}/locations/us-central1/publishers/google/models/gemini-2.5-flash"
+      endpoint = "projects/%{project_name}/locations/global/publishers/google/models/gemini-3.5-flash"
       unstructured_inference {
         parameters = {
           "max_tokens" = 25000

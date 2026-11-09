@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -149,7 +148,6 @@ var (
 	_ = strconv.Atoi
 	_ = strings.Trim
 	_ = time.Now
-	_ = errwrap.Wrap
 	_ = cty.BoolVal
 	_ = diag.Diagnostic{}
 	_ = customdiff.All
@@ -335,7 +333,7 @@ func resourceComputeRouterNatAddressCreate(d *schema.ResourceData, meta interfac
 	transport_tpg.MutexStore.Lock(lockName)
 	defer transport_tpg.MutexStore.Unlock(lockName)
 
-	url, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/regions/{{region}}/routers/{{router}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/routers/{{router}}")
 	if err != nil {
 		return err
 	}
@@ -999,7 +997,7 @@ func resourceComputeRouterNatAddressPatchDeleteEncoder(d *schema.ResourceData, m
 // extracting list of objects.
 func resourceComputeRouterNatAddressListForPatch(d *schema.ResourceData, meta interface{}) ([]interface{}, error) {
 	config := meta.(*transport_tpg.Config)
-	url, err := tpgresource.ReplaceVars(d, config, "{{ComputeBasePath}}projects/{{project}}/regions/{{region}}/routers/{{router}}")
+	url, err := tpgresource.ReplaceVars(d, config, transport_tpg.BaseUrl(Product, config)+"projects/{{project}}/regions/{{region}}/routers/{{router}}")
 	if err != nil {
 		return nil, err
 	}

@@ -85,7 +85,7 @@ func TestAccFirestoreIndex_firestoreIndexBasicExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -150,7 +150,7 @@ func TestAccFirestoreIndex_firestoreIndexDatastoreModeExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -219,7 +219,7 @@ func TestAccFirestoreIndex_firestoreIndexVectorExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -292,7 +292,7 @@ func TestAccFirestoreIndex_firestoreIndexNameDescendingExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -352,7 +352,7 @@ func TestAccFirestoreIndex_firestoreIndexMongodbCompatibleScopeExample(t *testin
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -423,7 +423,7 @@ func TestAccFirestoreIndex_firestoreIndexSparseAnyExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -494,7 +494,7 @@ func TestAccFirestoreIndex_firestoreIndexUniqueExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -566,7 +566,7 @@ func TestAccFirestoreIndex_firestoreIndexSkipWaitExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -634,7 +634,7 @@ func TestAccFirestoreIndex_firestoreIndexDeletionPolicyExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -700,7 +700,7 @@ func TestAccFirestoreIndex_firestoreIndexTextSearchExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -745,6 +745,83 @@ resource "google_firestore_index" "my-index" {
 `, context)
 }
 
+func TestAccFirestoreIndex_firestoreIndexSearchIndexOptionsExample(t *testing.T) {
+	t.Parallel()
+
+	randomSuffix := acctest.RandString(t, 10)
+
+	context := map[string]interface{}{
+		"project_id":    envvar.GetTestProjectFromEnv(),
+		"database_id":   "tf-test-search-index-options-db" + randomSuffix,
+		"random_suffix": randomSuffix,
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckFirestoreIndexDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccFirestoreIndex_firestoreIndexSearchIndexOptionsExample(context),
+			},
+			{
+				ResourceName:            "google_firestore_index.my-index",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"collection", "database"},
+			},
+			{
+				ResourceName:       "google_firestore_index.my-index",
+				ImportState:        true,
+				ExpectNonEmptyPlan: true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+			},
+		},
+	})
+}
+
+func testAccFirestoreIndex_firestoreIndexSearchIndexOptionsExample(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_firestore_database" "database" {
+	project                 = "%{project_id}"
+	name                    = "%{database_id}"
+	location_id             = "nam5"
+	type                    = "FIRESTORE_NATIVE"
+	database_edition        = "ENTERPRISE"
+
+	delete_protection_state = "DELETE_PROTECTION_DISABLED"
+	deletion_policy         = "DELETE"
+}
+
+resource "google_firestore_index" "my-index" {
+	project    = "%{project_id}"
+	database   = google_firestore_database.database.name
+	collection = "atestcollection"
+
+	api_scope   = "MONGODB_COMPATIBLE_API"
+	query_scope = "COLLECTION_GROUP"
+	multikey    = true
+
+	search_index_options {
+		text_language                     = "es"
+		text_language_override_field_path = "lang"
+	}
+
+	fields {
+		field_path = "description"
+		search_config {
+			text_spec {
+				index_specs {
+					index_type = "TOKENIZED"
+					match_type = "MATCH_GLOBALLY"
+				}
+			}
+		}
+	}
+}
+`, context)
+}
+
 func TestAccFirestoreIndex_firestoreIndexSuppressGeojsonIndexingExample(t *testing.T) {
 	t.Parallel()
 
@@ -772,7 +849,7 @@ func TestAccFirestoreIndex_firestoreIndexSuppressGeojsonIndexingExample(t *testi
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
@@ -841,7 +918,7 @@ func TestAccFirestoreIndex_firestoreIndexGeoSearchExample(t *testing.T) {
 			},
 			{
 				ResourceName:       "google_firestore_index.my-index",
-				RefreshState:       true,
+				ImportState:        true,
 				ExpectNonEmptyPlan: true,
 				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
 			},
