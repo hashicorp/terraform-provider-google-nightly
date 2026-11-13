@@ -94,6 +94,7 @@ import (
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dataprocmetastore"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/datastream"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/deploymentmanager"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/designcenter"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/developerconnect"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dialogflow"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/dialogflowcx"
