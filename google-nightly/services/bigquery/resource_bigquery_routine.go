@@ -151,8 +151,8 @@ If language=SQL, it is the substring inside (but excluding) the parentheses.`,
 						"argument_kind": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: verify.ValidateEnum([]string{"FIXED_TYPE", "ANY_TYPE", "FIXED_TABLE", ""}),
-							Description:  `Defaults to FIXED_TYPE. Default value: "FIXED_TYPE" Possible values: ["FIXED_TYPE", "ANY_TYPE", "FIXED_TABLE"]`,
+							ValidateFunc: verify.ValidateEnum([]string{"FIXED_TYPE", "ANY_TYPE", "FIXED_TABLE", "ANY_TABLE", ""}),
+							Description:  `Defaults to FIXED_TYPE. Default value: "FIXED_TYPE" Possible values: ["FIXED_TYPE", "ANY_TYPE", "FIXED_TABLE", "ANY_TABLE"]`,
 							Default:      "FIXED_TYPE",
 						},
 						"data_type": {
@@ -160,7 +160,7 @@ If language=SQL, it is the substring inside (but excluding) the parentheses.`,
 							Optional:     true,
 							ValidateFunc: validation.StringIsJSON,
 							StateFunc:    func(v interface{}) string { s, _ := structure.NormalizeJsonString(v); return s },
-							Description: `A JSON schema for the data type. Required unless argumentKind = ANY_TYPE.
+							Description: `A JSON schema for the data type. Required if argumentKind = FIXED_TYPE.
 ~>**NOTE**: Because this field expects a JSON string, any changes to the string
 will create a diff, even if the JSON itself hasn't changed. If the API returns
 a different value for the same schema, e.g. it switched the order of values
@@ -290,7 +290,8 @@ to execute the code in the container. Format:
 							Optional: true,
 							Description: `List of volume mounts for the Python UDF container that executes the
 managed function. When volume mounts are set, 'runtime_connection' must
-also be set.`,
+also be set. For more information, see [Create a Python UDF with volume
+mounts](https://cloud.google.com/bigquery/docs/user-defined-functions-python#volume-mounts).`,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"mount_path": {
@@ -304,8 +305,8 @@ mounted. For example, '/mnt/data'.`,
 										Required: true,
 										Description: `The absolute path of the source to be mounted. Only Google Cloud
 Storage buckets or folders are currently supported. For example,
-'gs://bucket-xxx' for a Cloud Storage bucket, or
-'gs://bucket-xxx/folder1/folder2' for a Cloud Storage folder.`,
+'gs://my-bucket' for a Cloud Storage bucket, or
+'gs://my-bucket/folder1/folder2' for a Cloud Storage folder.`,
 									},
 								},
 							},
@@ -1102,7 +1103,6 @@ func flattenBigQueryRoutineArgumentsDataType(v interface{}, d *schema.ResourceDa
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
-		// TODO: return error once https://github.com/GoogleCloudPlatform/magic-modules/issues/3257 is fixed.
 		log.Printf("[ERROR] failed to marshal schema to JSON: %v", err)
 	}
 	return string(b)
@@ -1151,7 +1151,6 @@ func flattenBigQueryRoutineArgumentsTableTypeColumnsType(v interface{}, d *schem
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
-		// TODO: return error once https://github.com/GoogleCloudPlatform/magic-modules/issues/3257 is fixed.
 		log.Printf("[ERROR] failed to marshal schema to JSON: %v", err)
 	}
 	return string(b)
@@ -1163,7 +1162,6 @@ func flattenBigQueryRoutineReturnType(v interface{}, d *schema.ResourceData, con
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
-		// TODO: return error once https://github.com/GoogleCloudPlatform/magic-modules/issues/3257 is fixed.
 		log.Printf("[ERROR] failed to marshal schema to JSON: %v", err)
 	}
 	return string(b)
@@ -1175,7 +1173,6 @@ func flattenBigQueryRoutineReturnTableType(v interface{}, d *schema.ResourceData
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
-		// TODO: return error once https://github.com/GoogleCloudPlatform/magic-modules/issues/3257 is fixed.
 		log.Printf("[ERROR] failed to marshal schema to JSON: %v", err)
 	}
 	return string(b)
@@ -1500,11 +1497,11 @@ func expandBigQueryRoutineArgumentsDataType(v interface{}, d tpgresource.Terrafo
 	if len(b) == 0 {
 		return nil, nil
 	}
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(b, &m); err != nil {
+	var j interface{}
+	if err := json.Unmarshal(b, &j); err != nil {
 		return nil, err
 	}
-	return m, nil
+	return j, nil
 }
 
 func expandBigQueryRoutineArgumentsTableType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -1570,11 +1567,11 @@ func expandBigQueryRoutineArgumentsTableTypeColumnsType(v interface{}, d tpgreso
 	if len(b) == 0 {
 		return nil, nil
 	}
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(b, &m); err != nil {
+	var j interface{}
+	if err := json.Unmarshal(b, &j); err != nil {
 		return nil, err
 	}
-	return m, nil
+	return j, nil
 }
 
 func expandBigQueryRoutineReturnType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -1582,11 +1579,11 @@ func expandBigQueryRoutineReturnType(v interface{}, d tpgresource.TerraformResou
 	if len(b) == 0 {
 		return nil, nil
 	}
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(b, &m); err != nil {
+	var j interface{}
+	if err := json.Unmarshal(b, &j); err != nil {
 		return nil, err
 	}
-	return m, nil
+	return j, nil
 }
 
 func expandBigQueryRoutineReturnTableType(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
@@ -1594,11 +1591,11 @@ func expandBigQueryRoutineReturnTableType(v interface{}, d tpgresource.Terraform
 	if len(b) == 0 {
 		return nil, nil
 	}
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(b, &m); err != nil {
+	var j interface{}
+	if err := json.Unmarshal(b, &j); err != nil {
 		return nil, err
 	}
-	return m, nil
+	return j, nil
 }
 
 func expandBigQueryRoutineImportedLibraries(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {

@@ -126,6 +126,8 @@ resource "google_ces_app" "ces_app_basic" {
     metric_analysis_settings {
       llm_metrics_opted_out = false
     }
+
+    required_recording_consent = true
   }
 
   model_settings {
@@ -569,6 +571,11 @@ The following arguments are supported:
   Configuration for how the user barge-in activities should be handled.
   Structure is [documented below](#nested_audio_processing_config_barge_in_config).
 
+* `custom_voice_samples` -
+  (Optional)
+  Configures custom voice samples for voice cloning.
+  Structure is [documented below](#nested_audio_processing_config_custom_voice_samples).
+
 * `inactivity_timeout` -
   (Optional)
   The duration of user inactivity (no speech or interaction) before the agent
@@ -624,6 +631,30 @@ The following arguments are supported:
   that the user hasn't heard the full preceding agent message.
   This should not be used in scenarios where agent responses are displayed
   visually.
+
+<a name="nested_audio_processing_config_custom_voice_samples"></a>The `custom_voice_samples` block supports:
+
+* `consent_audio_gcs_uri` -
+  (Optional)
+  Consent audio for voice cloning.
+
+* `name` -
+  (Optional)
+  The user-defined name for the custom voice sample.
+
+* `preview_text` -
+  (Optional)
+  Text for synthesizing preview audio for custom voice.
+
+* `voice_instruction` -
+  (Optional)
+  Natural language instructions for voice style, tone, pacing, or
+  pronunciation.
+
+* `voice_sample_gcs_uri` -
+  (Optional)
+  The Cloud Storage URI to the audio sample for voice cloning. The
+  audio sample should be a mono-channel, 24kHz WAV file.
 
 <a name="nested_audio_processing_config_synthesize_speech_configs"></a>The `synthesize_speech_configs` block supports:
 
@@ -942,6 +973,16 @@ The following arguments are supported:
   (Optional)
   Configuration to instruct how sensitive data should be handled.
   Structure is [documented below](#nested_logging_settings_redaction_config).
+
+* `required_recording_consent` -
+  (Optional)
+  Whether the app has to say what may be recorded before anything is kept.
+  When true, a session starts with recording off and stays off until the
+  client sends SessionInput.recording_control, which then decides every turn
+  from that point on. This covers audio recording as well as conversation
+  history, BigQuery export and Cloud Logging.
+  When `false`, the default, the settings above decide on their own and the
+  client does not have to send anything.
 
 
 <a name="nested_logging_settings_audio_recording_config"></a>The `audio_recording_config` block supports:

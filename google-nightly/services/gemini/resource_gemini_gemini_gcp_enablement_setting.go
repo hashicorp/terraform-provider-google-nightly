@@ -164,6 +164,15 @@ func ResourceGeminiGeminiGcpEnablementSetting() *schema.Resource {
 				Optional:    true,
 				Description: `Whether customer data sharing should be enabled.`,
 			},
+			"gcs_bucket": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Description: `The Cloud Storage bucket name allocated for this setting.
+Note: Please make sure the cloudaicompanion service agent
+'service-<PROJECT-NUMBER>@gcp-sa-cloudaicompanion.iam.gserviceaccount.com'
+has 'storage.objects.get' and 'storage.objects.create' permission to the
+Cloud Storage bucket.`,
+			},
 			"gemini_enterprise_project": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -307,6 +316,12 @@ func resourceGeminiGeminiGcpEnablementSettingCreate(d *schema.ResourceData, meta
 		return err
 	} else if v, ok := d.GetOkExists("has_custom_instructions"); !tpgresource.IsEmptyValue(reflect.ValueOf(hasCustomInstructionsProp)) && (ok || !reflect.DeepEqual(v, hasCustomInstructionsProp)) {
 		obj["hasCustomInstructions"] = hasCustomInstructionsProp
+	}
+	gcsBucketProp, err := expandGeminiGeminiGcpEnablementSettingGcsBucket(d.Get("gcs_bucket"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("gcs_bucket"); !tpgresource.IsEmptyValue(reflect.ValueOf(gcsBucketProp)) && (ok || !reflect.DeepEqual(v, gcsBucketProp)) {
+		obj["gcsBucket"] = gcsBucketProp
 	}
 	effectiveLabelsProp, err := expandGeminiGeminiGcpEnablementSettingEffectiveLabels(d.Get("effective_labels"), d, config)
 	if err != nil {
@@ -579,6 +594,12 @@ func resourceGeminiGeminiGcpEnablementSettingUpdate(d *schema.ResourceData, meta
 	} else if v, ok := d.GetOkExists("has_custom_instructions"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, hasCustomInstructionsProp)) {
 		obj["hasCustomInstructions"] = hasCustomInstructionsProp
 	}
+	gcsBucketProp, err := expandGeminiGeminiGcpEnablementSettingGcsBucket(d.Get("gcs_bucket"), d, config)
+	if err != nil {
+		return err
+	} else if v, ok := d.GetOkExists("gcs_bucket"); !tpgresource.IsEmptyValue(reflect.ValueOf(v)) && (ok || !reflect.DeepEqual(v, gcsBucketProp)) {
+		obj["gcsBucket"] = gcsBucketProp
+	}
 	effectiveLabelsProp, err := expandGeminiGeminiGcpEnablementSettingEffectiveLabels(d.Get("effective_labels"), d, config)
 	if err != nil {
 		return err
@@ -628,6 +649,10 @@ func resourceGeminiGeminiGcpEnablementSettingUpdate(d *schema.ResourceData, meta
 
 	if d.HasChange("has_custom_instructions") {
 		updateMask = append(updateMask, "hasCustomInstructions")
+	}
+
+	if d.HasChange("gcs_bucket") {
+		updateMask = append(updateMask, "gcsBucket")
 	}
 
 	if d.HasChange("effective_labels") {
@@ -820,6 +845,10 @@ func flattenGeminiGeminiGcpEnablementSettingHasCustomInstructions(v interface{},
 	return v
 }
 
+func flattenGeminiGeminiGcpEnablementSettingGcsBucket(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
 func flattenGeminiGeminiGcpEnablementSettingTerraformLabels(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	if v == nil {
 		return v
@@ -864,6 +893,10 @@ func expandGeminiGeminiGcpEnablementSettingReleaseChannel(v interface{}, d tpgre
 }
 
 func expandGeminiGeminiGcpEnablementSettingHasCustomInstructions(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandGeminiGeminiGcpEnablementSettingGcsBucket(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 
@@ -912,6 +945,9 @@ func ResourceGeminiGeminiGcpEnablementSettingFlatten(d *schema.ResourceData, met
 		return fmt.Errorf("Error reading GeminiGcpEnablementSetting: %s", err)
 	}
 	if err = d.Set("has_custom_instructions", flattenGeminiGeminiGcpEnablementSettingHasCustomInstructions(res["hasCustomInstructions"], d, config)); err != nil {
+		return fmt.Errorf("Error reading GeminiGcpEnablementSetting: %s", err)
+	}
+	if err = d.Set("gcs_bucket", flattenGeminiGeminiGcpEnablementSettingGcsBucket(res["gcsBucket"], d, config)); err != nil {
 		return fmt.Errorf("Error reading GeminiGcpEnablementSetting: %s", err)
 	}
 	if err = d.Set("terraform_labels", flattenGeminiGeminiGcpEnablementSettingTerraformLabels(res["labels"], d, config)); err != nil {

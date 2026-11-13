@@ -1,4 +1,5 @@
 // Copyright IBM Corp. 2014, 2026
+// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -213,6 +214,14 @@ attached. Possible values: ["COLLOCATED"]`,
 							Optional:      true,
 							Description:   `Specifies the number of max logical switches.`,
 							ConflictsWith: []string{"group_placement_policy.0.gpu_topology"},
+						},
+						"scope": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: verify.ValidateEnum([]string{"HOST", ""}),
+							Description: `Scope specifies the availability domain to which the VMs should be
+spread. Possible values: ["HOST"]`,
 						},
 						"tpu_topology": {
 							Type:        schema.TypeString,
@@ -1245,6 +1254,8 @@ func flattenComputeResourcePolicyGroupPlacementPolicy(v interface{}, d *schema.R
 		flattenComputeResourcePolicyGroupPlacementPolicyGpuTopology(original["gpuTopology"], d, config)
 	transformed["tpu_topology"] =
 		flattenComputeResourcePolicyGroupPlacementPolicyTpuTopology(original["tpuTopology"], d, config)
+	transformed["scope"] =
+		flattenComputeResourcePolicyGroupPlacementPolicyScope(original["scope"], d, config)
 	return []interface{}{transformed}
 }
 func flattenComputeResourcePolicyGroupPlacementPolicyVmCount(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
@@ -1307,6 +1318,10 @@ func flattenComputeResourcePolicyGroupPlacementPolicyGpuTopology(v interface{}, 
 }
 
 func flattenComputeResourcePolicyGroupPlacementPolicyTpuTopology(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	return v
+}
+
+func flattenComputeResourcePolicyGroupPlacementPolicyScope(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
 	return v
 }
 
@@ -1796,6 +1811,13 @@ func expandComputeResourcePolicyGroupPlacementPolicy(v interface{}, d tpgresourc
 		transformed["tpuTopology"] = transformedTpuTopology
 	}
 
+	transformedScope, err := expandComputeResourcePolicyGroupPlacementPolicyScope(original["scope"], d, config)
+	if err != nil {
+		return nil, err
+	} else if val := reflect.ValueOf(transformedScope); val.IsValid() && !tpgresource.IsEmptyValue(val) {
+		transformed["scope"] = transformedScope
+	}
+
 	return transformed, nil
 }
 
@@ -1820,6 +1842,10 @@ func expandComputeResourcePolicyGroupPlacementPolicyGpuTopology(v interface{}, d
 }
 
 func expandComputeResourcePolicyGroupPlacementPolicyTpuTopology(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
+	return v, nil
+}
+
+func expandComputeResourcePolicyGroupPlacementPolicyScope(v interface{}, d tpgresource.TerraformResourceData, config *transport_tpg.Config) (interface{}, error) {
 	return v, nil
 }
 

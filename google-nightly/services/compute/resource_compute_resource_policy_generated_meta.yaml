@@ -1,4 +1,5 @@
 # Copyright IBM Corp. 2014, 2026
+# Copyright 2026 Google LLC
 # SPDX-License-Identifier: MPL-2.0
 resource: google_compute_resource_policy
 generation_type: mmv1
@@ -13,6 +14,7 @@ fields:
     - api_field: groupPlacementPolicy.collocation
     - api_field: groupPlacementPolicy.gpuTopology
     - api_field: groupPlacementPolicy.maxDistance
+    - api_field: groupPlacementPolicy.scope
     - api_field: groupPlacementPolicy.tpuTopology
     - api_field: groupPlacementPolicy.vmCount
     - api_field: instanceSchedulePolicy.expirationTime
