@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -32,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/agentregistry"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 )
 
@@ -52,7 +52,6 @@ func TestAccIapAgentRegistryEndpointIamBindingGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -100,7 +99,6 @@ func TestAccIapAgentRegistryEndpointIamMemberGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -146,7 +144,6 @@ func TestAccIapAgentRegistryEndpointIamPolicyGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -194,7 +191,6 @@ func TestAccIapAgentRegistryEndpointIamBindingGenerated_withCondition(t *testing
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -234,7 +230,6 @@ func TestAccIapAgentRegistryEndpointIamBindingGenerated_withAndWithoutCondition(
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -284,7 +279,6 @@ func TestAccIapAgentRegistryEndpointIamMemberGenerated_withCondition(t *testing.
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -324,7 +318,6 @@ func TestAccIapAgentRegistryEndpointIamMemberGenerated_withAndWithoutCondition(t
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -374,7 +367,6 @@ func TestAccIapAgentRegistryEndpointIamPolicyGenerated_withCondition(t *testing.
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"endpoint_id":             "tf-test-endpoint-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -414,9 +406,60 @@ func TestAccIapAgentRegistryEndpointIamPolicyGenerated_withCondition(t *testing.
 
 func testAccIapAgentRegistryEndpointIamMember_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 resource "google_iap_agent_registry_endpoint_iam_member" "foo" {
@@ -431,9 +474,60 @@ resource "google_iap_agent_registry_endpoint_iam_member" "foo" {
 
 func testAccIapAgentRegistryEndpointIamPolicy_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 data "google_iam_policy" "foo" {
@@ -463,9 +557,60 @@ data "google_iap_agent_registry_endpoint_iam_policy" "foo" {
 
 func testAccIapAgentRegistryEndpointIamPolicy_emptyBinding(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 data "google_iam_policy" "foo" {
@@ -482,9 +627,60 @@ resource "google_iap_agent_registry_endpoint_iam_policy" "foo" {
 
 func testAccIapAgentRegistryEndpointIamBinding_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 resource "google_iap_agent_registry_endpoint_iam_binding" "foo" {
@@ -499,9 +695,60 @@ resource "google_iap_agent_registry_endpoint_iam_binding" "foo" {
 
 func testAccIapAgentRegistryEndpointIamBinding_updateGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 resource "google_iap_agent_registry_endpoint_iam_binding" "foo" {
@@ -516,9 +763,60 @@ resource "google_iap_agent_registry_endpoint_iam_binding" "foo" {
 
 func testAccIapAgentRegistryEndpointIamBinding_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 resource "google_iap_agent_registry_endpoint_iam_binding" "foo" {
@@ -538,9 +836,60 @@ resource "google_iap_agent_registry_endpoint_iam_binding" "foo" {
 
 func testAccIapAgentRegistryEndpointIamBinding_withAndWithoutConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 resource "google_iap_agent_registry_endpoint_iam_binding" "foo" {
@@ -582,9 +931,60 @@ resource "google_iap_agent_registry_endpoint_iam_binding" "foo3" {
 
 func testAccIapAgentRegistryEndpointIamMember_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 resource "google_iap_agent_registry_endpoint_iam_member" "foo" {
@@ -604,9 +1004,60 @@ resource "google_iap_agent_registry_endpoint_iam_member" "foo" {
 
 func testAccIapAgentRegistryEndpointIamMember_withAndWithoutConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 resource "google_iap_agent_registry_endpoint_iam_member" "foo" {
@@ -648,9 +1099,60 @@ resource "google_iap_agent_registry_endpoint_iam_member" "foo3" {
 
 func testAccIapAgentRegistryEndpointIamPolicy_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "endpoint_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-endpoint"
+  description  = "Test endpoint service"
+  display_name = "Test endpoint service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "GRPC"
+  }
+
+  endpoint_spec {
+    type = "NO_SPEC"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_endpoint" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  endpoint_id = "agentregistry-00000000-0000-0000-64c7-1e6dd8448684"
+  filter   = "displayName:Test endpoint service"
+
+  depends_on = [google_agent_registry_service.endpoint_service]
 }
 
 data "google_iam_policy" "foo" {

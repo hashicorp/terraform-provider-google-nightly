@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -32,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/agentregistry"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 )
 
@@ -52,7 +52,6 @@ func TestAccIapAgentRegistryAgentIamBindingGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -100,7 +99,6 @@ func TestAccIapAgentRegistryAgentIamMemberGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -146,7 +144,6 @@ func TestAccIapAgentRegistryAgentIamPolicyGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -194,7 +191,6 @@ func TestAccIapAgentRegistryAgentIamBindingGenerated_withCondition(t *testing.T)
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -234,7 +230,6 @@ func TestAccIapAgentRegistryAgentIamBindingGenerated_withAndWithoutCondition(t *
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -284,7 +279,6 @@ func TestAccIapAgentRegistryAgentIamMemberGenerated_withCondition(t *testing.T) 
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -324,7 +318,6 @@ func TestAccIapAgentRegistryAgentIamMemberGenerated_withAndWithoutCondition(t *t
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -374,7 +367,6 @@ func TestAccIapAgentRegistryAgentIamPolicyGenerated_withCondition(t *testing.T) 
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"agent_id":                "tf-test-agent-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -414,9 +406,48 @@ func TestAccIapAgentRegistryAgentIamPolicyGenerated_withCondition(t *testing.T) 
 
 func testAccIapAgentRegistryAgentIamMember_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 resource "google_iap_agent_registry_agent_iam_member" "foo" {
@@ -431,9 +462,48 @@ resource "google_iap_agent_registry_agent_iam_member" "foo" {
 
 func testAccIapAgentRegistryAgentIamPolicy_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 data "google_iam_policy" "foo" {
@@ -463,9 +533,48 @@ data "google_iap_agent_registry_agent_iam_policy" "foo" {
 
 func testAccIapAgentRegistryAgentIamPolicy_emptyBinding(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 data "google_iam_policy" "foo" {
@@ -482,9 +591,48 @@ resource "google_iap_agent_registry_agent_iam_policy" "foo" {
 
 func testAccIapAgentRegistryAgentIamBinding_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 resource "google_iap_agent_registry_agent_iam_binding" "foo" {
@@ -499,9 +647,48 @@ resource "google_iap_agent_registry_agent_iam_binding" "foo" {
 
 func testAccIapAgentRegistryAgentIamBinding_updateGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 resource "google_iap_agent_registry_agent_iam_binding" "foo" {
@@ -516,9 +703,48 @@ resource "google_iap_agent_registry_agent_iam_binding" "foo" {
 
 func testAccIapAgentRegistryAgentIamBinding_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 resource "google_iap_agent_registry_agent_iam_binding" "foo" {
@@ -538,9 +764,48 @@ resource "google_iap_agent_registry_agent_iam_binding" "foo" {
 
 func testAccIapAgentRegistryAgentIamBinding_withAndWithoutConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 resource "google_iap_agent_registry_agent_iam_binding" "foo" {
@@ -582,9 +847,48 @@ resource "google_iap_agent_registry_agent_iam_binding" "foo3" {
 
 func testAccIapAgentRegistryAgentIamMember_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 resource "google_iap_agent_registry_agent_iam_member" "foo" {
@@ -604,9 +908,48 @@ resource "google_iap_agent_registry_agent_iam_member" "foo" {
 
 func testAccIapAgentRegistryAgentIamMember_withAndWithoutConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 resource "google_iap_agent_registry_agent_iam_member" "foo" {
@@ -648,9 +991,48 @@ resource "google_iap_agent_registry_agent_iam_member" "foo3" {
 
 func testAccIapAgentRegistryAgentIamPolicy_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+# Needed for CI tests for resource to propagate
+resource "time_sleep" "wait_for_agent_creation" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_agent" "default" {
-  location = "us-central1"
+  project    = google_project.project.project_id
+  location = "global"
   filter = "displayName:Workspace Agent"
+
+  depends_on = [time_sleep.wait_for_agent_creation]
 }
 
 data "google_iam_policy" "foo" {

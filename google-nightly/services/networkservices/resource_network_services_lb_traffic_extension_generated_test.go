@@ -468,7 +468,6 @@ func TestAccNetworkServicesLbTrafficExtension_networkServicesLbTrafficExtensionH
 		"callouts_hc_name":              "tf-test-l7-ilb-callouts-hc-route" + randomSuffix,
 		"callouts_instance_group":       "tf-test-l7-ilb-callouts-ins-group-route" + randomSuffix,
 		"callouts_instance_name":        "tf-test-l7-ilb-callouts-ins-route" + randomSuffix,
-		"forwarding_rule_name":          "tf-test-l7-ilb-forwarding-rule-route" + randomSuffix,
 		"fw_allow_iap_hc_name":          "tf-test-l7-ilb-fw-allow-iap-hc-route" + randomSuffix,
 		"fw_allow_ilb_to_backends_name": "tf-test-l7-ilb-fw-allow-ilb-to-backends-route" + randomSuffix,
 		"gateway_name":                  "tf-test-l7-ilb-gateway-route" + randomSuffix,
@@ -479,8 +478,6 @@ func TestAccNetworkServicesLbTrafficExtension_networkServicesLbTrafficExtensionH
 		"mig_name":                      "tf-test-l7-ilb-mig1-route" + randomSuffix,
 		"mig_template_name":             "tf-test-l7-ilb-mig-template-route" + randomSuffix,
 		"proxy_subnet_name":             "tf-test-l7-ilb-proxy-subnet-route" + randomSuffix,
-		"regional_url_map_name":         "tf-test-l7-ilb-regional-url-map-route" + randomSuffix,
-		"target_http_proxy_name":        "tf-test-l7-ilb-target-http-proxy-route" + randomSuffix,
 		"vm_test_name":                  "tf-test-l7-ilb-test-vm-route" + randomSuffix,
 		"random_suffix":                 randomSuffix,
 	}
