@@ -1252,7 +1252,6 @@ func TestAccCloudRunV2Service_cloudrunv2ServiceZipDeployExample(t *testing.T) {
 
 	context := map[string]interface{}{
 		"cloud_run_service_name": "tf-test-cloudrun-zip-service" + randomSuffix,
-		"targz_path":             "tf-test-./test-fixtures/function-source.tar.gz" + randomSuffix,
 		"random_suffix":          randomSuffix,
 	}
 
@@ -1514,7 +1513,7 @@ resource "google_cloud_run_v2_service" "default" {
   name     = "%{cloud_run_service_name}"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "ALPHA"
+  launch_stage = "BETA"
   template {
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello"

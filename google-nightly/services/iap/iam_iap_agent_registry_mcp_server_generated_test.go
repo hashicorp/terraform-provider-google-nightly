@@ -1,5 +1,4 @@
 // Copyright IBM Corp. 2014, 2026
-// Copyright 2026 Google LLC
 // SPDX-License-Identifier: MPL-2.0
 
 // ----------------------------------------------------------------------------
@@ -32,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/acctest"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/envvar"
 	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/agentregistry"
+	_ "github.com/hashicorp/terraform-provider-google-nightly/google-nightly/services/resourcemanager"
 	"github.com/hashicorp/terraform-provider-google-nightly/google-nightly/tpgresource"
 )
 
@@ -52,7 +52,6 @@ func TestAccIapAgentRegistryMcpServerIamBindingGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -100,7 +99,6 @@ func TestAccIapAgentRegistryMcpServerIamMemberGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -146,7 +144,6 @@ func TestAccIapAgentRegistryMcpServerIamPolicyGenerated(t *testing.T) {
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -194,7 +191,6 @@ func TestAccIapAgentRegistryMcpServerIamBindingGenerated_withCondition(t *testin
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -234,7 +230,6 @@ func TestAccIapAgentRegistryMcpServerIamBindingGenerated_withAndWithoutCondition
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -284,7 +279,6 @@ func TestAccIapAgentRegistryMcpServerIamMemberGenerated_withCondition(t *testing
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -324,7 +318,6 @@ func TestAccIapAgentRegistryMcpServerIamMemberGenerated_withAndWithoutCondition(
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -374,7 +367,6 @@ func TestAccIapAgentRegistryMcpServerIamPolicyGenerated_withCondition(t *testing
 		"role":          "roles/iap.egressor",
 		"org_id":        envvar.GetTestOrgFromEnv(t),
 
-		"mcp_server_id":           "tf-test-mcp-server-id" + randomSuffix,
 		"condition_title":         "expires_after_2019_12_31",
 		"condition_expr":          `request.time < timestamp(\"2020-01-01T00:00:00Z\")`,
 		"condition_desc":          "Expiring at midnight of 2019-12-31",
@@ -414,9 +406,61 @@ func TestAccIapAgentRegistryMcpServerIamPolicyGenerated_withCondition(t *testing
 
 func testAccIapAgentRegistryMcpServerIamMember_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 resource "google_iap_agent_registry_mcp_server_iam_member" "foo" {
@@ -431,9 +475,61 @@ resource "google_iap_agent_registry_mcp_server_iam_member" "foo" {
 
 func testAccIapAgentRegistryMcpServerIamPolicy_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 data "google_iam_policy" "foo" {
@@ -463,9 +559,61 @@ data "google_iap_agent_registry_mcp_server_iam_policy" "foo" {
 
 func testAccIapAgentRegistryMcpServerIamPolicy_emptyBinding(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 data "google_iam_policy" "foo" {
@@ -482,9 +630,61 @@ resource "google_iap_agent_registry_mcp_server_iam_policy" "foo" {
 
 func testAccIapAgentRegistryMcpServerIamBinding_basicGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 resource "google_iap_agent_registry_mcp_server_iam_binding" "foo" {
@@ -499,9 +699,61 @@ resource "google_iap_agent_registry_mcp_server_iam_binding" "foo" {
 
 func testAccIapAgentRegistryMcpServerIamBinding_updateGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 resource "google_iap_agent_registry_mcp_server_iam_binding" "foo" {
@@ -516,9 +768,61 @@ resource "google_iap_agent_registry_mcp_server_iam_binding" "foo" {
 
 func testAccIapAgentRegistryMcpServerIamBinding_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 resource "google_iap_agent_registry_mcp_server_iam_binding" "foo" {
@@ -538,9 +842,61 @@ resource "google_iap_agent_registry_mcp_server_iam_binding" "foo" {
 
 func testAccIapAgentRegistryMcpServerIamBinding_withAndWithoutConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 resource "google_iap_agent_registry_mcp_server_iam_binding" "foo" {
@@ -582,9 +938,61 @@ resource "google_iap_agent_registry_mcp_server_iam_binding" "foo3" {
 
 func testAccIapAgentRegistryMcpServerIamMember_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 resource "google_iap_agent_registry_mcp_server_iam_member" "foo" {
@@ -604,9 +1012,61 @@ resource "google_iap_agent_registry_mcp_server_iam_member" "foo" {
 
 func testAccIapAgentRegistryMcpServerIamMember_withAndWithoutConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 resource "google_iap_agent_registry_mcp_server_iam_member" "foo" {
@@ -648,9 +1108,61 @@ resource "google_iap_agent_registry_mcp_server_iam_member" "foo3" {
 
 func testAccIapAgentRegistryMcpServerIamPolicy_withConditionGenerated(context map[string]interface{}) string {
 	return acctest.Nprintf(`
+resource "google_project" "project" {
+  project_id = "tf-test%{random_suffix}"
+  name       = "tf-test%{random_suffix}"
+  org_id     = "%{org_id}"
+  deletion_policy = "DELETE"
+}
+
+# Needed for CI tests for permissions to propagate
+resource "time_sleep" "wait_for_project_propagation" {
+  create_duration = "60s"
+
+  depends_on = [google_project.project]
+}
+
+resource "google_project_service" "iap_service" {
+  project    = google_project.project.project_id
+  service    = "iap.googleapis.com"
+
+  depends_on = [time_sleep.wait_for_project_propagation]
+}
+
+resource "google_project_service" "agentregistry_service" {
+  project    = google_project.project.project_id
+  service    = "agentregistry.googleapis.com"
+
+  # Chain service resource calls to avoid cache misses during CI test replays
+  depends_on = [google_project_service.iap_service]
+}
+
+resource "google_agent_registry_service" "mcp_service" {
+  project    = google_project.project.project_id
+  location     = "us-central1"
+  service_id   = "tf-test-mcp"
+  description  = "Test MCP service"
+  display_name = "Test MCP service"
+
+  interfaces {
+    url              = "https://www.google.com"
+    protocol_binding = "JSONRPC"
+  }
+
+  mcp_server_spec {
+    type    = "TOOL_SPEC"
+    content = "{\"tools\":[]}"
+  }
+
+  depends_on = [google_project_service.agentregistry_service]
+}
+
 data "google_agent_registry_mcp_server" "default" {
+  project    = google_project.project.project_id
   location = "us-central1"
-  filter = "displayName:Best_AI_Agent"
+  filter   = "displayName:Test MCP service"
+
+  depends_on = [google_agent_registry_service.mcp_service]
 }
 
 data "google_iam_policy" "foo" {
